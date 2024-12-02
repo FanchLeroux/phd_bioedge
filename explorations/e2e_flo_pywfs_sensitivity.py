@@ -62,7 +62,7 @@ plt.title("WFS Camera Frame - Flat wavefront\nmodulation ="+str(int(modulation))
 
 #%% -------------------------- Fourier modes generation ------------------------
 
-from OOPAO.tools.tools import compute_fourier_mode
+from OOPAO.tools.tools import compute_fourier_mode, zero_pad_array
 
 #wavelength = ngs.photometry(optBand)[0]
 
@@ -85,10 +85,41 @@ tel*wfs
 
 #%% --------------------------- Custom modulation simulation ------------------------
 
-[opd_tilt,_] = np.meshgrid(np.arange(0, tel.pupil.shape[0]), np.arange(0, tel.pupil.shape[0]))
-opd_tilt_normalized = opd_tilt/opd_tilt.max() # phase ramp between 0 and 1
-opd_tilt_normalized = opd_tilt/opd_tilt.max()
+[X,Y] = np.meshgrid(np.arange(0, tel.pupil.shape[0]), np.arange(0, tel.pupil.shape[0]))
+Y = np.flip(Y, axis=0) # chage orientation
 
+theta = 0.*np.pi
+
+opd_tilt_theta = np.cos(theta) * X + np.sin(theta) * Y
+
+opd_tilt_theta_normalized = opd_tilt_theta/opd_tilt_theta.max()
+
+#%%
+
+tilt_amplitude = 2.*np.pi
+
+plt.figure(1)
+plt.imshow(opd_tilt_theta_normalized)
+
+plt.figure(2)
+plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(np.exp(1j*tilt_amplitude*opd_tilt_theta_normalized)))))
+
+plt.figure(3)
+plt.imshow(np.log(np.abs(np.fft.fftshift(np.fft.fft2(np.exp(1j*tilt_amplitude*opd_tilt_theta_normalized))))+1.))
+
+#%%
+
+zeros_padding_factor = 3
+
+complex_amplitude = tel.pupil * np.exp(1j*tilt_amplitude*opd_tilt_theta_normalized)
+
+complex_amplitude_pad = np.pad(complex_amplitude, (((zeros_padding_factor-1)*complex_amplitude.shape[0]//2, 
+                                 (zeros_padding_factor-1)*complex_amplitude.shape[0]//2),
+                                ((zeros_padding_factor-1)*complex_amplitude.shape[1]//2, 
+                                 (zeros_padding_factor-1)*complex_amplitude.shape[1]//2)))
+
+plt.figure(1)
+plt.imshow(np.abs(complex_amplitude_pad))
 
 #%% ----------------------------- Show many Fourier Modes ----------------------
 
