@@ -10,7 +10,7 @@ import numpy as np
 
 # number of subaperture for the WFS
 n_subaperture = 60
-modulation = 10
+modulation = 3.
 optBand = 'V'
 
 #%% -----------------------     TELESCOPE   ----------------------------------
@@ -54,11 +54,7 @@ wfs = Pyramid(nSubap            = n_subaperture,                # number of suba
 # propagate the light to the Wave-Front Sensor
 tel*wfs
 
-plt.figure(1)
-plt.close('all')
-plt.figure()
-plt.imshow(wfs.cam.frame)
-plt.title("WFS Camera Frame - Flat wavefront\nmodulation ="+str(int(modulation)) + " lambda/D")
+oopao_frame = wfs.cam.frame
 
 #%% -------------------------- Fourier modes generation ------------------------
 
@@ -85,45 +81,72 @@ tel*wfs
 
 #%% --------------------------- Custom modulation simulation ------------------------
 
+zeros_padding_factor = 2
+
+#modulation parameters
+modulation_radius = 3.
+n_modulation_points = 5
+
+# therefore
+theta_list = np.arange(0., 2.*np.pi, 2.*np.pi/n_modulation_points)
+tilt_amplitude = 2.*np.pi * modulation_radius
+
+# modulation phase screens generation - Units : phase
+modulation_phase_screens = np.empty((tel.pupil.shape[0],
+                                     tel.pupil.shape[1],
+                                     n_modulation_points), dtype=complex)
 [X,Y] = np.meshgrid(np.arange(0, tel.pupil.shape[0]), np.arange(0, tel.pupil.shape[0]))
-Y = np.flip(Y, axis=0) # chage orientation
+Y = np.flip(Y, axis=0) # change orientation
 
-theta = 0.25*np.pi
+for k in range(n_modulation_points):
 
-opd_tilt_theta = np.cos(theta) * X + np.sin(theta) * Y
+    theta = theta_list[k]    
 
-#%% pupil addition and normalization
+    tilt_theta = np.cos(theta) * X + np.sin(theta) * Y
 
-opd_tilt_theta[tel.pupil>0] = (opd_tilt_theta[tel.pupil>0] - opd_tilt_theta[tel.pupil>0].min())\
-    /(opd_tilt_theta[tel.pupil>0].max()- opd_tilt_theta[tel.pupil>0].min())
+    # pupil addition and normalization
+    
+    tilt_theta[tel.pupil>0] = (tilt_theta[tel.pupil>0] - tilt_theta[tel.pupil>0].min())\
+        /(tilt_theta[tel.pupil>0].max()- tilt_theta[tel.pupil>0].min())
+    tilt_theta[tel.pupil==0] = 0.
+    
+    modulation_phase_screens[:,:,k] = tilt_amplitude*tilt_theta
 
-opd_tilt_theta = opd_tilt_theta * tel.pupil
+#%% Modulated focal plane
 
-#%%
+detector_focal_plane = np.zeros((zeros_padding_factor*tel.pupil.shape[0],zeros_padding_factor*tel.pupil.shape[1]), dtype=float)
 
-tilt_amplitude = 2.*np.pi * 2**0.5
+for k in range(n_modulation_points):
+    
+    complex_amplitude = tel.pupil * np.exp(1j*modulation_phase_screens[:,:,k])
 
-#%%
+    complex_amplitude_pad = np.pad(complex_amplitude, (((zeros_padding_factor-1)*complex_amplitude.shape[0]//2, 
+                                     (zeros_padding_factor-1)*complex_amplitude.shape[0]//2),
+                                    ((zeros_padding_factor-1)*complex_amplitude.shape[1]//2, 
+                                     (zeros_padding_factor-1)*complex_amplitude.shape[1]//2)))
 
-zeros_padding_factor = 4
+    detector_focal_plane = detector_focal_plane + np.abs(np.fft.fftshift(np.fft.fft2(complex_amplitude_pad)))**2
 
-complex_amplitude = tel.pupil * np.exp(1j*tilt_amplitude*opd_tilt_theta)
+#%% WFS detector
 
-complex_amplitude_pad = np.pad(complex_amplitude, (((zeros_padding_factor-1)*complex_amplitude.shape[0]//2, 
-                                 (zeros_padding_factor-1)*complex_amplitude.shape[0]//2),
-                                ((zeros_padding_factor-1)*complex_amplitude.shape[1]//2, 
-                                 (zeros_padding_factor-1)*complex_amplitude.shape[1]//2)))
+detector_pywfs = np.zeros(wfs.cam.frame.shape, dtype=float)
+
+for k in range(n_modulation_points):
+    
+    # modulation phase screen is defined in phase [rad], not in opd [m]
+    tel.OPD = tel.pupil * modulation_phase_screens[:,:,k] * ngs.photometry(optBand)[0]/(2.*np.pi)
+    tel*wfs
+    detector_pywfs = detector_pywfs + wfs.cam.frame
+
+#%% Plots
 
 plt.figure(1)
-plt.imshow(np.abs(complex_amplitude_pad))
+plt.imshow(oopao_frame)
+plt.title("WFS Camera Frame - Flat wavefront\nOOPAO modulation ="+str(int(modulation)) + " lambda/D")
 
 plt.figure(2)
-plt.imshow(tilt_amplitude*opd_tilt_theta)
+plt.imshow(detector_focal_plane)
 
 plt.figure(3)
-plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(complex_amplitude_pad))))
-
-#%% ----------------------------- Show many Fourier Modes ----------------------
-
-from OOPAO.calibration.InteractionMatrix import InteractionMatrix
-
+plt.imshow(detector_pywfs)
+plt.title("WFS Camera Frame - Flat wavefront\nFanch modulation ="+str(int(modulation_radius)) + " lambda/D")
