@@ -81,7 +81,7 @@ tel*wfs
 
 #%% --------------------------- Custom modulation simulation ------------------------
 
-zeros_padding_factor = 2
+zeros_padding_factor = 4
 
 #modulation parameters
 modulation_radius = 3.
@@ -98,6 +98,8 @@ modulation_phase_screens = np.empty((tel.pupil.shape[0],
 [X,Y] = np.meshgrid(np.arange(0, tel.pupil.shape[0]), np.arange(0, tel.pupil.shape[0]))
 Y = np.flip(Y, axis=0) # change orientation
 
+phasor = np.pi * (X/X.max()-Y/Y.max()) / zeros_padding_factor
+
 for k in range(n_modulation_points):
 
     theta = theta_list[k]    
@@ -110,9 +112,18 @@ for k in range(n_modulation_points):
         /(tilt_theta[tel.pupil>0].max()- tilt_theta[tel.pupil>0].min())
     tilt_theta[tel.pupil==0] = 0.
     
-    modulation_phase_screens[:,:,k] = tilt_amplitude*tilt_theta
+    modulation_phase_screens[:,:,k] = tilt_amplitude*tilt_theta + phasor
 
 #%% Modulated focal plane
+
+def zeros_padding(array, zeros_padding_factor):
+    array = np.pad(array, (((zeros_padding_factor-1)*array.shape[0]//2, 
+                                     (zeros_padding_factor-1)*array.shape[0]//2),
+                                    ((zeros_padding_factor-1)*array.shape[1]//2, 
+                                     (zeros_padding_factor-1)*array.shape[1]//2)))
+    return array
+
+#%%
 
 detector_focal_plane = np.zeros((zeros_padding_factor*tel.pupil.shape[0],zeros_padding_factor*tel.pupil.shape[1]), dtype=float)
 
@@ -141,7 +152,7 @@ for k in range(n_modulation_points):
 
 #%% Custom PYWFS detector
 
-def get_4pywfs_phase_mask(shape):
+def get_4pywfs_phase_mask(shape, amplitude):
     
     mask = np.empty(shape, dtype=float)
     [X,Y] = np.meshgrid(np.arange(0, shape[0]), np.arange(0, shape[1]))
@@ -158,7 +169,27 @@ def get_4pywfs_phase_mask(shape):
     mask[mask.shape[0]//2:, :mask.shape[1]//2] = (mask[mask.shape[0]//2:, :mask.shape[1]//2]-mask[mask.shape[0]//2:, :mask.shape[1]//2].min())/(mask[mask.shape[0]//2:, :mask.shape[1]//2].max()-mask[mask.shape[0]//2:, :mask.shape[1]//2].min())
     mask[mask.shape[0]//2:, mask.shape[1]//2:] = (mask[mask.shape[0]//2:, mask.shape[1]//2:]-mask[mask.shape[0]//2:, mask.shape[1]//2:].min())/(mask[mask.shape[0]//2:, mask.shape[1]//2:].max()-mask[mask.shape[0]//2:, mask.shape[1]//2:].min())
 
-    return mask
+    return amplitude*mask
+
+pywfs_phase_mask_amplitude = zeros_padding_factor/2 * modulation_phase_screens.shape[0]*np.pi # zeros_padding_factor * modulation_phase_screens.shape[0] // 2
+
+pywfs_phase_mask = get_4pywfs_phase_mask((zeros_padding_factor * modulation_phase_screens.shape[0], zeros_padding_factor * modulation_phase_screens.shape[1]), 
+                                        pywfs_phase_mask_amplitude)
+
+pywfs_custom_detector = np.zeros(pywfs_phase_mask.shape, dtype=float)
+
+for k in range(n_modulation_points):
+    
+    complex_amplitude = tel.pupil * np.exp(1j*modulation_phase_screens[:,:,k])
+
+    complex_amplitude_pad = np.pad(complex_amplitude, (((zeros_padding_factor-1)*complex_amplitude.shape[0]//2, 
+                                     (zeros_padding_factor-1)*complex_amplitude.shape[0]//2),
+                                    ((zeros_padding_factor-1)*complex_amplitude.shape[1]//2, 
+                                     (zeros_padding_factor-1)*complex_amplitude.shape[1]//2)))
+    
+    focal_plane_complex_amplitude = np.fft.fftshift(np.fft.fft2(complex_amplitude_pad))*np.exp(1j*pywfs_phase_mask)
+    
+    pywfs_custom_detector = pywfs_custom_detector + np.abs(np.fft.ifftshift(np.fft.fft2(focal_plane_complex_amplitude)))**2
 
 #%% Plots
 
@@ -172,3 +203,6 @@ plt.imshow(detector_focal_plane)
 plt.figure(3)
 plt.imshow(detector_pywfs)
 plt.title("WFS Camera Frame - Flat wavefront\nFanch modulation ="+str(int(modulation_radius)) + " lambda/D")
+
+plt.figure(4)
+plt.imshow(pywfs_custom_detector)
