@@ -88,30 +88,26 @@ tel*wfs
 [X,Y] = np.meshgrid(np.arange(0, tel.pupil.shape[0]), np.arange(0, tel.pupil.shape[0]))
 Y = np.flip(Y, axis=0) # chage orientation
 
-theta = 0.*np.pi
+theta = 0.25*np.pi
 
 opd_tilt_theta = np.cos(theta) * X + np.sin(theta) * Y
 
-opd_tilt_theta_normalized = opd_tilt_theta/opd_tilt_theta.max()
+#%% pupil addition and normalization
+
+opd_tilt_theta[tel.pupil>0] = (opd_tilt_theta[tel.pupil>0] - opd_tilt_theta[tel.pupil>0].min())\
+    /(opd_tilt_theta[tel.pupil>0].max()- opd_tilt_theta[tel.pupil>0].min())
+
+opd_tilt_theta = opd_tilt_theta * tel.pupil
 
 #%%
 
-tilt_amplitude = 2.*np.pi
-
-plt.figure(1)
-plt.imshow(opd_tilt_theta_normalized)
-
-plt.figure(2)
-plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(np.exp(1j*tilt_amplitude*opd_tilt_theta_normalized)))))
-
-plt.figure(3)
-plt.imshow(np.log(np.abs(np.fft.fftshift(np.fft.fft2(np.exp(1j*tilt_amplitude*opd_tilt_theta_normalized))))+1.))
+tilt_amplitude = 2.*np.pi * 2**0.5
 
 #%%
 
-zeros_padding_factor = 3
+zeros_padding_factor = 4
 
-complex_amplitude = tel.pupil * np.exp(1j*tilt_amplitude*opd_tilt_theta_normalized)
+complex_amplitude = tel.pupil * np.exp(1j*tilt_amplitude*opd_tilt_theta)
 
 complex_amplitude_pad = np.pad(complex_amplitude, (((zeros_padding_factor-1)*complex_amplitude.shape[0]//2, 
                                  (zeros_padding_factor-1)*complex_amplitude.shape[0]//2),
@@ -120,6 +116,12 @@ complex_amplitude_pad = np.pad(complex_amplitude, (((zeros_padding_factor-1)*com
 
 plt.figure(1)
 plt.imshow(np.abs(complex_amplitude_pad))
+
+plt.figure(2)
+plt.imshow(tilt_amplitude*opd_tilt_theta)
+
+plt.figure(3)
+plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(complex_amplitude_pad))))
 
 #%% ----------------------------- Show many Fourier Modes ----------------------
 
