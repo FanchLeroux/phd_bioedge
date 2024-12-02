@@ -127,7 +127,7 @@ for k in range(n_modulation_points):
 
     detector_focal_plane = detector_focal_plane + np.abs(np.fft.fftshift(np.fft.fft2(complex_amplitude_pad)))**2
 
-#%% WFS detector
+#%% OOPAO PYWFS detector
 
 detector_pywfs = np.zeros(wfs.cam.frame.shape, dtype=float)
 
@@ -137,6 +137,28 @@ for k in range(n_modulation_points):
     tel.OPD = tel.pupil * modulation_phase_screens[:,:,k] * ngs.photometry(optBand)[0]/(2.*np.pi)
     tel*wfs
     detector_pywfs = detector_pywfs + wfs.cam.frame
+
+
+#%% Custom PYWFS detector
+
+def get_4pywfs_phase_mask(shape):
+    
+    mask = np.empty(shape, dtype=float)
+    [X,Y] = np.meshgrid(np.arange(0, shape[0]), np.arange(0, shape[1]))
+    Y = np.flip(Y, axis=0) # change orientation
+    
+    theta = [np.pi/4, 3*np.pi/4, 5*np.pi/4, 7*np.pi/4]
+    mask[:mask.shape[0]//2, mask.shape[1]//2:] = (np.cos(theta[0]) * X + np.sin(theta[0]) * Y)[:mask.shape[0]//2, mask.shape[1]//2:]
+    mask[:mask.shape[0]//2, :mask.shape[1]//2] = (np.cos(theta[1]) * X + np.sin(theta[1]) * Y)[:mask.shape[0]//2, :mask.shape[1]//2]
+    mask[mask.shape[0]//2:, :mask.shape[1]//2] = (np.cos(theta[2]) * X + np.sin(theta[2]) * Y)[mask.shape[0]//2:, mask.shape[1]//2:]
+    mask[mask.shape[0]//2:, mask.shape[1]//2:] = (np.cos(theta[3]) * X + np.sin(theta[3]) * Y)[:mask.shape[0]//2, mask.shape[1]//2:]
+    
+    mask[:mask.shape[0]//2, mask.shape[1]//2:] = (mask[:mask.shape[0]//2, mask.shape[1]//2:]-mask[:mask.shape[0]//2, mask.shape[1]//2:].min())/(mask[:mask.shape[0]//2, mask.shape[1]//2:].max()-mask[:mask.shape[0]//2, mask.shape[1]//2:].min())
+    mask[:mask.shape[0]//2, :mask.shape[1]//2] = (mask[:mask.shape[0]//2, :mask.shape[1]//2]-mask[:mask.shape[0]//2, :mask.shape[1]//2].min())/(mask[:mask.shape[0]//2, :mask.shape[1]//2].max()-mask[:mask.shape[0]//2, :mask.shape[1]//2].min())
+    mask[mask.shape[0]//2:, :mask.shape[1]//2] = (mask[mask.shape[0]//2:, :mask.shape[1]//2]-mask[mask.shape[0]//2:, :mask.shape[1]//2].min())/(mask[mask.shape[0]//2:, :mask.shape[1]//2].max()-mask[mask.shape[0]//2:, :mask.shape[1]//2].min())
+    mask[mask.shape[0]//2:, mask.shape[1]//2:] = (mask[mask.shape[0]//2:, mask.shape[1]//2:]-mask[mask.shape[0]//2:, mask.shape[1]//2:].min())/(mask[mask.shape[0]//2:, mask.shape[1]//2:].max()-mask[mask.shape[0]//2:, mask.shape[1]//2:].min())
+
+    return mask
 
 #%% Plots
 
