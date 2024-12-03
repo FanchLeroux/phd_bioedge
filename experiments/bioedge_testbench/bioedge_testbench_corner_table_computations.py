@@ -7,14 +7,15 @@ Created on Thu Nov 28 17:10:53 2024
 
 import numpy as np
 
-diameter_L1 = 25e-3 # [m]
-focal_length_L1 = 100e-3 # [m]
+wavelength_lam = 675e-9 # [m]
+wavelength_ghost = 770e-9 # [m]
 
-numerical_aperture_sLED = 0.13 # sin of the half aperture angle
+mfd_lam = [3.6e-6, 5.3e-6] # [m]
+mfd_ghost = 5e-6 # [m]
 
-alpha_LED = np.arcsin(numerical_aperture_sLED)
-alpha_L1 = np.arctan(diameter_L1/(2*focal_length_L1))
+half_divergence_angle_lam = [wavelength_lam/(np.pi*(mfd_lam[0]/2)), wavelength_lam/(np.pi*(mfd_lam[1]/2))] # [rad]
+half_divergence_angle_ghost = wavelength_ghost/(np.pi*(mfd_ghost/2)) # [rad]
 
-collimated_beam_diameter = 2*numerical_aperture_sLED*focal_length_L1
+half_divergence_angle_lam_deg = np.rad2deg(np.array(half_divergence_angle_lam)) # [°]
+half_divergence_angle_ghost_deg = np.rad2deg(half_divergence_angle_ghost) # [°]
 
-eta_L1 = (1.-np.cos(alpha_L1))/(1.-np.cos(alpha_LED))
