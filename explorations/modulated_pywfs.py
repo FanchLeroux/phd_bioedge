@@ -128,6 +128,8 @@ for k in range(modulation_phase_screens.shape[2]):
     
     gsc_detector += get_focal_plane_image(pupil_pad)
 
+#%% PLOTS
+
 plt.figure(1)
 plt.imshow(mpywfs_detector)
 
