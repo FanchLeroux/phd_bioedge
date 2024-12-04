@@ -47,8 +47,8 @@ from OOPAO.BioEdge import BioEdge
 
 wfs = BioEdge(nSubap = n_subaperture, 
               telescope = tel, 
-              modulation = 10.,
-              grey_width = 0, 
+              modulation = 0.,
+              grey_width = 2.5, 
               lightRatio = 0.5,
               n_pix_separation = 0,
               postProcessing = 'fullFrame', 
@@ -59,10 +59,12 @@ tel*wfs
 wfs.wfs_measure(tel.pupil)
 flat_frame = wfs.cam.frame
 
+
+
 #%% super resolution
 
-sx = [0.05,0,0,0]
-sy = [0,0,0,0]
+sx = [0.025,0,0,0]
+sy = [0.025,0,0,0]
 wfs.apply_shift_wfs(sx = sx, sy = sy)
 
 tel*wfs
@@ -72,8 +74,14 @@ flat_frame_sr = wfs.cam.frame
 
 # %% ------------------ PLOTS --------------------------------------------
 
-plt.figure(1)
-plt.imshow(np.abs(flat_frame_sr-flat_frame))
+# plt.figure(1)
+# plt.imshow(np.abs(flat_frame_sr-flat_frame))
+
+plt.figure(2)
+plt.imshow(np.abs(np.array(wfs.mask)[0,:,:]))
+
+plt.figure(3)
+plt.imshow(np.angle(np.array(wfs.mask)[1,:,:]))
 
 #%%
  
