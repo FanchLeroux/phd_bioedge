@@ -72,6 +72,10 @@ def get_ffwfs_frame(complex_amplitude, mask_complex_amplitude):
     return np.abs(np.fft.fft2(np.fft.ifftshift(focal_plane_complex_amplitude)))**2
     
 
+def mpywfs(phase, mask, modulation_masks):
+    
+    return
+
 #%% -------------- PARAMETERS ---------------------
 
 # telescope
@@ -124,6 +128,7 @@ gsc_detector = np.zeros([zeros_padding_factor*pupil.shape[0], zeros_padding_fact
 for k in range(modulation_phase_screens.shape[2]):
     
     pupil_pad = zeros_padding(pupil*np.exp(1j*phasor)*np.exp(1j*modulation_phase_screens[:,:,k]), zeros_padding_factor)
+    
     mpywfs_detector += get_ffwfs_frame(pupil_pad, mask_complex_amplitude)
     
     gsc_detector += get_focal_plane_image(pupil_pad)

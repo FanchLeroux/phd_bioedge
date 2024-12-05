@@ -10,6 +10,18 @@ import numpy as np
 
 n_subaperture = 32 # 124
 
+
+
+#%% Functions declarations
+
+def get_tilt(shape, theta=0., amplitude=1.):
+    [X,Y] = np.meshgrid(np.arange(0, shape[0]), np.arange(0, shape[1]))
+    tilt_theta = np.cos(theta) * X + np.sin(theta) * Y
+    Y = np.flip(Y, axis=0) # change orientation
+    tilt_theta = (tilt_theta - tilt_theta.min())/(tilt_theta.max()- tilt_theta.min())
+    
+    return amplitude*tilt_theta
+
 #%% -----------------------     TELESCOPE   ----------------------------------
 from OOPAO.Telescope import Telescope
 
@@ -58,30 +70,52 @@ wfs = BioEdge(nSubap = n_subaperture,
 tel*wfs
 wfs.wfs_measure(tel.pupil)
 flat_frame = wfs.cam.frame
+flat_raw_data = wfs.bioFrame
 
 
 
 #%% super resolution
 
-sx = [0.025,0,0,0]
-sy = [0.025,0,0,0]
-wfs.apply_shift_wfs(sx = sx, sy = sy)
+sx = [4,0,0,0] # 0.025 # pixels on wfs.bioFrame
+sy = [0,0,0,0]         # pixels on wfs.bioFrame
+#wfs.apply_shift_wfs(sx = sx, sy = sy, units='pixels')
+
+# extract masks         (convention : left|right ; top/bottom)
+# mask[0] ---> 1|0
+# mask[1] ---> 0|1
+# mask[2] ---> 1/0   
+# mask[3] ---> 0/1  
+mask = wfs.mask
+
+# apply shifts manually - for the raw data
+
+for k in range(len(mask)):
+    tilt_x = get_tilt(mask[k].shape, theta = 0., amplitude = 2.*np.pi*sx[k])
+    tilt_y = get_tilt(mask[k].shape, theta = np.pi/2, amplitude = 2.*np.pi*sy[k])
+    mask[k] = mask[k]*np.exp(1j*(tilt_x+tilt_y))
+
+
+# replace usual-masks by SR-masks
+wfs.mask = mask
 
 tel*wfs
 wfs.wfs_measure(tel.pupil)
 flat_frame_sr = wfs.cam.frame
-
+flat_raw_data_sr = wfs.bioFrame
 
 # %% ------------------ PLOTS --------------------------------------------
 
-# plt.figure(1)
-# plt.imshow(np.abs(flat_frame_sr-flat_frame))
+plt.figure(1)
+plt.imshow(np.abs(flat_frame_sr-flat_frame))
 
 plt.figure(2)
-plt.imshow(np.abs(np.array(wfs.mask)[0,:,:]))
+plt.imshow(np.abs(flat_raw_data_sr-flat_raw_data))
 
 plt.figure(3)
-plt.imshow(np.angle(np.array(wfs.mask)[1,:,:]))
+plt.imshow(wfs.cam.frame)
+
+plt.figure(4)
+plt.imshow(wfs.bioFrame)
 
 #%%
  
