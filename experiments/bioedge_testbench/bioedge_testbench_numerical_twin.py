@@ -5,6 +5,8 @@ Created on Wed Dec  4 10:08:36 2024
 @author: fleroux
 """
 
+from copy import deepcopy
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -76,7 +78,7 @@ flat_raw_data = wfs.bioFrame
 
 #%% super resolution
 
-sx = [4,0,0,0] # 0.025 # pixels on wfs.bioFrame
+sx = [10,0,0,0] # 0.025 # pixels on wfs.bioFrame
 sy = [0,0,0,0]         # pixels on wfs.bioFrame
 #wfs.apply_shift_wfs(sx = sx, sy = sy, units='pixels')
 
@@ -86,22 +88,43 @@ sy = [0,0,0,0]         # pixels on wfs.bioFrame
 # mask[2] ---> 1/0   
 # mask[3] ---> 0/1  
 mask = wfs.mask
+mask_sr_raw_data = deepcopy(mask)
 
 # apply shifts manually - for the raw data
 
 for k in range(len(mask)):
     tilt_x = get_tilt(mask[k].shape, theta = 0., amplitude = 2.*np.pi*sx[k])
     tilt_y = get_tilt(mask[k].shape, theta = np.pi/2, amplitude = 2.*np.pi*sy[k])
-    mask[k] = mask[k]*np.exp(1j*(tilt_x+tilt_y))
+    mask_sr_raw_data[k] = mask[k]*np.exp(1j*(tilt_x+tilt_y))
 
 
 # replace usual-masks by SR-masks
-wfs.mask = mask
+wfs.mask = mask_sr_raw_data
+
+tel*wfs
+wfs.wfs_measure(tel.pupil)
+flat_raw_data_sr = wfs.bioFrame
+
+# apply shifts manually - for the binned data (wfs.cam.frame)
+
+mask_sr_cam_frame = deepcopy(mask)
+
+binning_factor = wfs.bioFrame.shape[0]/wfs.cam.frame.shape[0]
+sx_cam_frame = [binning_factor * k for k in sx]
+sy_cam_frame = [binning_factor * k for k in sy]
+
+for k in range(len(mask)):
+    tilt_x = get_tilt(mask[k].shape, theta = 0., amplitude = 2.*np.pi*sx_cam_frame[k])
+    tilt_y = get_tilt(mask[k].shape, theta = np.pi/2, amplitude = 2.*np.pi*sy_cam_frame[k])
+    mask_sr_cam_frame[k] = mask[k]*np.exp(1j*(tilt_x+tilt_y))
+
+
+# replace usual-masks by SR-masks
+wfs.mask = mask_sr_cam_frame
 
 tel*wfs
 wfs.wfs_measure(tel.pupil)
 flat_frame_sr = wfs.cam.frame
-flat_raw_data_sr = wfs.bioFrame
 
 # %% ------------------ PLOTS --------------------------------------------
 
