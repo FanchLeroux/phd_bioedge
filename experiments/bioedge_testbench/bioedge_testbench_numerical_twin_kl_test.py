@@ -10,7 +10,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 
-n_subaperture = 16 # 124
+n_subaperture = 32 # 124
 
 
 
@@ -146,79 +146,32 @@ atm = Atmosphere(telescope     = tel,                               # Telescope
                  altitude      = [0    ,1000 ,5000 ,10000 ,12000 ]) # Altitude Layers in [m]
 
 
-#%% -----------------------     Modal Basis - Zernike  ----------------------------------
-
-from OOPAO.Zernike import Zernike
-
-#n_modes_callib
-
-n_modes = int(np.pi * wfs.nSubap **2)
-
-# create Zernike Object
-Z = Zernike(tel,n_modes)
-# compute polynomials for given telescope
-Z.computeZernike(tel)
-
 #%% Interaction Matrix
 
-wfs.mask = mask # mask_sr_cam_frame
-
-amplitude = 10e-9 # [m]
-
-interraction_matrix_frames = np.empty([wfs.signal_2D.shape[0], wfs.signal_2D.shape[1], n_modes])
-interraction_matrix = np.empty([wfs.signal.shape[0], n_modes])
-
-for m in range(Z.modesFullRes.shape[2]):
-    wfs.wfs_measure(amplitude * 2*np.pi/wfs.telescope.src.wavelength * Z.modesFullRes[:,:,m]/np.std(Z.modesFullRes[:,:,m]))
-    interraction_matrix_frames[:,:,m] = wfs.signal_2D
-    interraction_matrix[:,m] = wfs.signal
-    
+from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
+M2C_KL = compute_KL_basis(tel, atm, dm,lim = 1e-2) # matrix to apply modes on the DM 
 
 #%%
-    
-sensitivity_matrix = np.matmul(np.transpose(interraction_matrix), interraction_matrix)
-plt.figure(1)
-plt.imshow(sensitivity_matrix)
 
-#%% Interaction Matrix - sr
+dm.coefs = M2C_KL[:,0]
 
-wfs.mask = mask_sr_cam_frame # mask_sr_cam_frame
+ngs*tel*dm
 
-amplitude = 10e-9 # [m]
-
-interraction_matrix_frames_sr = np.empty([wfs.signal_2D.shape[0], wfs.signal_2D.shape[1], n_modes])
-interraction_matrix_sr = np.empty([wfs.signal.shape[0], n_modes])
-
-for m in range(Z.modesFullRes.shape[2]):
-    wfs.wfs_measure(amplitude * 2*np.pi/wfs.telescope.src.wavelength * Z.modesFullRes[:,:,m]/np.std(Z.modesFullRes[:,:,m]))
-    interraction_matrix_frames_sr[:,:,m] = wfs.signal_2D
-    interraction_matrix_sr[:,m] = wfs.signal
-    
-
-#%%
-    
-sensitivity_matrix_sr = np.matmul(np.transpose(interraction_matrix_sr), interraction_matrix_sr)
-plt.figure(2)
-plt.imshow(sensitivity_matrix_sr)
+plt.imshow(tel.OPD)
 
 # %% ------------------ PLOTS --------------------------------------------
 
-plt.figure(3)
-plt.imshow(np.log(np.abs(sensitivity_matrix_sr-sensitivity_matrix)))
-
-plt.figure(4)
+plt.figure(1)
 plt.imshow(np.abs(flat_frame_sr-flat_frame))
 
-print(np.trace(sensitivity_matrix_sr)-np.trace(sensitivity_matrix))
+plt.figure(2)
+plt.imshow(np.abs(flat_raw_data_sr-flat_raw_data))
 
-# plt.figure(2)
-# plt.imshow(np.abs(flat_raw_data_sr-flat_raw_data))
+plt.figure(3)
+plt.imshow(wfs.cam.frame)
 
-# plt.figure(3)
-# plt.imshow(wfs.cam.frame)
-
-# plt.figure(4)
-# plt.imshow(wfs.bioFrame)
+plt.figure(4)
+plt.imshow(wfs.bioFrame)
 
 #%%
  
