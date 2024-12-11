@@ -78,9 +78,10 @@ flat_raw_data = wfs.bioFrame
 
 #%% super resolution
 
-sx = [-0.25, 0.25, -0.25, 0.25] # pixels on wfs.bioFrame
-sy = [0.25, 0.25, -0.25, -0.25]         # pixels on wfs.bioFrame
-#wfs.apply_shift_wfs(sx = sx, sy = sy, units='pixels')
+amp = 0.25
+
+sx = np.array([-amp, amp, -amp, amp]) - amp # unit : pixel on wfs.cam.frame
+sy = np.array([amp, amp, -amp, -amp]) - amp # unit : pixel on wfs.cam.frame
 
 # extract masks         (convention : left|right ; top/bottom)
 # mask[0] ---> 1|0
@@ -150,9 +151,7 @@ atm = Atmosphere(telescope     = tel,                               # Telescope
 
 from OOPAO.Zernike import Zernike
 
-#n_modes_callib
-
-n_modes = int(np.pi * wfs.nSubap **2)
+n_modes = 2*int(np.pi * wfs.nSubap **2)
 
 # create Zernike Object
 Z = Zernike(tel,n_modes)
@@ -184,6 +183,12 @@ plt.imshow(sensitivity_matrix)
 
 wfs.mask = mask_sr_cam_frame # mask_sr_cam_frame
 
+wfs.slopesUnits                = 1     
+wfs.referenceSignal            = 0
+wfs.referenceSignal_2D         = 0
+wfs.wfs_calibration(wfs.telescope)
+
+
 amplitude = 10e-9 # [m]
 
 interraction_matrix_frames_sr = np.empty([wfs.signal_2D.shape[0], wfs.signal_2D.shape[1], n_modes])
@@ -204,12 +209,19 @@ plt.imshow(sensitivity_matrix_sr)
 # %% ------------------ PLOTS --------------------------------------------
 
 plt.figure(3)
-plt.imshow(np.log(np.abs(sensitivity_matrix_sr-sensitivity_matrix)))
+plt.imshow(np.abs(sensitivity_matrix_sr-sensitivity_matrix))
 
 plt.figure(4)
 plt.imshow(np.abs(flat_frame_sr-flat_frame))
 
+plt.figure(5)
+plt.plot(np.diag(sensitivity_matrix), 'b', label='No SR')
+plt.plot(np.diag(sensitivity_matrix_sr), 'r', label='SR')
+plt.title('sensitivity matrix diagonal coeficients')
+plt.legend()
+
 print(np.trace(sensitivity_matrix_sr)-np.trace(sensitivity_matrix))
+print(np.trace(sensitivity_matrix_sr))
 
 # plt.figure(2)
 # plt.imshow(np.abs(flat_raw_data_sr-flat_raw_data))

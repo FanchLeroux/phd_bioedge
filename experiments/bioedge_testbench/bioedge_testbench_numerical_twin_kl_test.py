@@ -10,7 +10,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 
-n_subaperture = 32 # 124
+n_subaperture = 16 # 124
 
 
 
@@ -33,7 +33,7 @@ tel = Telescope(resolution           = 4*n_subaperture,   # resolution of the te
                 samplingTime         = 1/1000,            # Sampling time in [s] of the AO loop
                 centralObstruction   = 0.,                # Central obstruction in [%] of a diameter 
                 display_optical_path = False,             # Flag to display optical path
-                fov                  = 10 )               # field of view in [arcsec]. If set to 0 (default) this speeds up the computation of 
+                fov                  = 10)               # field of view in [arcsec]. If set to 0 (default) this speeds up the computation of 
                                                           # the phase screens but is uncompatible with off-axis targets
 
 #%% -----------------------     NGS   ----------------------------------
@@ -45,7 +45,7 @@ from OOPAO.Source import Source
 
 # create the Natural Guide Star object
 ngs = Source(optBand     = 'I2',          # Optical band (see photometry.py)
-             magnitude   = 8,             # Source Magnitude
+             magnitude   = 0,             # Source Magnitude
              coordinates = [0,0])         # Source coordinated [arcsec,deg]
 
 # combine the NGS to the telescope using '*'
@@ -72,65 +72,14 @@ wfs = BioEdge(nSubap = n_subaperture,
 tel*wfs
 wfs.wfs_measure(tel.pupil)
 flat_frame = wfs.cam.frame
-flat_raw_data = wfs.bioFrame
+# flat_raw_data = wfs.bioFrame
 
-
-
-#%% super resolution
-
-sx = [-0.25, 0.25, -0.25, 0.25] # pixels on wfs.bioFrame
-sy = [0.25, 0.25, -0.25, -0.25]         # pixels on wfs.bioFrame
-#wfs.apply_shift_wfs(sx = sx, sy = sy, units='pixels')
-
-# extract masks         (convention : left|right ; top/bottom)
-# mask[0] ---> 1|0
-# mask[1] ---> 0|1
-# mask[2] ---> 1/0   
-# mask[3] ---> 0/1  
-mask = wfs.mask
-mask_sr_raw_data = deepcopy(mask)
-
-# apply shifts manually - for the raw data
-
-for k in range(len(mask)):
-    tilt_x = get_tilt(mask[k].shape, theta = 0., amplitude = 2.*np.pi*sx[k])
-    tilt_y = get_tilt(mask[k].shape, theta = np.pi/2, amplitude = 2.*np.pi*sy[k])
-    mask_sr_raw_data[k] = mask[k]*np.exp(1j*(tilt_x+tilt_y))
-
-
-# replace usual-masks by SR-masks
-wfs.mask = mask_sr_raw_data
-
-tel*wfs
-wfs.wfs_measure(tel.pupil)
-flat_raw_data_sr = wfs.bioFrame
-
-# apply shifts manually - for the binned data (wfs.cam.frame)
-
-mask_sr_cam_frame = deepcopy(mask)
-
-binning_factor = wfs.bioFrame.shape[0]/wfs.cam.frame.shape[0]
-sx_cam_frame = [binning_factor * k for k in sx]
-sy_cam_frame = [binning_factor * k for k in sy]
-
-for k in range(len(mask)):
-    tilt_x = get_tilt(mask[k].shape, theta = 0., amplitude = 2.*np.pi*sx_cam_frame[k])
-    tilt_y = get_tilt(mask[k].shape, theta = np.pi/2, amplitude = 2.*np.pi*sy_cam_frame[k])
-    mask_sr_cam_frame[k] = mask[k]*np.exp(1j*(tilt_x+tilt_y))
-
-
-# replace usual-masks by SR-masks
-wfs.mask = mask_sr_cam_frame
-
-tel*wfs
-wfs.wfs_measure(tel.pupil)
-flat_frame_sr = wfs.cam.frame
 
 #%% Deformable mirror
 
 from OOPAO.DeformableMirror import DeformableMirror
 
-dm = DeformableMirror(tel, nSubap=n_subaperture)
+dm = DeformableMirror(tel, nSubap=2*n_subaperture)
 
 #%% Atmosphere
 
@@ -146,45 +95,80 @@ atm = Atmosphere(telescope     = tel,                               # Telescope
                  altitude      = [0    ,1000 ,5000 ,10000 ,12000 ]) # Altitude Layers in [m]
 
 
-#%% Interaction Matrix
+#%% Modal basis
 
 from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
-M2C_KL = compute_KL_basis(tel, atm, dm,lim = 1e-2) # matrix to apply modes on the DM 
+M2C_KL = compute_KL_basis(tel, atm, dm, lim = 1e-3) # matrix to apply modes on the DM
 
-#%%
+#%% Callibration - No SR
 
-dm.coefs = M2C_KL[:,0]
+from OOPAO.calibration.InteractionMatrix import InteractionMatrix
+
+stroke = 1e-9 # [m]
+
+#dm.coefs = amplitude*M2C_KL[:,10] # normalized : default = 1 m rms
 
 ngs*tel*dm
 
-plt.imshow(tel.OPD)
+tel.resetOPD()
+ngs*tel*dm
+calib = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C_KL, stroke = stroke)
+
+#%% Super Resolution
+
+sr_amplitude = 0.25
+
+sx = [-sr_amplitude, sr_amplitude, -sr_amplitude, sr_amplitude] # pixels 
+sy = [sr_amplitude, sr_amplitude, -sr_amplitude, -sr_amplitude] # pixels
+
+sx = np.array(sx)
+sy = np.array(sy)
+
+mask = wfs.mask
+mask_sr_cam_frame = deepcopy(mask)
+
+binning_factor = wfs.bioFrame.shape[0]/wfs.cam.frame.shape[0]
+sx_cam_frame = [binning_factor * k for k in sx]
+sy_cam_frame = [binning_factor * k for k in sy]
+
+for k in range(len(mask)):
+    tilt_x = get_tilt(mask[k].shape, theta = 0., amplitude = 2.*np.pi*sx_cam_frame[k])
+    tilt_y = get_tilt(mask[k].shape, theta = np.pi/2, amplitude = 2.*np.pi*sy_cam_frame[k])
+    mask_sr_cam_frame[k] = mask[k]*np.exp(1j*(tilt_x+tilt_y))
+
+# replace usual-masks by SR-masks
+wfs.mask = mask_sr_cam_frame
+wfs.modulation = 0. # update reference intensities etc.
+
+tel*wfs
+wfs.wfs_measure(tel.pupil)
+flat_frame_sr = wfs.cam.frame
+
+#%% Callibration - SR
+
+tel.resetOPD()
+calib_sr = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C_KL, stroke = stroke)
 
 # %% ------------------ PLOTS --------------------------------------------
 
+from OOPAO.tools.displayTools import display_wfs_signals
+
 plt.figure(1)
 plt.imshow(np.abs(flat_frame_sr-flat_frame))
+plt.title('SR pupils - No SR pupils (reference signal for a flat wavefront)\n0.25 pixel shifts')
 
 plt.figure(2)
-plt.imshow(np.abs(flat_raw_data_sr-flat_raw_data))
-
-plt.figure(3)
-plt.imshow(wfs.cam.frame)
-
-plt.figure(4)
-plt.imshow(wfs.bioFrame)
+plt.plot(calib.eigenValues/calib.eigenValues.max(), 'b', label='no SR')
+plt.plot(calib_sr.eigenValues/calib_sr.eigenValues.max(), 'r', label='SR')
+plt.title('calib.eigenValues, '+str(n_subaperture)+' wfs subapertures, KL basis used, 0.25 pixels shift')
+plt.legend()
+plt.xlabel('# eigen mode')
+plt.ylabel('normalized eigen value')
 
 #%%
- 
-# from OOPAO.tools.tools import compute_fourier_mode
 
+n_mode = 7
 
-# S = compute_fourier_mode(pupil=tel.pupil, spatial_frequency = 5, angle_deg=45) 
- 
- 
-# wfs.wfs_measure(S*1e-9*tel.pupil)
-
-# signal_sr = wfs.signal_2D
-
-# plt.figure(3)
-# plt.imshow(wfs.signal_2D)
-# plt.title('WFS Camera Frame')
+plt.figure(3)
+display_wfs_signals(wfs, signals=calib_sr.D[:,n_mode])
+plt.title('Bi-O-Edge signal, '+str(n_mode)+'th mode, KL basis')
