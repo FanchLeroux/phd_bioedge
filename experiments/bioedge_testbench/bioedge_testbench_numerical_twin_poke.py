@@ -97,10 +97,9 @@ atm = Atmosphere(telescope     = tel,                               # Telescope
 #%% Modal basis
 
 # poke
-M2C = np.zeros((dm.nValidAct, dm.nValidAct))
+M2C = np.identity(dm.nValidAct, dm.nValidAct)
 
-for m in range(dm.nValidAct):
-    M2C[m,m] = 1
+modal_basis_name = 'Pokes modes'
 
 #%% Callibration - No SR
 
@@ -114,7 +113,7 @@ calib = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C, stroke = stroke)
 
 #%% Super Resolution
 
-sr_amplitude = 0.5 # pixel
+sr_amplitude = 0.25 # pixel
 
 # sx = [-sr_amplitude, sr_amplitude, -sr_amplitude, sr_amplitude]
 # sy = [sr_amplitude, sr_amplitude, -sr_amplitude, -sr_amplitude]
@@ -159,7 +158,7 @@ from OOPAO.tools.displayTools import display_wfs_signals
 
 plt.figure(1)
 plt.imshow(np.abs(flat_frame_sr-flat_frame))
-plt.title('SR pupils - No SR pupils (reference signal for a flat wavefront)\n0.25 pixel shifts')
+plt.title('SR pupils - No SR pupils (reference signal for a flat wavefront)\n'+str(sr_amplitude)+' pixel shifts')
 
 plt.figure(2)
 plt.plot(calib.eigenValues/calib.eigenValues.max(), 'b', label='no SR')
@@ -169,11 +168,16 @@ plt.legend()
 plt.xlabel('# eigen mode')
 plt.ylabel('normalized eigen value')
 
-#%%
-
-n_mode = 400
-
+n_mode = 30
 plt.figure(3)
 display_wfs_signals(wfs, signals=calib_sr.D[:,n_mode])
 plt.title('Bi-O-Edge signal, '+str(n_mode)+'th mode, poke basis')
 
+
+fig6, axs6 = plt.subplots(nrows=1, ncols=2)
+img1 = axs6[0].imshow(np.matmul(np.transpose(calib.D), calib.D))
+axs6[0].set_title('Sensitivity matrix - ' + modal_basis_name + ' - No SR')
+img2 = axs6[1].imshow(np.matmul(np.transpose(calib_sr.D), calib_sr.D))
+axs6[1].set_title('Sensitivity matrix - ' + modal_basis_name + ' - SR')
+plt.colorbar(img1, ax=axs6[0], fraction=0.046, pad=0.04)
+plt.colorbar(img2, ax=axs6[1], fraction=0.046, pad=0.04)
