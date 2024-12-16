@@ -22,11 +22,27 @@ def get_tilt(shape, theta=0., amplitude=1.):
     
     return amplitude*tilt_theta
 
-def compute_fourier_mode_x(shape, n_cycle):
-    [X,_] = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]))
-    X = np.sin(2*np.pi * n_cycle/shape[0] * X)
-    X = X/X.std()
-    return X
+def compute_fourier_mode(shape, n_cycle_x, n_cycle_y):
+    [X,Y] = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]))
+    fourier_mode = np.sin(2*np.pi * n_cycle_x/shape[0] * X + 2*np.pi * n_cycle_y/shape[1] * Y)
+    if fourier_mode.std() != 0:
+        fourier_mode = fourier_mode/fourier_mode.std()
+    return fourier_mode
+
+def compute_fourier_basis(shape):
+    fourier_basis = np.empty((shape[0], shape[1], shape[0], shape[1]))
+    fourier_basis.fill(np.nan)
+    for m in range(shape[0]):
+        for n in range(shape[1]):
+            spectrum = np.zeros(shape)
+            fourier_mode = np.zeros(shape)
+            if m+n!=0:                        # test needed to avoid normalization by zero
+                spectrum[m,n] = 1.
+                fourier_mode = np.real(np.fft.fft2(spectrum))
+                fourier_mode = fourier_mode/fourier_mode.std()
+                fourier_basis[:, :, m, n] = fourier_mode
+            fourier_basis[:, :, m, n] = fourier_mode
+    return fourier_basis
 
 #%% -----------------------     TELESCOPE   ----------------------------------
 from OOPAO.Telescope import Telescope

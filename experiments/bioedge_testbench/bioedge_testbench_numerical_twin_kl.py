@@ -72,6 +72,7 @@ wfs = BioEdge(nSubap = n_subaperture,
 tel*wfs
 wfs.wfs_measure(tel.pupil)
 flat_frame = wfs.cam.frame
+# flat_raw_data = wfs.bioFrame
 
 
 #%% Deformable mirror
@@ -96,33 +97,32 @@ atm = Atmosphere(telescope     = tel,                               # Telescope
 
 #%% Modal basis
 
-# poke
-M2C = np.identity(dm.nValidAct, dm.nValidAct)
+from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
 
-modal_basis_name = 'Pokes modes'
+modal_basis_name = 'KL modes'
+
+M2C_KL = compute_KL_basis(tel, atm, dm, lim = 1e-3) # matrix to apply modes on the DM
 
 #%% Callibration - No SR
 
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
-stroke = 100e-9 # [m]
+stroke = 1e-9 # [m]
+
+#dm.coefs = amplitude*M2C_KL[:,10] # normalized : default = 1 m rms
+
+ngs*tel*dm
 
 tel.resetOPD()
 ngs*tel*dm
-calib = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C, stroke = stroke)
+calib = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C_KL, stroke = stroke)
 
 #%% Super Resolution
 
-sr_amplitude = 0.25 # pixel
+sr_amplitude = 0.25
 
-# sx = [-sr_amplitude, sr_amplitude, -sr_amplitude, sr_amplitude]
-# sy = [sr_amplitude, sr_amplitude, -sr_amplitude, -sr_amplitude]
-
-# sx = [-sr_amplitude, sr_amplitude, 0., 0.]
-# sy = [0. , 0. , -sr_amplitude, sr_amplitude]
-
-sx = [0. , 0. , -sr_amplitude, sr_amplitude]
-sy = [-sr_amplitude, sr_amplitude, 0., 0.]
+sx = [-sr_amplitude, sr_amplitude, -sr_amplitude, sr_amplitude] # pixels 
+sy = [sr_amplitude, sr_amplitude, -sr_amplitude, -sr_amplitude] # pixels
 
 sx = np.array(sx)
 sy = np.array(sy)
@@ -150,7 +150,10 @@ flat_frame_sr = wfs.cam.frame
 #%% Callibration - SR
 
 tel.resetOPD()
-calib_sr = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C, stroke = stroke)
+calib_sr = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C_KL, stroke = stroke)
+
+sensitivity_matrix = np.matmul(np.transpose(calib.D), calib.D)
+sensitivity_matrix_sr = np.matmul(np.transpose(calib_sr.D), calib_sr.D)
 
 # %% ------------------ PLOTS --------------------------------------------
 
@@ -158,26 +161,32 @@ from OOPAO.tools.displayTools import display_wfs_signals
 
 plt.figure(1)
 plt.imshow(np.abs(flat_frame_sr-flat_frame))
-plt.title('SR pupils - No SR pupils (reference signal for a flat wavefront)\n'+str(sr_amplitude)+' pixel shifts')
+plt.title('SR pupils - No SR pupils (reference signal for a flat wavefront)\n0.25 pixel shifts')
 
 plt.figure(2)
 plt.plot(calib.eigenValues/calib.eigenValues.max(), 'b', label='no SR')
 plt.plot(calib_sr.eigenValues/calib_sr.eigenValues.max(), 'r', label='SR')
-plt.title('calib.eigenValues, '+str(n_subaperture)+' wfs subapertures, poke basis used, '+str(sr_amplitude) +' pixels shift')
+plt.title('calib.eigenValues, '+str(n_subaperture)+' wfs subapertures, KL basis used, 0.25 pixels shift')
 plt.legend()
 plt.xlabel('# eigen mode')
 plt.ylabel('normalized eigen value')
 
-n_mode = 300
-plt.figure(3)
-display_wfs_signals(wfs, signals=calib_sr.D[:,n_mode])
-plt.title('Bi-O-Edge signal, '+str(n_mode)+'th mode, poke basis')
+#%%
 
+n_mode = 5
+
+display_wfs_signals(wfs, signals=calib.D[:,n_mode])
+plt.title('Bi-O-Edge signal, '+str(n_mode)+'th ' + modal_basis_name+'\n No SR')
+
+display_wfs_signals(wfs, signals=calib_sr.D[:,n_mode])
+plt.title('Bi-O-Edge signal, '+str(n_mode)+'th ' + modal_basis_name+'\n SR')
+
+#%%
 
 fig6, axs6 = plt.subplots(nrows=1, ncols=2)
-img1 = axs6[0].imshow(np.abs(np.matmul(np.transpose(calib.D), calib.D)))
+img1 = axs6[0].imshow(np.abs(sensitivity_matrix))
 axs6[0].set_title('Sensitivity matrix - ' + modal_basis_name + ' - No SR')
-img2 = axs6[1].imshow(np.abs(np.matmul(np.transpose(calib_sr.D), calib_sr.D)))
+img2 = axs6[1].imshow(np.abs(sensitivity_matrix_sr))
 axs6[1].set_title('Sensitivity matrix - ' + modal_basis_name + ' - SR')
 plt.colorbar(img1, ax=axs6[0], fraction=0.046, pad=0.04)
 plt.colorbar(img2, ax=axs6[1], fraction=0.046, pad=0.04)
