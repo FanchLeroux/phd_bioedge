@@ -36,7 +36,7 @@ from OOPAO.Telescope import Telescope
 # You need to be VERY carefull with the telescope resolution. Setting it to only 4*n_subaperture leads to a too strong aliasing in the 
 # input phases to be able to caracterize well enough the super resolution benefits
 
-tel = Telescope(resolution           = 8*n_subaperture,   # resolution of the telescope in [pix]
+tel = Telescope(resolution           = 4*n_subaperture,   # resolution of the telescope in [pix]
                 diameter             = 8,                 # diameter in [m]        
                 samplingTime         = 1/1000,            # Sampling time in [s] of the AO loop
                 centralObstruction   = 0.,                # Central obstruction in [%] of a diameter 
@@ -137,8 +137,8 @@ calib = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C_modal_dm, stroke = s
 
 sr_amplitude = 0.25 # pixel
 
-sx = [-sr_amplitude, sr_amplitude, 0., 0.] # shift along meaningfull direction, no shift for blind pupils => we see a difference
-sy = [0., 0., -0., -0.]
+# sx = [-sr_amplitude, sr_amplitude, 0., 0.] # shift along meaningfull direction, no shift for blind pupils => we see a difference
+# sy = [0., 0., -0., -0.]
 
 
 # sx = [0., 0., -0., -0.]
@@ -146,8 +146,8 @@ sy = [0., 0., -0., -0.]
 
 
 
-# sx = [-sr_amplitude, sr_amplitude, -sr_amplitude, sr_amplitude] # standard shifts
-# sy = [sr_amplitude, sr_amplitude, -sr_amplitude, -sr_amplitude]
+sx = [-sr_amplitude, sr_amplitude, -sr_amplitude, sr_amplitude] # standard shifts
+sy = [sr_amplitude, sr_amplitude, -sr_amplitude, -sr_amplitude]
 
 # sx = [-sr_amplitude, sr_amplitude, 0., 0.]
 # sy = [0. , 0. , -sr_amplitude, sr_amplitude]

@@ -14,7 +14,7 @@ import numpy as np
 
 n_subaperture = 16 # 124
 modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D'
-modal_basis_name = 'Fourier1D'
+#modal_basis_name = 'Fourier1D'
 #modal_basis_name = 'poke'
 
 #%% Functions declarations
@@ -31,7 +31,7 @@ def get_tilt(shape, theta=0., amplitude=1.):
 from OOPAO.Telescope import Telescope
 
 # create the Telescope object
-tel = Telescope(resolution           = 4*n_subaperture,   # resolution of the telescope in [pix]
+tel = Telescope(resolution           = 8*n_subaperture,   # resolution of the telescope in [pix]
                 diameter             = 8,                 # diameter in [m]        
                 samplingTime         = 1/1000,            # Sampling time in [s] of the AO loop
                 centralObstruction   = 0.,                # Central obstruction in [%] of a diameter 
@@ -205,3 +205,9 @@ img2 = axs6[1].imshow(np.abs(sensitivity_matrix_sr))
 axs6[1].set_title('Sensitivity matrix - ' + modal_basis_name + ' - SR')
 plt.colorbar(img1, ax=axs6[0], fraction=0.046, pad=0.04)
 plt.colorbar(img2, ax=axs6[1], fraction=0.046, pad=0.04)
+
+#%%
+
+plt.figure()
+plt.semilogy(1/np.diag(calib.M@calib.M.T), 'b')
+plt.semilogy(1/np.diag(calib_sr.M@calib_sr.M.T),'r')

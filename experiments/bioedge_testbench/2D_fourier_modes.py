@@ -15,10 +15,18 @@ def zeros_padding(array, zeros_padding_factor):
                                      (zeros_padding_factor-1)*array.shape[1]//2)))
     return array
 
+def compute_fourier_mode_x(shape, n_cycle):
+    [X,_] = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]))
+    X = np.sin(2*np.pi * n_cycle/shape[0] * X)
+    X = X/X.std()
+    return X
+
+#%%
+
 shape = 32*np.ones(2, dtype=int)
 zeros_padding_factor = 1
-fx = 2
-fy = 3
+fx = 0
+fy = 15
 
 spectrum =  np.zeros(shape, dtype=float)
 
