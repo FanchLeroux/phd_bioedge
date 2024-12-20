@@ -13,9 +13,10 @@ import numpy as np
 #%% Parameters
 
 n_subaperture = 16 # 124
-modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D'
-#modal_basis_name = 'Fourier1D'
+modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D' ; 'Fourier2D'
 #modal_basis_name = 'poke'
+#modal_basis_name = 'Fourier1D'
+modal_basis_name = 'Fourier2D'
 
 #%% Functions declarations
 
@@ -31,7 +32,7 @@ def get_tilt(shape, theta=0., amplitude=1.):
 from OOPAO.Telescope import Telescope
 
 # create the Telescope object
-tel = Telescope(resolution           = 8*n_subaperture,   # resolution of the telescope in [pix]
+tel = Telescope(resolution           = 4*n_subaperture,   # resolution of the telescope in [pix]
                 diameter             = 8,                 # diameter in [m]        
                 samplingTime         = 1/1000,            # Sampling time in [s] of the AO loop
                 centralObstruction   = 0.,                # Central obstruction in [%] of a diameter 
@@ -75,14 +76,6 @@ wfs = BioEdge(nSubap = n_subaperture,
 tel*wfs
 wfs.wfs_measure(tel.pupil)
 flat_frame = wfs.cam.frame
-# flat_raw_data = wfs.bioFrame
-
-
-#%% Deformable mirror
-
-
-
-
 
 #%% Atmosphere
 
@@ -106,9 +99,11 @@ if modal_basis_name == 'KL':
     from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
     dm = DeformableMirror(tel, nSubap=2*n_subaperture)
     M2C = compute_KL_basis(tel, atm, dm, lim = 1e-3) # matrix to apply modes on the DM
+
 elif modal_basis_name == 'poke':
     dm = DeformableMirror(tel, nSubap=2*n_subaperture)
     M2C = np.identity(dm.nValidAct)
+
 elif modal_basis_name == 'Fourier1D':
     from OOPAO.tools.tools import compute_fourier_mode
     n_modes = tel.resolution//2
@@ -119,10 +114,13 @@ elif modal_basis_name == 'Fourier1D':
         fourier_modes[:,k] = np.reshape(fourier_mode, fourier_modes.shape[0])
     dm = DeformableMirror(tel, nSubap=2*n_subaperture, modes=fourier_modes) # modal dm
     M2C = np.identity(dm.nValidAct)
-#%%
-# fourier_mode = compute_fourier_mode(tel.pupil, spatial_frequency = 4, angle_deg = 90.)
-# plt.figure()
-# plt.imshow(fourier_mode)
+    
+elif modal_basis_name == 'Fourier2D':
+    from bi_dimensional_real_fourier_basis import compute_real_fourier_basis
+    fourier_modes = compute_real_fourier_basis(tel.resolution)
+    fourier_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
+    dm = DeformableMirror(tel, nSubap=2*n_subaperture, modes=fourier_modes) # modal dm
+    M2C = np.identity(dm.nValidAct)
 
 #%% Callibration - No SR
 
