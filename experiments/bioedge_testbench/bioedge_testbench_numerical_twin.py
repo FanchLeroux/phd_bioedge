@@ -13,11 +13,11 @@ import numpy as np
 #%% Parameters
 
 n_subaperture = 16 # 124
-modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D' ; 'Fourier2D', 'Fourier2Dsmall'
+#modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D' ; 'Fourier2D', 'Fourier2Dsmall'
 #modal_basis_name = 'poke'
 #modal_basis_name = 'Fourier1D'
-modal_basis_name = 'Fourier2D'
-#modal_basis_name = 'Fourier2Dsmall'
+#modal_basis_name = 'Fourier2D'
+modal_basis_name = 'Fourier2Dsmall'
 
 #%% Functions declarations
 
@@ -124,10 +124,10 @@ elif modal_basis_name == 'Fourier2D':
     M2C = np.identity(dm.nValidAct)
     
 elif modal_basis_name == 'Fourier2Dsmall':
-    from bi_dimensional_real_fourier_basis import compute_real_fourier_basis, extract_subset, basis_map2basis
+    from bi_dimensional_real_fourier_basis import compute_real_fourier_basis, extract_subset, sort_real_fourier_basis
     fourier_modes = compute_real_fourier_basis(tel.resolution, return_map=True)
     fourier_modes = extract_subset(fourier_modes, 2*n_subaperture)
-    fourier_modes = basis_map2basis(fourier_modes)
+    fourier_modes = sort_real_fourier_basis(fourier_modes)
     fourier_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
     dm = DeformableMirror(tel, nSubap=2*n_subaperture, modes=fourier_modes) # modal dm
     M2C = np.identity(dm.nValidAct)

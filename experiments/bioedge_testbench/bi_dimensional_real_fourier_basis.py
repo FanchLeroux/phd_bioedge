@@ -8,14 +8,34 @@ Created on Wed Dec 18 11:08:46 2024
 import numpy as np
 import matplotlib.pyplot as plt
 
+def sort_real_fourier_basis(basis_map):
+    
+    n_px = basis_map.shape[2]
+    my_list = []
+    
+    for nu_x in np.arange(-n_px//2 + 1, n_px//2 + 1):
+        for nu_y in np.arange(0, n_px//2 + 1):
+            if (nu_x == 0 and nu_y == 0) or (nu_x == 0 and nu_y == n_px//2)\
+            or (nu_x == n_px//2 and nu_y == n_px//2) or (nu_x == n_px//2 and nu_y == 0):
+                my_list.append([(nu_x**2 + nu_y**2)**0.5, basis_map[:,:,nu_x,nu_y,0].tolist()])
+            elif (nu_y != 0 or nu_x >= 0) and  (nu_y != n_px//2 or nu_x >= 0):
+                my_list.append([(nu_x**2 + nu_y**2)**0.5, basis_map[:,:,nu_x,nu_y,0].tolist()])
+                my_list.append([(nu_x**2 + nu_y**2)**0.5, basis_map[:,:,nu_x,nu_y,1].tolist()])
+    
+    my_list.sort()
+    
+    basis = np.empty((basis_map.shape[0], basis_map.shape[1], len(my_list)))
+    basis.fill(np.nan)
+    
+    for k in range(len(my_list)):
+        basis[:,:,k] = np.array(my_list[k][1])
+            
+    return basis
+
 def compute_real_fourier_basis(n_px:int, *, return_map = False):
     
-    basis = np.empty((n_px, n_px, n_px**2), dtype=float)
-    basis.fill(np.nan)
     basis_map = np.empty((n_px, n_px, n_px, n_px//2+1, 2), dtype=float)
     basis_map.fill(np.nan)
-    
-    index = 0
     
     [X,Y] = np.meshgrid(np.arange(-n_px//2 + 1, n_px//2 + 1), np.flip(np.arange(-n_px//2 + 1, n_px//2 + 1)))
     
@@ -25,15 +45,10 @@ def compute_real_fourier_basis(n_px:int, *, return_map = False):
             if (nu_x == 0 and nu_y == 0) or (nu_x == 0 and nu_y == n_px//2)\
             or (nu_x == n_px//2 and nu_y == n_px//2) or (nu_x == n_px//2 and nu_y == 0):
                 
-                basis[:,:,index] = 1./n_px * np.cos(2.*np.pi/n_px * (nu_x * X + nu_y * Y))
-                index += 1
                 basis_map[:,:,nu_x, nu_y, 0] = 1./n_px * np.cos(2.*np.pi/n_px * (nu_x * X + nu_y * Y))
                 
             elif (nu_y != 0 or nu_x >= 0) and  (nu_y != n_px//2 or nu_x >= 0):
                 
-                basis[:,:,index] = 2**0.5/n_px * np.cos(2.*np.pi/n_px * (nu_x * X + nu_y * Y))
-                basis[:,:,index+1] = 2**0.5/n_px * np.sin(2.*np.pi/n_px * (nu_x * X + nu_y * Y))
-                index += 2
                 basis_map[:,:,nu_x, nu_y, 0] = 2**0.5/n_px * np.cos(2.*np.pi/n_px * (nu_x * X + nu_y * Y))
                 basis_map[:,:,nu_x, nu_y, 1] = 2**0.5/n_px * np.sin(2.*np.pi/n_px * (nu_x * X + nu_y * Y))
     
@@ -41,7 +56,7 @@ def compute_real_fourier_basis(n_px:int, *, return_map = False):
     if return_map:
         return basis_map
     else:
-        return basis
+        return sort_real_fourier_basis(basis_map)
 
 def extract_subset(complete_real_fourier_basis, new_n_px):
     return np.roll(complete_real_fourier_basis[:,:,np.arange(-new_n_px//2+1,new_n_px//2+1),0:new_n_px//2+1,:]
@@ -70,49 +85,23 @@ def basis_map2basis(basis_map):
     
     return basis
 
-def sort_real_fourier_basis(basis_map):
-    
-    n_px = basis_map.shape[2]
-    my_list = []
-    
-    for nu_x in np.arange(-n_px//2 + 1, n_px//2 + 1):
-        for nu_y in np.arange(0, n_px//2 + 1):
-            if (nu_x == 0 and nu_y == 0) or (nu_x == 0 and nu_y == n_px//2)\
-            or (nu_x == n_px//2 and nu_y == n_px//2) or (nu_x == n_px//2 and nu_y == 0):
-                my_list.append([(nu_x**2 + nu_y**2)**0.5, basis_map[:,:,nu_x,nu_y,0].tolist()])
-            elif (nu_y != 0 or nu_x >= 0) and  (nu_y != n_px//2 or nu_x >= 0):
-                my_list.append([(nu_x**2 + nu_y**2)**0.5, basis_map[:,:,nu_x,nu_y,0].tolist()])
-                my_list.append([(nu_x**2 + nu_y**2)**0.5, basis_map[:,:,nu_x,nu_y,1].tolist()])
-    
-    my_list.sort()
-    
-    basis = np.empty((basis_map.shape[0], basis_map.shape[1], basis_map.shape[0]*basis_map.shape[1]))
-    basis.fill(np.nan)
-    
-    for k in range(len(my_list)):
-        basis[:,:,k] = np.array(my_list[k][1])
-            
-    return basis
-
 
 #%%
 
 # n_px = 8
+# basis = compute_real_fourier_basis(n_px)
+
+#%%
 
 # Check that the computed basis is orthonormal
 
-# basis = compute_real_fourier_basis(n_px)
 # basis_columns = basis.reshape((basis.shape[0]*basis.shape[1], basis.shape[2]))
-
 # plt.figure(1)
 # plt.imshow(basis_columns[:,0].reshape((n_px,n_px))==basis[:,:,0]) # check reshape function behaviour
 # plt.figure(2)
 # plt.imshow(basis_columns.T @ basis_columns)
 
-
 # Plot basis
-
-# basis = compute_real_fourier_basis(n_px)
 
 # figure, axs = plt.subplots(nrows=n_px, ncols=n_px)
 
