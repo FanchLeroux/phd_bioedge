@@ -49,8 +49,8 @@ def extract_subset(complete_real_fourier_basis, new_n_px):
 
 def basis_map2basis(basis_map):
     
-    n_px = basis_map.shape[0]
-    basis = np.empty((n_px, n_px, n_px**2))
+    n_px = basis_map.shape[2]
+    basis = np.empty((basis_map.shape[0], basis_map.shape[1], basis_map.shape[2]**2))
     
     index = 0
     for nu_x in np.arange(-n_px//2 + 1, n_px//2 + 1):
@@ -70,7 +70,29 @@ def basis_map2basis(basis_map):
     
     return basis
 
-
+def sort_real_fourier_basis(basis_map):
+    
+    n_px = basis_map.shape[2]
+    my_list = []
+    
+    for nu_x in np.arange(-n_px//2 + 1, n_px//2 + 1):
+        for nu_y in np.arange(0, n_px//2 + 1):
+            if (nu_x == 0 and nu_y == 0) or (nu_x == 0 and nu_y == n_px//2)\
+            or (nu_x == n_px//2 and nu_y == n_px//2) or (nu_x == n_px//2 and nu_y == 0):
+                my_list.append([(nu_x**2 + nu_y**2)**0.5, basis_map[:,:,nu_x,nu_y,0].tolist()])
+            elif (nu_y != 0 or nu_x >= 0) and  (nu_y != n_px//2 or nu_x >= 0):
+                my_list.append([(nu_x**2 + nu_y**2)**0.5, basis_map[:,:,nu_x,nu_y,0].tolist()])
+                my_list.append([(nu_x**2 + nu_y**2)**0.5, basis_map[:,:,nu_x,nu_y,1].tolist()])
+    
+    my_list.sort()
+    
+    basis = np.empty((basis_map.shape[0], basis_map.shape[1], basis_map.shape[0]*basis_map.shape[1]))
+    basis.fill(np.nan)
+    
+    for k in range(len(my_list)):
+        basis[:,:,k] = np.array(my_list[k][1])
+            
+    return basis
 
 
 #%%
@@ -119,3 +141,10 @@ def basis_map2basis(basis_map):
 # basis_retrieved = basis_map2basis(basis_map)
 
 # print((basis == basis_retrieved).sum()/(basis == basis_retrieved).size)
+
+# list.sort() usage
+
+# A = [[2, [[1, 1], [1, 1]]], [1, [2, 2], [2, 2]]]
+# print(A)
+# A.sort()
+# print(A)
