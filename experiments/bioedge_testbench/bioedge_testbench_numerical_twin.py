@@ -38,7 +38,7 @@ tel = Telescope(resolution           = 4*n_subaperture,   # resolution of the te
                 samplingTime         = 1/1000,            # Sampling time in [s] of the AO loop
                 centralObstruction   = 0.,                # Central obstruction in [%] of a diameter 
                 display_optical_path = False,             # Flag to display optical path
-                fov                  = 10)               # field of view in [arcsec]. If set to 0 (default) this speeds up the computation of 
+                fov                  = 10)                # field of view in [arcsec]. If set to 0 (default) this speeds up the computation of 
                                                           # the phase screens but is uncompatible with off-axis targets
 
 #%% -----------------------     NGS   ----------------------------------

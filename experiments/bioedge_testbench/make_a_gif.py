@@ -37,6 +37,8 @@ basis = extract_subset(basis, n_px)
 
 basis = sort_real_fourier_basis(basis)
 
+basis_fliped = np.flip(basis, axis=2)
+
 pupil = get_circular_pupil(basis.shape[0])
 
 zeros_padding_factor = 4
@@ -44,7 +46,8 @@ zeros_padding_factor = 4
 complex_amplitude_screen = np.empty((zeros_padding_factor*basis.shape[0], zeros_padding_factor*basis.shape[1], basis.shape[2]), dtype=complex)
 
 for k in range(complex_amplitude_screen.shape[2]):
-    complex_amplitude_screen[:,:,k] = zeros_padding(pupil*np.exp(1j*2*np.pi*basis[:,:,k]), zeros_padding_factor)
+    complex_amplitude_screen[:,:,k] = zeros_padding(pupil*np.exp(1j*2*np.pi*(basis[:,:,k]+basis_fliped[:,:,k])), 
+                                                    zeros_padding_factor)
 
 #%%
 
@@ -76,8 +79,6 @@ ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True,
 #     fps=15, metadata=dict(artist='Me'), bitrate=1800)
 # ani.save("movie.mp4", writer=writer)
 
-
-
 plt.show()
 
-ani.save("2D_fourier_basis_focal_plane_movie.mp4")
+#ani.save("2D_fourier_basis_focal_plane_movie.mp4")

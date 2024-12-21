@@ -86,6 +86,28 @@ def basis_map2basis(basis_map):
     return basis
 
 
+def alpha_cut(array, alpha, tol=0.5):
+    
+    coordinates = np.arange(-array.shape[0]//2+1, array.shape[0]//2+1) # N = 4 : [-2,-1,0,1]
+    [X,Y] = np.meshgrid(coordinates,np.flip(coordinates))
+    radial_coordinates = (X**2+Y**2)**0.5
+    angles = np.arctan2(Y,X)
+    angles_sup = np.arctan2(Y+tol,X)
+    angles_inf = np.arctan2(Y-tol,X)
+    
+    test = np.ones(angles.shape)
+    test[angles_inf>=alpha] = 0
+    test[angles_sup<=alpha] = 0
+    test[test.shape[0]//2,:] = 0
+    test[test.shape[0]//2-1,:] = 0
+    coordinates_alpha_cut = radial_coordinates[test==1]
+    
+    return test
+
+# n_px = 100
+
+# plt.imshow(alpha_cut(np.ones((n_px,n_px)), 0.1 * 1/4 * np.pi))
+
 #%%
 
 # n_px = 8
