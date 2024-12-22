@@ -62,6 +62,38 @@ def extract_subset(complete_real_fourier_basis, new_n_px):
     return np.roll(complete_real_fourier_basis[:,:,np.arange(-new_n_px//2+1,new_n_px//2+1),0:new_n_px//2+1,:]
                    , -new_n_px//2 + 1, axis = 2)
 
+def extract_horizontal_frequencies(basis_map):
+    
+    horizontal_frequencies = basis_map[:,:,:,0,0]
+    return horizontal_frequencies
+
+def extract_vertical_frequencies(basis_map):
+    
+    vertical_frequencies = basis_map[:,:,0,:,0]
+    return vertical_frequencies
+
+def extract_diagonal_frequencies(basis_map, complete = 0):
+    
+    diagonal_frequencies = np.empty((basis_map.shape[0], basis_map.shape[1], basis_map.shape[3]))
+    diagonal_frequencies.fill(np.nan)
+    
+    for k in range(basis_map.shape[3]):
+        diagonal_frequencies[:,:,k] = basis_map[:,:,k,k,0]
+    
+    if complete:
+        diagonal_frequencies = np.empty((basis_map.shape[0], basis_map.shape[1], 2*basis_map.shape[3]-2))
+        diagonal_frequencies.fill(np.nan)
+        index = 0
+        for k in range(basis_map.shape[3]):
+            diagonal_frequencies[:,:,index] = basis_map[:,:,k,k,0]
+            if k != basis_map.shape[3]-1 and k !=0:
+                diagonal_frequencies[:,:,index+1] = basis_map[:,:,k,k,1]
+                index += 2
+            else:
+                index += 1
+    
+    return np.array(diagonal_frequencies)
+
 def basis_map2basis(basis_map):
     
     n_px = basis_map.shape[2]

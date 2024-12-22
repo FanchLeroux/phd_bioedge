@@ -13,9 +13,6 @@ import matplotlib.pyplot as plt
 # from OOPAO.DeformableMirror import DeformableMirror
 # from OOPAO.Pyramid import Pyramid
 
-from bi_dimensional_real_fourier_basis import compute_real_fourier_basis,\
-    extract_subset, sort_real_fourier_basis
-
 def zeros_padding(array, zeros_padding_factor):
     array = np.pad(array, (((zeros_padding_factor-1)*array.shape[0]//2, 
                                      (zeros_padding_factor-1)*array.shape[0]//2),
@@ -25,7 +22,7 @@ def zeros_padding(array, zeros_padding_factor):
 
 #%%
 
-n_subapertures = 32
+n_subapertures = 16
     
 #%% -----------------------     TELESCOPE   ----------------------------------
 from OOPAO.Telescope import Telescope
@@ -69,7 +66,7 @@ atm = Atmosphere(telescope     = tel,                               # Telescope
 
 #%% --------------------------- Modulation ------------------------------------
 
-modulation = 5.
+modulation = 0.
 
 #%% --------------------------- PYWFS ------------------------------------
 
@@ -96,58 +93,94 @@ bioedge = BioEdge(nSubap = n_subapertures,
 
 #%% ------------------------- Modal basis --------------------------------
 
+from bi_dimensional_real_fourier_basis import compute_real_fourier_basis,\
+    extract_subset, sort_real_fourier_basis, extract_vertical_frequencies,\
+    extract_diagonal_frequencies
+
 fourier_modes = compute_real_fourier_basis(tel.resolution, return_map=True)
 fourier_modes = extract_subset(fourier_modes, n_subapertures)
-fourier_modes = sort_real_fourier_basis(fourier_modes)
-dm_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
 
-#%% --------------------------- Modal DM ---------------------------------
+#%%
+
+vertical_fourier_modes = extract_vertical_frequencies(fourier_modes)
+
+diagonal_fourier_modes = extract_diagonal_frequencies(fourier_modes, complete=True)
+
+complete_fourier_modes = sort_real_fourier_basis(fourier_modes)
+
+#%%
+
+modes_calibrations = [complete_fourier_modes, vertical_fourier_modes,\
+                      diagonal_fourier_modes]
+
+pywfs_calibrations = []
+bioedge_calibrations = []
+    
+pywfs_sensitivity_matrices = []
+pywfs_modal_sensitivities = []
+bioedge_sensitivity_matrices = []
+bioedge_modal_sensitivities = []
+    
+#%%
+
+#fourier_modes = sort_real_fourier_basis(fourier_modes)
+
+#fourier_modes = vertical_fourier_modes
+
+#fourier_modes = diagonal_fourier_modes
 
 from OOPAO.DeformableMirror import DeformableMirror
-
-dm = DeformableMirror(tel, nSubap=2*n_subapertures, modes=dm_modes) # modal dm
-M2C = np.identity(dm.nValidAct)
-
-#%% --------------------------- Calibration ------------------------------
-
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
 stroke = 1e-9 # [m]
 
-#tel.resetOPD()
-ngs*tel*dm
-calib_pywfs = InteractionMatrix(ngs, atm, tel, dm, pywfs, M2C = M2C, stroke = stroke)
+for fourier_modes in modes_calibrations:
 
-tel.resetOPD()
-ngs*tel*dm
-calib_bioedge = InteractionMatrix(ngs, atm, tel, dm, bioedge, M2C = M2C, stroke = stroke)
+#%%
 
+    dm_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
+
+#%% --------------------------- Modal DM ---------------------------------
+
+    dm = DeformableMirror(tel, nSubap=2*n_subapertures, modes=dm_modes) # modal dm
+    M2C = np.identity(dm.nValidAct)
+
+#%% --------------------------- Calibration ------------------------------
+
+    tel.resetOPD()
+    ngs*tel*dm
+    calib_pywfs = InteractionMatrix(ngs, atm, tel, dm, pywfs, M2C = M2C, stroke = stroke)
+    
+    tel.resetOPD()
+    ngs*tel*dm
+    calib_bioedge = InteractionMatrix(ngs, atm, tel, dm, bioedge, M2C = M2C, stroke = stroke)
+    
+    pywfs_calibrations.append(calib_pywfs)
+    bioedge_calibrations.append(calib_bioedge)
+    
 #%% ---------------------------- Sensitivity -----------------------------
+    
+    sensitivity_matrix_pywfs= calib_pywfs.D.T @ calib_pywfs.D
+    sensitivity_matrix_bioedge = calib_bioedge.D.T @ calib_bioedge.D
+    
+    modal_sensitivity_pywfs = np.diag(sensitivity_matrix_pywfs)
+    modal_sensitivity_bioedge = np.diag(sensitivity_matrix_bioedge)
 
-sensitivity_matrix_pywfs= calib_pywfs.D.T @ calib_pywfs.D
-sensitivity_matrix_bioedge = calib_bioedge.D.T @ calib_bioedge.D
-
-modal_sensitivity_pywfs = np.diag(sensitivity_matrix_pywfs)
-modal_sensitivity_bioedge = np.diag(sensitivity_matrix_bioedge)
+    pywfs_sensitivity_matrices.append(sensitivity_matrix_pywfs)
+    pywfs_modal_sensitivities.append(modal_sensitivity_pywfs)
+    
+    bioedge_sensitivity_matrices.append(sensitivity_matrix_bioedge)
+    bioedge_modal_sensitivities.append(modal_sensitivity_bioedge)
 
 #%%
 
 from OOPAO.tools.displayTools import display_wfs_signals
 
-#n_mode = 5
 
-n_mode = 1
-
-#%%
-display_wfs_signals(pywfs, calib_pywfs.D[:,n_mode])
-
-#%%
-display_wfs_signals(bioedge, calib_bioedge.D[:,n_mode])
 
 #%%
 
-plt.figure(2)
-plt.imshow(fourier_modes[:,:,n_mode])
+
 
 # zeros_padding_factor = 2
 # complex_amplitude = zeros_padding(tel.pupil*np.exp(1j*20*np.pi*fourier_modes[:,:,n_mode]), zeros_padding_factor)
@@ -157,10 +190,28 @@ plt.imshow(fourier_modes[:,:,n_mode])
 #%%
 
 plt.figure(3)
-plt.plot(modal_sensitivity_pywfs, '-b', label='pywfs')
-plt.plot(modal_sensitivity_bioedge, '-r', label='bioedge')
+plt.plot(pywfs_modal_sensitivities[1], '-c', label='vertical pywfs')
+plt.plot(bioedge_modal_sensitivities[1], '-m', label='vertical bioedge')
+plt.plot(pywfs_modal_sensitivities[2], '-b', label='diagonal pywfs')
+plt.plot(bioedge_modal_sensitivities[2], '-r', label='diagonal bioedge')
 plt.legend()
 
-plt.figure(4)
-plt.semilogy(modal_sensitivity_pywfs/modal_sensitivity_bioedge, 'b')
-plt.plot(np.ones(modal_sensitivity_bioedge.size),'r')
+# plt.figure(4)
+# plt.semilogy(modal_sensitivity_pywfs/modal_sensitivity_bioedge, 'b')
+# plt.plot(np.ones(modal_sensitivity_bioedge.size),'r')
+
+#%%
+
+n_calib = 0
+n_mode = 5
+
+plt.figure(2)
+plt.imshow(tel.pupil*modes_calibrations[n_calib][:,:,n_mode])
+
+#%%
+
+display_wfs_signals(pywfs, pywfs_calibrations[n_calib].D[:,n_mode])
+
+#%%
+
+display_wfs_signals(bioedge, bioedge_calibrations[n_calib].D[:,n_mode])
