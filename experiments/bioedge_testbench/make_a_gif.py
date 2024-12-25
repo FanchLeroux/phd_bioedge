@@ -60,7 +60,6 @@ ims = []
 for i in range(basis.shape[2]):
     im = ax.imshow(np.abs(np.fft.fftshift(np.fft.fft2(complex_amplitude_screen[:,:,i]))))
     if i == 0:
-        #ax.imshow(basis[:,:,i])  # show an initial one first
         ax.imshow(np.abs(np.fft.fftshift(np.fft.fft2(complex_amplitude_screen[:,:,i])))**2)
     ims.append([im])
 
