@@ -124,7 +124,8 @@ elif modal_basis_name == 'Fourier2D':
     M2C = np.identity(dm.nValidAct)
     
 elif modal_basis_name == 'Fourier2Dsmall':
-    from bi_dimensional_real_fourier_basis import compute_real_fourier_basis, extract_subset, sort_real_fourier_basis
+    from fanch.basis.fourier import compute_real_fourier_basis,\
+        extract_subset, sort_real_fourier_basis
     fourier_modes = compute_real_fourier_basis(tel.resolution, return_map=True)
     fourier_modes = extract_subset(fourier_modes, 2*n_subaperture)
     fourier_modes = sort_real_fourier_basis(fourier_modes)

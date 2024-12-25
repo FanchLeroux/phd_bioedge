@@ -8,24 +8,31 @@ Created on Sat Dec 21 11:40:19 2024
 import numpy as np
 import matplotlib.pyplot as plt
 
-# from OOPAO.Source import Source
-# from OOPAO.Telescope import Telescope
-# from OOPAO.DeformableMirror import DeformableMirror
-# from OOPAO.Pyramid import Pyramid
+from OOPAO.Source import Source
+from OOPAO.Atmosphere import Atmosphere
+from OOPAO.Telescope import Telescope
+from OOPAO.DeformableMirror import DeformableMirror
+from OOPAO.Pyramid import Pyramid
+from OOPAO.BioEdge import BioEdge
+from OOPAO.calibration.InteractionMatrix import InteractionMatrix
+from OOPAO.tools.displayTools import display_wfs_signals
 
-def zeros_padding(array, zeros_padding_factor):
-    array = np.pad(array, (((zeros_padding_factor-1)*array.shape[0]//2, 
-                                     (zeros_padding_factor-1)*array.shape[0]//2),
-                                    ((zeros_padding_factor-1)*array.shape[1]//2, 
-                                     (zeros_padding_factor-1)*array.shape[1]//2)))
-    return array
+from fanch.basis.fourier import compute_real_fourier_basis,\
+    extract_subset, sort_real_fourier_basis, extract_vertical_frequencies,\
+    extract_diagonal_frequencies
+from fanch.tools import zeros_padding
 
 #%%
 
-n_subapertures = 16
+n_subapertures = 8
+
+modulation = 0.
+stroke = 1e-9 # [m]
+
+n_calib = 0
+n_mode = 0
     
 #%% -----------------------     TELESCOPE   ----------------------------------
-from OOPAO.Telescope import Telescope
 
 # create the Telescope object
 tel = Telescope(resolution           = 4*n_subapertures,   # resolution of the telescope in [pix]
@@ -41,8 +48,6 @@ tel = Telescope(resolution           = 4*n_subapertures,   # resolution of the t
 # GHOST wavelength : 770 nm, full bandwidth = 20 nm
 # 'I2' band : 750 nm, bandwidth? = 33 nm
 
-from OOPAO.Source import Source
-
 # create the Natural Guide Star object
 ngs = Source(optBand     = 'I2',          # Optical band (see photometry.py)
              magnitude   = 0,             # Source Magnitude
@@ -52,8 +57,6 @@ ngs = Source(optBand     = 'I2',          # Optical band (see photometry.py)
 ngs*tel
 
 #%% ----------------------- Atmosphere ----------------------------------
-
-from OOPAO.Atmosphere import Atmosphere
            
 # create the Atmosphere object
 atm = Atmosphere(telescope     = tel,                               # Telescope                              
@@ -62,15 +65,9 @@ atm = Atmosphere(telescope     = tel,                               # Telescope
                  fractionalR0  = [0.45 ,0.1  ,0.1  ,0.25  ,0.1   ], # Cn2 Profile
                  windSpeed     = [10   ,12   ,11   ,15    ,20    ], # Wind Speed in [m]
                  windDirection = [0    ,72   ,144  ,216   ,288   ], # Wind Direction in [degrees]
-                 altitude      = [0    ,1000 ,5000 ,10000 ,12000 ]) # Altitude Layers in [m]
-
-#%% --------------------------- Modulation ------------------------------------
-
-modulation = 0.
+                 altitude      = [0    ,1000 ,5000 ,10000 ,12000 ]) # Altitude Layers
 
 #%% --------------------------- PYWFS ------------------------------------
-
-from OOPAO.Pyramid import Pyramid
 
 pywfs = Pyramid(nSubap = n_subapertures, 
               telescope = tel, 
@@ -82,8 +79,6 @@ pywfs = Pyramid(nSubap = n_subapertures,
 
 #%% --------------------------- Bio Edge ------------------------------------
 
-from OOPAO.BioEdge import BioEdge
-
 bioedge = BioEdge(nSubap = n_subapertures, 
                    telescope = tel, 
                    modulation = modulation, 
@@ -93,10 +88,6 @@ bioedge = BioEdge(nSubap = n_subapertures,
 
 #%% ------------------------- Modal basis --------------------------------
 
-from bi_dimensional_real_fourier_basis import compute_real_fourier_basis,\
-    extract_subset, sort_real_fourier_basis, extract_vertical_frequencies,\
-    extract_diagonal_frequencies
-
 fourier_modes = compute_real_fourier_basis(tel.resolution, return_map=True)
 fourier_modes = extract_subset(fourier_modes, n_subapertures)
 
@@ -104,7 +95,7 @@ fourier_modes = extract_subset(fourier_modes, n_subapertures)
 
 vertical_fourier_modes = extract_vertical_frequencies(fourier_modes)
 
-diagonal_fourier_modes = extract_diagonal_frequencies(fourier_modes, complete=True)
+diagonal_fourier_modes = extract_diagonal_frequencies(fourier_modes, complete=False)
 
 complete_fourier_modes = sort_real_fourier_basis(fourier_modes)
 
@@ -123,22 +114,12 @@ bioedge_modal_sensitivities = []
     
 #%%
 
-#fourier_modes = sort_real_fourier_basis(fourier_modes)
-
-#fourier_modes = vertical_fourier_modes
-
-#fourier_modes = diagonal_fourier_modes
-
-from OOPAO.DeformableMirror import DeformableMirror
-from OOPAO.calibration.InteractionMatrix import InteractionMatrix
-
-stroke = 1e-9 # [m]
-
 for fourier_modes in modes_calibrations:
 
 #%%
 
-    dm_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
+    dm_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],
+                                      fourier_modes.shape[2]))
 
 #%% --------------------------- Modal DM ---------------------------------
 
@@ -149,11 +130,13 @@ for fourier_modes in modes_calibrations:
 
     tel.resetOPD()
     ngs*tel*dm
-    calib_pywfs = InteractionMatrix(ngs, atm, tel, dm, pywfs, M2C = M2C, stroke = stroke)
+    calib_pywfs = InteractionMatrix(ngs, atm, tel, dm, pywfs, M2C = M2C, 
+                                    stroke = stroke)
     
     tel.resetOPD()
     ngs*tel*dm
-    calib_bioedge = InteractionMatrix(ngs, atm, tel, dm, bioedge, M2C = M2C, stroke = stroke)
+    calib_bioedge = InteractionMatrix(ngs, atm, tel, dm, bioedge, M2C = M2C, 
+                                      stroke = stroke)
     
     pywfs_calibrations.append(calib_pywfs)
     bioedge_calibrations.append(calib_bioedge)
@@ -174,18 +157,12 @@ for fourier_modes in modes_calibrations:
 
 #%%
 
-from OOPAO.tools.displayTools import display_wfs_signals
-
-
-
-#%%
-
-
-
-# zeros_padding_factor = 2
-# complex_amplitude = zeros_padding(tel.pupil*np.exp(1j*20*np.pi*fourier_modes[:,:,n_mode]), zeros_padding_factor)
-# plt.figure(4)
-# plt.imshow(np.abs(np.fft.fftshift((np.fft.fft2(complex_amplitude))))**2)
+zeros_padding_factor = 2
+complex_amplitude = zeros_padding(tel.pupil*\
+                                  np.exp(1j*20*np.pi*fourier_modes[:,:,n_mode]),\
+                                  zeros_padding_factor)
+plt.figure(4)
+plt.imshow(np.abs(np.fft.fftshift((np.fft.fft2(complex_amplitude))))**2)
 
 #%%
 
@@ -202,9 +179,6 @@ plt.legend()
 
 #%%
 
-n_calib = 0
-n_mode = 5
-
 plt.figure(2)
 plt.imshow(tel.pupil*modes_calibrations[n_calib][:,:,n_mode])
 
@@ -215,3 +189,16 @@ display_wfs_signals(pywfs, pywfs_calibrations[n_calib].D[:,n_mode])
 #%%
 
 display_wfs_signals(bioedge, bioedge_calibrations[n_calib].D[:,n_mode])
+
+#%%
+
+print("sum abs bio edge\n"+
+      str(np.abs(bioedge_calibrations[n_calib].D[:,n_mode]).sum()))
+
+print("sum abs pywfs\n"+
+      str(np.abs(pywfs_calibrations[n_calib].D[:,n_mode]).sum()))
+
+print("sum square bio edge\n"+
+      str((np.abs(bioedge_calibrations[n_calib].D[:,n_mode]**2).sum())))
+print("sum square pywfs\n"+
+      str((pywfs_calibrations[n_calib].D[:,n_mode]**2).sum()))
