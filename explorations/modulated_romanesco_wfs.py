@@ -21,21 +21,25 @@ from fanch.basis.fourier import compute_real_fourier_basis,\
 
 #%%
 
-dirc = Path(__file__).parent
+dirc = Path(__file__).parent.parent\
+    .parent / "outputs" / "phd_bioedge" / "exploration"
 
-filename = "lo_pywfs_resolved.mp4"
+filename = "lo_romanesco_resolved.mp4"
 
 #%% -------------- PARAMETERS ---------------------
 
 # telescope
-n_px = 32
+n_px = 128
 
 # modulation
-modulation_radius = 10. # pixels/zeros_padding_factor [1/D m^-1]
+modulation_radius = 5. # pixels/zeros_padding_factor [1/D m^-1]
 n_modulation_points = 64
 
 # focal plane sampling
 zeros_padding_factor = 3
+
+# focal plane mask
+romanesco_radius = zeros_padding_factor * 2 * modulation_radius
 
 # input phase
 input_phase_amplitude = 1. # 10 : see modal cross coupling
@@ -55,9 +59,16 @@ modulation_phase_screens = get_modulation_phase_screens(pupil,
 pywfs_tilt_amplitude = n_px * zeros_padding_factor * 0.5 * np.pi 
 mask = get_4pywfs_phase_mask(2*[n_px*zeros_padding_factor], pywfs_tilt_amplitude)
 
-mask = romanesco_central_mask(n_px*zeros_padding_factor, 
-                                                pywfs_tilt_amplitude)
-mask = mask/np.abs(mask)
+mask = np.exp(1j*mask)
+
+xx,yy = np.mgrid[0:n_px * zeros_padding_factor,0:n_px * zeros_padding_factor]\
+    - (n_px * zeros_padding_factor)//2
+    
+radial_coordinates = (xx**2 + yy**2)**0.5
+
+mask[radial_coordinates<=romanesco_radius] = romanesco_central_mask(n_px*zeros_padding_factor, 
+                    pywfs_tilt_amplitude)[radial_coordinates<=romanesco_radius]
+#mask = mask/np.abs(mask)
 
 # %% --------------------- PHASOR ------------------
 
@@ -71,6 +82,33 @@ phasor = 1/zeros_padding_factor * 2**0.5 * np.pi * phasor
 pupil = pupil * np.exp(1j*phasor)
 
 # %% ------------------ PROPAGATION ------------------
+
+#%% Reference frame without modulation
+
+pupil_pad = zeros_padding(pupil, zeros_padding_factor)
+frame_ref_no_modul = get_ffwfs_frame(pupil_pad, mask)
+
+#%% Reference frame with modulation
+
+mpywfs_resolved_detector_ref= np.zeros([zeros_padding_factor*pupil.shape[0], 
+                            zeros_padding_factor*pupil.shape[1], 
+                            modulation_phase_screens.shape[2]])
+gsc_resolved_detector_ref= np.zeros([zeros_padding_factor*pupil.shape[0], 
+                         zeros_padding_factor*pupil.shape[1], 
+                         modulation_phase_screens.shape[2]])
+
+for k in range(modulation_phase_screens.shape[2]):
+    
+    pupil_pad = zeros_padding(pupil*np.exp(1j*modulation_phase_screens[:,:,k]), 
+                              zeros_padding_factor)
+    
+    mpywfs_resolved_detector_ref[:,:,k] = get_ffwfs_frame(pupil_pad, 
+                                      mask)
+    
+    gsc_resolved_detector_ref[:,:,k] = get_focal_plane_image(pupil_pad)
+
+mpywfs_detector_ref= mpywfs_resolved_detector_ref.sum(axis=2)
+gsc_detector_ref= gsc_resolved_detector_ref.sum(axis=2)
 
 #%% Input phase
 
@@ -105,7 +143,9 @@ for k in range(modulation_phase_screens.shape[2]):
     pupil_pad = zeros_padding(pupil*np.exp(1j*modulation_phase_screens[:,:,k]), 
                               zeros_padding_factor)
     
-    mpywfs_resolved_detector[:,:,k] = get_ffwfs_frame(pupil_pad, mask_complex_amplitude)
+    mpywfs_resolved_detector[:,:,k] = get_ffwfs_frame(pupil_pad, 
+                                      mask_complex_amplitude)\
+                                    - mpywfs_resolved_detector_ref[:,:,k]
     
     gsc_resolved_detector[:,:,k] = get_focal_plane_image(pupil_pad)
 

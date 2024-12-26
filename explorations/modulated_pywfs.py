@@ -14,16 +14,17 @@ import numpy as np
 
 from fanch.tools import get_circular_pupil, get_tilt, zeros_padding
 from fanch.pupil_masks import get_modulation_phase_screens
-from fanch.focus_masks import get_4pywfs_phase_mask, romanesco_central_mask
+from fanch.focus_masks import get_4pywfs_phase_mask
 from fanch.propagation import get_focal_plane_image, get_ffwfs_frame
 from fanch.basis.fourier import compute_real_fourier_basis,\
                                 extract_diagonal_frequencies
 
 #%%
 
-dirc = Path(__file__).parent
+dirc = Path(__file__).parent.parent\
+    .parent / "outputs" / "phd_bioedge" / "exploration"
 
-filename = "lo_pywfs_resolved.mp4"
+filename = "lo_romanesco_resolved.mp4"
 
 #%% -------------- PARAMETERS ---------------------
 
@@ -31,7 +32,7 @@ filename = "lo_pywfs_resolved.mp4"
 n_px = 32
 
 # modulation
-modulation_radius = 10. # pixels/zeros_padding_factor [1/D m^-1]
+modulation_radius = 3. # pixels/zeros_padding_factor [1/D m^-1]
 n_modulation_points = 64
 
 # focal plane sampling
@@ -39,7 +40,7 @@ zeros_padding_factor = 3
 
 # input phase
 input_phase_amplitude = 1. # 10 : see modal cross coupling
-n_mode = 2
+n_mode = 7
 
 #%% ---------------- TELESCOPE --------------------
 
@@ -55,9 +56,9 @@ modulation_phase_screens = get_modulation_phase_screens(pupil,
 pywfs_tilt_amplitude = n_px * zeros_padding_factor * 0.5 * np.pi 
 mask = get_4pywfs_phase_mask(2*[n_px*zeros_padding_factor], pywfs_tilt_amplitude)
 
-# %% --------------------- PHASOR ------------------
+mask_complex_amplitude = np.exp(1j*mask)
 
-pupil_pad = zeros_padding(pupil, zeros_padding_factor)
+# %% --------------------- PHASOR ------------------
 
 phasor = get_tilt(2*[n_px], theta=1.25*np.pi) * pupil
 phasor[pupil!=0] = (phasor[pupil!=0] - phasor[pupil!=0].min())\
@@ -67,6 +68,33 @@ phasor = 1/zeros_padding_factor * 2**0.5 * np.pi * phasor
 pupil = pupil * np.exp(1j*phasor)
 
 # %% ------------------ PROPAGATION ------------------
+
+#%% Reference frame without modulation
+
+pupil_pad = zeros_padding(pupil, zeros_padding_factor)
+frame_ref_no_modul = get_ffwfs_frame(pupil_pad, mask_complex_amplitude)
+
+#%% Reference frame with modulation
+
+mpywfs_resolved_detector_no_modul = np.zeros([zeros_padding_factor*pupil.shape[0], 
+                            zeros_padding_factor*pupil.shape[1], 
+                            modulation_phase_screens.shape[2]])
+gsc_resolved_detector_no_modul = np.zeros([zeros_padding_factor*pupil.shape[0], 
+                         zeros_padding_factor*pupil.shape[1], 
+                         modulation_phase_screens.shape[2]])
+
+for k in range(modulation_phase_screens.shape[2]):
+    
+    pupil_pad = zeros_padding(pupil*np.exp(1j*modulation_phase_screens[:,:,k]), 
+                              zeros_padding_factor)
+    
+    mpywfs_resolved_detector_no_modul[:,:,k] = get_ffwfs_frame(pupil_pad, 
+                                      mask_complex_amplitude)
+    
+    gsc_resolved_detector_no_modul[:,:,k] = get_focal_plane_image(pupil_pad)
+
+mpywfs_detector_no_modul = mpywfs_resolved_detector_no_modul.sum(axis=2)
+gsc_detector_no_modul = gsc_resolved_detector_no_modul.sum(axis=2)
 
 #%% Input phase
 
@@ -83,7 +111,7 @@ pupil = pupil*np.exp(1j*2*np.pi*phase_in)
 focal_plane_detector = get_focal_plane_image(zeros_padding(
                        pupil, zeros_padding_factor))
 
-mask_complex_amplitude = np.exp(1j*mask)
+
 
 pywfs_detector = get_ffwfs_frame(pupil_pad, mask_complex_amplitude)
 
@@ -101,12 +129,20 @@ for k in range(modulation_phase_screens.shape[2]):
     pupil_pad = zeros_padding(pupil*np.exp(1j*modulation_phase_screens[:,:,k]), 
                               zeros_padding_factor)
     
-    mpywfs_resolved_detector[:,:,k] = get_ffwfs_frame(pupil_pad, mask_complex_amplitude)
+    mpywfs_resolved_detector[:,:,k] = get_ffwfs_frame(pupil_pad, 
+                                      mask_complex_amplitude)\
+                                    - mpywfs_resolved_detector_no_modul[:,:,k]
     
     gsc_resolved_detector[:,:,k] = get_focal_plane_image(pupil_pad)
 
 mpywfs_detector = mpywfs_resolved_detector.sum(axis=2)
 gsc_detector = gsc_resolved_detector.sum(axis=2)
+
+#%% Subtract reference signal
+
+#mpywfs_signal = mpywfs_detector - mpywfs_detector_no_modul
+
+#plt.imshow(mpywfs_detector)
 
 #%% PLOTS
 
