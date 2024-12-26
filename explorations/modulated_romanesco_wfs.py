@@ -55,6 +55,10 @@ modulation_phase_screens = get_modulation_phase_screens(pupil,
 pywfs_tilt_amplitude = n_px * zeros_padding_factor * 0.5 * np.pi 
 mask = get_4pywfs_phase_mask(2*[n_px*zeros_padding_factor], pywfs_tilt_amplitude)
 
+mask = romanesco_central_mask(n_px*zeros_padding_factor, 
+                                                pywfs_tilt_amplitude)
+mask = mask/np.abs(mask)
+
 # %% --------------------- PHASOR ------------------
 
 pupil_pad = zeros_padding(pupil, zeros_padding_factor)
@@ -83,7 +87,7 @@ pupil = pupil*np.exp(1j*2*np.pi*phase_in)
 focal_plane_detector = get_focal_plane_image(zeros_padding(
                        pupil, zeros_padding_factor))
 
-mask_complex_amplitude = np.exp(1j*mask)
+mask_complex_amplitude = mask#np.exp(1j*mask)
 
 pywfs_detector = get_ffwfs_frame(pupil_pad, mask_complex_amplitude)
 
