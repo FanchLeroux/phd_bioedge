@@ -86,6 +86,8 @@ bioedge = BioEdge(nSubap = n_subapertures,
                    lightRatio = 0.5,
                    postProcessing = 'fullFrame')
 
+#%% -------- 8pywfs4pupil
+
 #%% ------------------------- Modal basis --------------------------------
 
 fourier_modes = compute_real_fourier_basis(tel.resolution, return_map=True)

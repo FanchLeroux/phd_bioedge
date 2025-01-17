@@ -14,20 +14,20 @@ import numpy as np
 
 from fanch.tools import get_circular_pupil, get_tilt, zeros_padding
 from fanch.pupil_masks import get_modulation_phase_screens
-from fanch.focus_masks import get_4pywfs_phase_mask, romanesco_mask
+from fanch.focus_masks import eight_faces_four_pupils_pyramid_mask,\
+    get_4pywfs_phase_mask
 from fanch.propagation import get_focal_plane_image, get_ffwfs_frame
 from fanch.basis.fourier import compute_real_fourier_basis,\
                                 extract_diagonal_frequencies
 
 from aoerror.ffwfs import *
 
-
 #%%
 
 dirc = Path(__file__).parent.parent\
     .parent / "outputs" / "phd_bioedge" / "exploration"
 
-filename = "lo_romanesco_resolved.mp4"
+filename = "lo_8faces4pupils_wfs_resolved.mp4"
 
 #%% -------------- PARAMETERS ---------------------
 
@@ -36,18 +36,16 @@ n_px = 32
 
 # modulation
 modulation_radius = 5. # pixels/zeros_padding_factor [1/D m^-1]
-n_modulation_points = 16
+n_modulation_points = 64
 
 # focal plane sampling
 zeros_padding_factor = 3
 
 # focal plane mask
-romanesco_radius = zeros_padding_factor * 2 * modulation_radius
-#romanesco_radius = zeros_padding_factor * n_px
 
 # input phase
 input_phase_amplitude = 1. # 10 : see modal cross coupling
-n_mode = 2
+n_mode = 0
 
 #%% ---------------- TELESCOPE --------------------
 
@@ -61,23 +59,10 @@ modulation_phase_screens = get_modulation_phase_screens(pupil,
 # %% ------------------ FOCAL PLANE MASK -----------
 
 pywfs_tilt_amplitude = n_px * zeros_padding_factor * 0.5 * np.pi 
-mask = get_4pywfs_phase_mask(2*[n_px*zeros_padding_factor], pywfs_tilt_amplitude)
+mask = eight_faces_four_pupils_pyramid_mask(n_px*zeros_padding_factor, 
+            amplitude = 2*np.pi * zeros_padding_factor * n_px/4 * 2)
 
 mask = np.exp(1j*mask)
-
-xx,yy = np.mgrid[0:n_px * zeros_padding_factor,0:n_px * zeros_padding_factor]\
-    - (n_px * zeros_padding_factor)//2
-    
-radial_coordinates = (xx**2 + yy**2)**0.5
-
-mask[radial_coordinates<=romanesco_radius] = romanesco_mask(n_px*
-                                                    zeros_padding_factor, 
-                    pywfs_tilt_amplitude, radius=romanesco_radius)\
-    [radial_coordinates<=romanesco_radius]
-#mask = mask/np.abs(mask)
-
-mask = romanesco_mask(n_px*zeros_padding_factor, 
-                    pywfs_tilt_amplitude, radius=romanesco_radius)
 
 # %% --------------------- PHASOR ------------------
 
@@ -96,6 +81,7 @@ pupil = pupil * np.exp(1j*phasor)
 
 pupil_pad = zeros_padding(pupil, zeros_padding_factor)
 frame_ref_no_modul = get_ffwfs_frame(pupil_pad, mask)
+
 psf = get_focal_plane_image(pupil_pad)
 psf = psf/psf.sum()
 
@@ -163,12 +149,11 @@ for k in range(modulation_phase_screens.shape[2]):
 mpywfs_detector = mpywfs_resolved_detector.sum(axis=2)
 gsc_detector = gsc_resolved_detector.sum(axis=2)
 
-#%%
 
 #%%
 
 modu = modulation(n_px*zeros_padding_factor, rmod=modulation_radius, samp=2)
-sensitivity_map = ffwfs_sensitivity(mask_complex_amplitude, modu, psf, psf)
+sensitivity_map = ffwfs_sensitivity(mask, modu, psf, psf)
 
 #%% PLOTS
 
@@ -192,7 +177,7 @@ sensitivity_map = ffwfs_sensitivity(mask_complex_amplitude, modu, psf, psf)
 # axs[0].imshow(gsc_resolved_detector[:,:,modulation_point])
 # axs[1].imshow(mpywfs_resolved_detector[:,:,modulation_point])
 
-plt.figure(3)
+plt.figure(2)
 plt.imshow(sensitivity_map)
 
 #%%
@@ -215,4 +200,4 @@ plt.imshow(sensitivity_map)
 # ani = animation.ArtistAnimation(fig, ims, interval=400, blit=True,
 #                                 repeat_delay=2000)
 
-# # ani.save(dirc / filename)
+# ani.save(dirc / filename)

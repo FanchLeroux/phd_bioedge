@@ -19,12 +19,14 @@ from fanch.propagation import get_focal_plane_image, get_ffwfs_frame
 from fanch.basis.fourier import compute_real_fourier_basis,\
                                 extract_diagonal_frequencies
 
+from aoerror.ffwfs import *
+
 #%%
 
 dirc = Path(__file__).parent.parent\
     .parent / "outputs" / "phd_bioedge" / "exploration"
 
-filename = "lo_romanesco_resolved.mp4"
+filename = "lo_mpywfs_resolved.mp4"
 
 #%% -------------- PARAMETERS ---------------------
 
@@ -32,7 +34,7 @@ filename = "lo_romanesco_resolved.mp4"
 n_px = 32
 
 # modulation
-modulation_radius = 3. # pixels/zeros_padding_factor [1/D m^-1]
+modulation_radius = 5. # pixels/zeros_padding_factor [1/D m^-1]
 n_modulation_points = 64
 
 # focal plane sampling
@@ -40,7 +42,7 @@ zeros_padding_factor = 3
 
 # input phase
 input_phase_amplitude = 1. # 10 : see modal cross coupling
-n_mode = 7
+n_mode = 0
 
 #%% ---------------- TELESCOPE --------------------
 
@@ -60,7 +62,7 @@ mask_complex_amplitude = np.exp(1j*mask)
 
 # %% --------------------- PHASOR ------------------
 
-phasor = get_tilt(2*[n_px], theta=1.25*np.pi) * pupil
+phasor = get_tilt(2*[n_px], theta=5*np.pi/4) * pupil
 phasor[pupil!=0] = (phasor[pupil!=0] - phasor[pupil!=0].min())\
                    /(phasor[pupil!=0].max()-phasor[pupil!=0].min()) # normalization
 phasor = 1/zeros_padding_factor * 2**0.5 * np.pi * phasor
@@ -73,6 +75,11 @@ pupil = pupil * np.exp(1j*phasor)
 
 pupil_pad = zeros_padding(pupil, zeros_padding_factor)
 frame_ref_no_modul = get_ffwfs_frame(pupil_pad, mask_complex_amplitude)
+
+#focal_plane_no_modul = get_focal_plane_image(pupil_pad)
+
+psf = get_focal_plane_image(pupil_pad)
+psf = psf/psf.sum()
 
 #%% Reference frame with modulation
 
@@ -138,6 +145,11 @@ for k in range(modulation_phase_screens.shape[2]):
 mpywfs_detector = mpywfs_resolved_detector.sum(axis=2)
 gsc_detector = gsc_resolved_detector.sum(axis=2)
 
+#%%
+
+modu = modulation(n_px*zeros_padding_factor, rmod=modulation_radius, samp=2)
+sensitivity_map = ffwfs_sensitivity(mask_complex_amplitude, modu, psf, psf)
+
 #%% Subtract reference signal
 
 #mpywfs_signal = mpywfs_detector - mpywfs_detector_no_modul
@@ -149,7 +161,7 @@ gsc_detector = gsc_resolved_detector.sum(axis=2)
 # plt.figure(1)
 # plt.imshow(phase_in)
 
-# plt.figure(2)
+# plt.figure(1)
 # plt.imshow(mpywfs_detector)
 
 # plt.figure(3)
@@ -166,24 +178,27 @@ gsc_detector = gsc_resolved_detector.sum(axis=2)
 # axs[0].imshow(gsc_resolved_detector[:,:,modulation_point])
 # axs[1].imshow(mpywfs_resolved_detector[:,:,modulation_point])
 
+plt.figure(1)
+plt.imshow(sensitivity_map)
+
 #%%
 
-fig, ax = plt.subplots()
+# fig, ax = plt.subplots()
 
-# ims is a list of lists, each row is a list of artists to draw in the
-# current frame; here we are just animating one artist, the image, in
-# each frame
-ims = []
-for i in range(mpywfs_resolved_detector.shape[2]):
-    im = ax.imshow(mpywfs_resolved_detector[:,:,i])
-    if i == 0:
-        #ax.imshow(basis[:,:,i])  # show an initial one first
-        ax.imshow(mpywfs_detector)
-    ims.append([im])
+# # ims is a list of lists, each row is a list of artists to draw in the
+# # current frame; here we are just animating one artist, the image, in
+# # each frame
+# ims = []
+# for i in range(mpywfs_resolved_detector.shape[2]):
+#     im = ax.imshow(mpywfs_resolved_detector[:,:,i])
+#     if i == 0:
+#         #ax.imshow(basis[:,:,i])  # show an initial one first
+#         ax.imshow(mpywfs_detector)
+#     ims.append([im])
 
-ax.set_title('MPYWFS detector accross modulation points')
+# ax.set_title('MPYWFS detector accross modulation points')
 
-ani = animation.ArtistAnimation(fig, ims, interval=400, blit=True,
-                                repeat_delay=2000)
+# ani = animation.ArtistAnimation(fig, ims, interval=400, blit=True,
+#                                 repeat_delay=2000)
 
-# ani.save(dirc / filename)
+# # ani.save(dirc / filename)
