@@ -24,23 +24,23 @@ from fanch.tools import zeros_padding
 
 #%%
 
-n_subapertures = 8
+n_subapertures = 32
 
-modulation = 0.
+modulation = 5.
 stroke = 1e-9 # [m]
 
 n_calib = 0
-n_mode = 0
+n_mode = 13
     
 #%% -----------------------     TELESCOPE   ----------------------------------
 
 # create the Telescope object
-tel = Telescope(resolution           = 4*n_subapertures,   # resolution of the telescope in [pix]
+tel = Telescope(resolution           = 4*n_subapertures,  # resolution of the telescope in [pix]
                 diameter             = 8,                 # diameter in [m]        
                 samplingTime         = 1/1000,            # Sampling time in [s] of the AO loop
                 centralObstruction   = 0.,                # Central obstruction in [%] of a diameter 
                 display_optical_path = False,             # Flag to display optical path
-                fov                  = 10)               # field of view in [arcsec]. If set to 0 (default) this speeds up the computation of 
+                fov                  = 10)                # field of view in [arcsec]. If set to 0 (default) this speeds up the computation of 
                                                           # the phase screens but is uncompatible with off-axis targets
 
 #%% -----------------------     NGS   ----------------------------------
