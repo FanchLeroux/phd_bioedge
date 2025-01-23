@@ -26,11 +26,13 @@ from fanch.tools import zeros_padding
 
 n_subapertures = 32
 
-modulation = 5.
+modulation = 5
 stroke = 1e-9 # [m]
 
-n_calib = 0
-n_mode = 13
+n_calib = 1
+n_mode = -2
+
+is_grey = 1
     
 #%% -----------------------     TELESCOPE   ----------------------------------
 
@@ -81,12 +83,10 @@ pywfs = Pyramid(nSubap = n_subapertures,
 
 bioedge = BioEdge(nSubap = n_subapertures, 
                    telescope = tel, 
-                   modulation = modulation, 
-                   grey_width = 0., 
+                   modulation = float(not(is_grey)*modulation), 
+                   grey_width = float(is_grey*modulation), 
                    lightRatio = 0.5,
                    postProcessing = 'fullFrame')
-
-#%% -------- 8pywfs4pupil
 
 #%% ------------------------- Modal basis --------------------------------
 
@@ -169,11 +169,20 @@ plt.imshow(np.abs(np.fft.fftshift((np.fft.fft2(complex_amplitude))))**2)
 #%%
 
 plt.figure(3)
-plt.plot(pywfs_modal_sensitivities[1], '-c', label='vertical pywfs')
-plt.plot(bioedge_modal_sensitivities[1], '-m', label='vertical bioedge')
-plt.plot(pywfs_modal_sensitivities[2], '-b', label='diagonal pywfs')
-plt.plot(bioedge_modal_sensitivities[2], '-r', label='diagonal bioedge')
+plt.plot(range(pywfs_modal_sensitivities[1][:-1].shape[0]),
+         pywfs_modal_sensitivities[1][:-1], '-+c', label='vertical modes, pywfs')
+plt.plot(range(pywfs_modal_sensitivities[1][:-1].shape[0]),
+         bioedge_modal_sensitivities[1][:-1], '-+m', label='vertical modes, bioedge')
+plt.plot(2**0.5*np.arange(pywfs_modal_sensitivities[1][:-1].shape[0]),
+         pywfs_modal_sensitivities[2][:-1], '-+b', label='diagonal modes, pywfs')
+plt.plot(2**0.5*np.arange(pywfs_modal_sensitivities[1][:-1].shape[0]),
+         bioedge_modal_sensitivities[2][:-1], '-+r', label='diagonal modes, bioedge')
 plt.legend()
+plt.title("Diagonal and vertical Fourier modes sensitivity\n"+
+          "Grey Bi-O-Edge VS MPYWFS\n"
+          "modulation = "+str(modulation)+" lambda/D")
+plt.xlabel("# cycle/pupil (phase amplitude = "+str(1e9*stroke)+" nm)")
+plt.ylabel("Sensitivity")
 
 # plt.figure(4)
 # plt.semilogy(modal_sensitivity_pywfs/modal_sensitivity_bioedge, 'b')
