@@ -26,13 +26,13 @@ from fanch.tools import zeros_padding
 
 n_subapertures = 32
 
-modulation = 5
+modulation = 0
 stroke = 1e-9 # [m]
 
 n_calib = 1
 n_mode = -2
 
-is_grey = 1
+is_grey = 0
     
 #%% -----------------------     TELESCOPE   ----------------------------------
 
@@ -83,8 +83,8 @@ pywfs = Pyramid(nSubap = n_subapertures,
 
 bioedge = BioEdge(nSubap = n_subapertures, 
                    telescope = tel, 
-                   modulation = float(not(is_grey)*modulation), 
-                   grey_width = float(is_grey*modulation), 
+                   modulation = float(not(is_grey))*modulation, 
+                   grey_width = float(is_grey)*modulation, 
                    lightRatio = 0.5,
                    postProcessing = 'fullFrame')
 
@@ -148,13 +148,13 @@ for fourier_modes in modes_calibrations:
     sensitivity_matrix_pywfs= calib_pywfs.D.T @ calib_pywfs.D
     sensitivity_matrix_bioedge = calib_bioedge.D.T @ calib_bioedge.D
     
-    modal_sensitivity_pywfs = np.diag(sensitivity_matrix_pywfs)
-    modal_sensitivity_bioedge = np.diag(sensitivity_matrix_bioedge)
+    modal_sensitivity_pywfs = np.diag(sensitivity_matrix_pywfs)**0.5
+    modal_sensitivity_bioedge = np.diag(sensitivity_matrix_bioedge)**0.5
 
     pywfs_sensitivity_matrices.append(sensitivity_matrix_pywfs)
-    pywfs_modal_sensitivities.append(modal_sensitivity_pywfs)
-    
     bioedge_sensitivity_matrices.append(sensitivity_matrix_bioedge)
+    
+    pywfs_modal_sensitivities.append(modal_sensitivity_pywfs)
     bioedge_modal_sensitivities.append(modal_sensitivity_bioedge)
 
 #%%
@@ -179,7 +179,7 @@ plt.plot(2**0.5*np.arange(pywfs_modal_sensitivities[1][:-1].shape[0]),
          bioedge_modal_sensitivities[2][:-1], '-+r', label='diagonal modes, bioedge')
 plt.legend()
 plt.title("Diagonal and vertical Fourier modes sensitivity\n"+
-          "Grey Bi-O-Edge VS MPYWFS\n"
+          "Bi-O-Edge VS PYWFS\n"
           "modulation = "+str(modulation)+" lambda/D")
 plt.xlabel("# cycle/pupil (phase amplitude = "+str(1e9*stroke)+" nm)")
 plt.ylabel("Sensitivity")

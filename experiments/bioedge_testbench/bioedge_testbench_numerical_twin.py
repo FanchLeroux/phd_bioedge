@@ -10,24 +10,29 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 
+from fanch.tools import get_tilt
+
 #%% Parameters
 
 n_subaperture = 16 # 124
 #modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D' ; 'Fourier2D', 'Fourier2Dsmall'
 #modal_basis_name = 'poke'
-#modal_basis_name = 'Fourier1D'
+#modal_basis_name = 'Fourier1D_diag'
+#modal_basis_name = 'Fourier1D_vert'
 #modal_basis_name = 'Fourier2D'
-modal_basis_name = 'Fourier2Dsmall'
+#modal_basis_name = 'Fourier2Dsmall'
+modal_basis_name = 'Fourier2DsmallBis'
 
 #%% Functions declarations
 
-def get_tilt(shape, theta=0., amplitude=1.):
-    [X,Y] = np.meshgrid(np.arange(0, shape[0]), np.arange(0, shape[1]))
-    tilt_theta = np.cos(theta) * X + np.sin(theta) * Y
-    Y = np.flip(Y, axis=0) # change orientation
-    tilt_theta = (tilt_theta - tilt_theta.min())/(tilt_theta.max()- tilt_theta.min())
+# def get_tilt(shape, theta=0., amplitude=1.):
+#     [X,Y] = np.meshgrid(np.arange(0, shape[0]), np.arange(0, shape[1]))
+#     tilt_theta = np.cos(theta) * X + np.sin(theta) * Y
+#     Y = np.flip(Y, axis=0) # change orientation
+#     tilt_theta = (tilt_theta - tilt_theta.min())/\
+#     (tilt_theta.max()- tilt_theta.min())
     
-    return amplitude*tilt_theta
+#     return amplitude*tilt_theta
 
 #%% -----------------------     TELESCOPE   ----------------------------------
 from OOPAO.Telescope import Telescope
@@ -105,21 +110,33 @@ elif modal_basis_name == 'poke':
     dm = DeformableMirror(tel, nSubap=2*n_subaperture)
     M2C = np.identity(dm.nValidAct)
 
-elif modal_basis_name == 'Fourier1D':
-    from OOPAO.tools.tools import compute_fourier_mode
-    n_modes = tel.resolution//2
-    fourier_modes = np.empty((tel.pupil.shape[0]**2, n_modes-1))
-    for k in range(n_modes-1):
-        fourier_mode = compute_fourier_mode(tel.pupil, spatial_frequency = k+1, angle_deg = 90.)
-        fourier_mode = tel.pupil*fourier_mode
-        fourier_modes[:,k] = np.reshape(fourier_mode, fourier_modes.shape[0])
+elif modal_basis_name == 'Fourier1D_diag':
+    from fanch.basis.fourier import compute_real_fourier_basis, extract_subset,\
+        extract_diagonal_frequencies
+    fourier_modes = compute_real_fourier_basis(tel.resolution, return_map=True)
+    fourier_modes = extract_subset(fourier_modes, 4*n_subaperture)
+    fourier_modes = extract_diagonal_frequencies(fourier_modes, complete=False)
+    fourier_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
+    fourier_modes = fourier_modes[:,1:] # remove piston
+    dm = DeformableMirror(tel, nSubap=2*n_subaperture, modes=fourier_modes) # modal dm
+    M2C = np.identity(dm.nValidAct)
+    
+elif modal_basis_name == 'Fourier1D_vert':
+    from fanch.basis.fourier import compute_real_fourier_basis, extract_subset,\
+        extract_vertical_frequencies
+    fourier_modes = compute_real_fourier_basis(tel.resolution, return_map=True)
+    #fourier_modes = extract_subset(fourier_modes, 4*n_subaperture)
+    fourier_modes = extract_vertical_frequencies(fourier_modes)
+    fourier_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
+    fourier_modes = fourier_modes[:,1:] # remove piston
     dm = DeformableMirror(tel, nSubap=2*n_subaperture, modes=fourier_modes) # modal dm
     M2C = np.identity(dm.nValidAct)
     
 elif modal_basis_name == 'Fourier2D':
-    from bi_dimensional_real_fourier_basis import compute_real_fourier_basis
+    from fanch.basis.fourier import compute_real_fourier_basis
     fourier_modes = compute_real_fourier_basis(tel.resolution)
     fourier_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
+    fourier_modes = fourier_modes[:,1:] # remove piston
     dm = DeformableMirror(tel, nSubap=2*n_subaperture, modes=fourier_modes) # modal dm
     M2C = np.identity(dm.nValidAct)
     
@@ -130,6 +147,16 @@ elif modal_basis_name == 'Fourier2Dsmall':
     fourier_modes = extract_subset(fourier_modes, 2*n_subaperture)
     fourier_modes = sort_real_fourier_basis(fourier_modes)
     fourier_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
+    fourier_modes = fourier_modes[:,1:] # remove piston
+    dm = DeformableMirror(tel, nSubap=2*n_subaperture, modes=fourier_modes) # modal dm
+    M2C = np.identity(dm.nValidAct)
+    
+elif modal_basis_name == 'Fourier2DsmallBis':
+    from fanch.basis.fourier import compute_real_fourier_basis
+    fourier_modes = compute_real_fourier_basis(tel.resolution)
+    fourier_modes = fourier_modes[:,:,:(2*n_subaperture)**2]
+    fourier_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
+    fourier_modes = fourier_modes[:,1:] # remove piston
     dm = DeformableMirror(tel, nSubap=2*n_subaperture, modes=fourier_modes) # modal dm
     M2C = np.identity(dm.nValidAct)
 
@@ -183,6 +210,14 @@ calib_sr = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C, stroke = stroke)
 sensitivity_matrix = np.abs(np.matmul(np.transpose(calib.D), calib.D))
 sensitivity_matrix_sr = np.abs(np.matmul(np.transpose(calib_sr.D), calib_sr.D))
 
+#%% Matrice de Covariance de l'erreur de phase
+
+# no SR
+phase_error_cov_matrix = np.linalg.inv(calib.D.T @ calib.D)
+
+# SR
+phase_error_cov_matrix_sr = np.linalg.inv(calib_sr.D.T @ calib_sr.D)
+
 # %% ------------------ PLOTS --------------------------------------------
 
 from OOPAO.tools.displayTools import display_wfs_signals
@@ -190,6 +225,8 @@ from OOPAO.tools.displayTools import display_wfs_signals
 plt.figure(1)
 plt.imshow(np.abs(flat_frame_sr-flat_frame))
 plt.title('SR pupils - No SR pupils (reference signal for a flat wavefront)\n0.25 pixel shifts')
+
+#%% SVD
 
 plt.figure(2)
 plt.semilogy(calib.eigenValues/calib.eigenValues.max(), 'b', label='no SR')
@@ -199,13 +236,17 @@ plt.legend()
 plt.xlabel('# eigen mode')
 plt.ylabel('normalized eigen value')
 
-n_mode = 5
+#%%
+
+n_mode = -1
 
 display_wfs_signals(wfs, signals=calib.D[:,n_mode])
 plt.title('Bi-O-Edge signal, '+str(n_mode)+'th ' + modal_basis_name+' modes\n No SR')
 
 display_wfs_signals(wfs, signals=calib_sr.D[:,n_mode])
 plt.title('Bi-O-Edge signal, '+str(n_mode)+'th ' + modal_basis_name+' modes\n SR')
+
+#%% Sensitivity Matrices
 
 fig6, axs6 = plt.subplots(nrows=1, ncols=2)
 img1 = axs6[0].imshow(np.abs(sensitivity_matrix))
@@ -215,8 +256,15 @@ axs6[1].set_title('Sensitivity matrix - ' + modal_basis_name + ' - SR')
 plt.colorbar(img1, ax=axs6[0], fraction=0.046, pad=0.04)
 plt.colorbar(img2, ax=axs6[1], fraction=0.046, pad=0.04)
 
-#%%
+#%% Noise propagation
 
 plt.figure()
-plt.semilogy(1/np.diag(calib.M@calib.M.T), 'b')
-plt.semilogy(1/np.diag(calib_sr.M@calib_sr.M.T),'r')
+plt.plot(np.diag(phase_error_cov_matrix), 'b', label="no SR")
+plt.plot(np.diag(phase_error_cov_matrix_sr),'r', label="SR")
+plt.title("Un truc sans doute proportionel à la propagation du bruit uniforme\n"
+          "Impact of Super Resolution")
+plt.xlabel("mode ("+modal_basis_name+") index i")
+plt.ylabel("np.linalg.inv(calib.D.T @ calib.D)[i,i]")
+plt.legend()
+
+#plt.imshow(np.reshape(dm.modes[:,0],( int(dm.modes.shape[0]**0.5),int(dm.modes.shape[0]**0.5))))
