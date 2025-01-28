@@ -15,13 +15,13 @@ from fanch.tools import get_tilt
 #%% Parameters
 
 n_subaperture = 16 # 124
-#modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D' ; 'Fourier2D', 'Fourier2Dsmall'
+modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D' ; 'Fourier2D', 'Fourier2Dsmall'
 #modal_basis_name = 'poke'
 #modal_basis_name = 'Fourier1D_diag'
 #modal_basis_name = 'Fourier1D_vert'
 #modal_basis_name = 'Fourier2D'
 #modal_basis_name = 'Fourier2Dsmall'
-modal_basis_name = 'Fourier2DsmallBis'
+#modal_basis_name = 'Fourier2DsmallBis'
 
 #%% Functions declarations
 
@@ -38,7 +38,7 @@ modal_basis_name = 'Fourier2DsmallBis'
 from OOPAO.Telescope import Telescope
 
 # create the Telescope object
-tel = Telescope(resolution           = 4*n_subaperture,   # resolution of the telescope in [pix]
+tel = Telescope(resolution           = 8*n_subaperture,   # resolution of the telescope in [pix]
                 diameter             = 8,                 # diameter in [m]        
                 samplingTime         = 1/1000,            # Sampling time in [s] of the AO loop
                 centralObstruction   = 0.,                # Central obstruction in [%] of a diameter 
@@ -105,6 +105,7 @@ if modal_basis_name == 'KL':
     from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
     dm = DeformableMirror(tel, nSubap=2*n_subaperture)
     M2C = compute_KL_basis(tel, atm, dm, lim = 1e-3) # matrix to apply modes on the DM
+    #M2C = M2C[:,:200]
 
 elif modal_basis_name == 'poke':
     dm = DeformableMirror(tel, nSubap=2*n_subaperture)
@@ -154,7 +155,7 @@ elif modal_basis_name == 'Fourier2Dsmall':
 elif modal_basis_name == 'Fourier2DsmallBis':
     from fanch.basis.fourier import compute_real_fourier_basis
     fourier_modes = compute_real_fourier_basis(tel.resolution)
-    fourier_modes = fourier_modes[:,:,:(2*n_subaperture)**2]
+    fourier_modes = fourier_modes[:,:,:int(np.pi * n_subaperture**2)]
     fourier_modes = fourier_modes.reshape((fourier_modes.shape[0]*fourier_modes.shape[1],fourier_modes.shape[2]))
     fourier_modes = fourier_modes[:,1:] # remove piston
     dm = DeformableMirror(tel, nSubap=2*n_subaperture, modes=fourier_modes) # modal dm
@@ -165,8 +166,6 @@ elif modal_basis_name == 'Fourier2DsmallBis':
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
 stroke = 1e-9 # [m]
-
-ngs*tel*dm
 
 tel.resetOPD()
 ngs*tel*dm
@@ -207,16 +206,47 @@ flat_frame_sr = wfs.cam.frame
 tel.resetOPD()
 calib_sr = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C, stroke = stroke)
 
-sensitivity_matrix = np.abs(np.matmul(np.transpose(calib.D), calib.D))
-sensitivity_matrix_sr = np.abs(np.matmul(np.transpose(calib_sr.D), calib_sr.D))
+
+#%% -----------------------     Bi-O-Edge WFS - 2x more samples   ------------------------
+
+from OOPAO.BioEdge import BioEdge
+
+wfs_oversampled = BioEdge(nSubap = 2*n_subaperture, 
+              telescope = tel, 
+              modulation = 0.,
+              grey_width = 2.5, 
+              lightRatio = 0.5,
+              n_pix_separation = 0,
+              postProcessing = 'fullFrame', 
+              psfCentering=False)
+
+# propagate the light to the Wave-Front Sensor
+tel*wfs_oversampled
+wfs_oversampled.wfs_measure(tel.pupil)
+flat_frame_oversampled = wfs_oversampled.cam.frame
+
+#%% Callibration - No SR - 2x oversampled
+
+tel.resetOPD()
+ngs*tel*dm
+calib_oversampled = InteractionMatrix(ngs, atm, tel, dm, wfs_oversampled, M2C = M2C, stroke = stroke)
+
+#%% Uniform noise sensitivity computation
+
+sensitivity_matrix = np.abs(calib.D.T @ calib.D)
+sensitivity_matrix_sr = np.abs(calib_sr.D.T @ calib_sr.D)
+sensitivity_matrix_oversampled = np.abs(calib_oversampled.D.T @ calib_oversampled.D)
 
 #%% Matrice de Covariance de l'erreur de phase
 
 # no SR
-phase_error_cov_matrix = np.linalg.inv(calib.D.T @ calib.D)
+phase_error_cov_matrix = calib.M @ calib.M.T #np.linalg.inv(calib.D.T @ calib.D)
 
 # SR
-phase_error_cov_matrix_sr = np.linalg.inv(calib_sr.D.T @ calib_sr.D)
+phase_error_cov_matrix_sr = calib_sr.M @ calib_sr.M.T # np.linalg.inv(calib_sr.D.T @ calib_sr.D)
+
+# oversampled
+phase_error_cov_matrix_oversampled = calib_oversampled.M @ calib_oversampled.M.T # np.linalg.inv(calib_sr.D.T @ calib_sr.D)
 
 # %% ------------------ PLOTS --------------------------------------------
 
@@ -226,11 +256,12 @@ plt.figure(1)
 plt.imshow(np.abs(flat_frame_sr-flat_frame))
 plt.title('SR pupils - No SR pupils (reference signal for a flat wavefront)\n0.25 pixel shifts')
 
-#%% SVD
+#%% SVD - Eigenvalues
 
 plt.figure(2)
 plt.semilogy(calib.eigenValues/calib.eigenValues.max(), 'b', label='no SR')
 plt.semilogy(calib_sr.eigenValues/calib_sr.eigenValues.max(), 'r', label='SR')
+plt.semilogy(calib_oversampled.eigenValues/calib_oversampled.eigenValues.max(), 'c', label='oversampled')
 plt.title('calib.eigenValues, '+str(n_subaperture)+' wfs subapertures, ' + modal_basis_name + ' modes used, 0.25 pixels shift')
 plt.legend()
 plt.xlabel('# eigen mode')
@@ -238,13 +269,13 @@ plt.ylabel('normalized eigen value')
 
 #%%
 
-n_mode = -1
+# n_mode = -1
 
-display_wfs_signals(wfs, signals=calib.D[:,n_mode])
-plt.title('Bi-O-Edge signal, '+str(n_mode)+'th ' + modal_basis_name+' modes\n No SR')
+# display_wfs_signals(wfs, signals=calib.D[:,n_mode])
+# plt.title('Bi-O-Edge signal, '+str(n_mode)+'th ' + modal_basis_name+' modes\n No SR')
 
-display_wfs_signals(wfs, signals=calib_sr.D[:,n_mode])
-plt.title('Bi-O-Edge signal, '+str(n_mode)+'th ' + modal_basis_name+' modes\n SR')
+# display_wfs_signals(wfs, signals=calib_sr.D[:,n_mode])
+# plt.title('Bi-O-Edge signal, '+str(n_mode)+'th ' + modal_basis_name+' modes\n SR')
 
 #%% Sensitivity Matrices
 
@@ -259,12 +290,49 @@ plt.colorbar(img2, ax=axs6[1], fraction=0.046, pad=0.04)
 #%% Noise propagation
 
 plt.figure()
-plt.plot(np.diag(phase_error_cov_matrix), 'b', label="no SR")
-plt.plot(np.diag(phase_error_cov_matrix_sr),'r', label="SR")
-plt.title("Un truc sans doute proportionel à la propagation du bruit uniforme\n"
+plt.plot(np.abs(np.diag(phase_error_cov_matrix)), 'b', label="no SR")
+plt.plot(np.abs(np.diag(phase_error_cov_matrix_sr)),'r', label="SR")
+plt.plot(np.diag(phase_error_cov_matrix_oversampled), 'c', label="oversampled")
+plt.title("Uniform noise propagation\n"
           "Impact of Super Resolution")
 plt.xlabel("mode ("+modal_basis_name+") index i")
-plt.ylabel("np.linalg.inv(calib.D.T @ calib.D)[i,i]")
+plt.ylabel("np.diag(calib.M @ calib.M.T)")
 plt.legend()
 
-#plt.imshow(np.reshape(dm.modes[:,0],( int(dm.modes.shape[0]**0.5),int(dm.modes.shape[0]**0.5))))
+#%% Noise propagation - Log Scale
+
+plt.figure()
+plt.plot(np.diag(phase_error_cov_matrix), 'b', label="no SR")
+plt.plot(np.diag(phase_error_cov_matrix_sr),'r', label="SR")
+plt.plot(np.diag(phase_error_cov_matrix_oversampled), 'c', label="oversampled")
+plt.yscale('log')
+plt.title("Uniform noise propagation\n"
+          "Impact of Super Resolution")
+plt.xlabel("mode ("+modal_basis_name+") index i")
+plt.ylabel("np.diag(calib.M @ calib.M.T)")
+plt.legend()
+
+#%% Noise propagation - Log-Log Scale
+
+plt.figure()
+plt.plot(np.diag(phase_error_cov_matrix), 'b', label="no SR")
+plt.plot(np.diag(phase_error_cov_matrix_sr),'r', label="SR")
+plt.plot(np.diag(phase_error_cov_matrix_oversampled), 'c', label="oversampled")
+plt.xscale('log')
+plt.yscale('log')
+plt.title("Uniform noise propagation\n"
+          "Impact of Super Resolution")
+plt.xlabel("mode ("+modal_basis_name+") index i")
+plt.ylabel("np.diag(calib.M @ calib.M.T)")
+plt.legend()
+
+#%% Uniform Noise sensitivity
+
+plt.figure()
+plt.plot(np.diag(sensitivity_matrix)**0.5,'b', label='no SR')
+plt.plot(np.diag(sensitivity_matrix_sr)**0.5,'r', label='SR')
+plt.plot(np.diag(sensitivity_matrix_oversampled)**0.5,'c', label='oversampled')
+plt.legend()
+plt.title("Uniform Noise Sensitivity")
+plt.xlabel("mode ("+modal_basis_name+") index")
+plt.ylabel("np.diag(calib.D.T @ calib.D)**0.5")
