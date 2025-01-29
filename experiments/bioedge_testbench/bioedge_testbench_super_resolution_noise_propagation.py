@@ -12,6 +12,12 @@ import numpy as np
 
 from fanch.tools import get_tilt
 
+#%%
+
+from pathlib import Path
+
+path = Path(__file__).parent
+
 #%% Parameters
 
 n_subaperture = 20
@@ -75,7 +81,7 @@ wfs = BioEdge(nSubap = n_subaperture,
               telescope = tel, 
               modulation = 0.,
               grey_width = grey_width, 
-              lightRatio = 0.,
+              lightRatio = 0.5,
               n_pix_separation = 10,
               postProcessing = 'fullFrame', 
               psfCentering=False)
@@ -98,6 +104,10 @@ atm = Atmosphere(telescope     = tel,                               # Telescope
                  windDirection = [0    ,72   ,144  ,216   ,288   ], # Wind Direction in [degrees]
                  altitude      = [0    ,1000 ,5000 ,10000 ,12000 ]) # Altitude Layers in [m]
 
+
+#%% Load KL modes
+
+M2C = np.load(path / "M2C_KL.npy")
 
 #%% Modal basis
 
@@ -163,6 +173,11 @@ elif modal_basis_name == 'Fourier2DsmallBis':
     dm = DeformableMirror(tel, nSubap=2*n_subaperture, modes=fourier_modes) # modal dm
     M2C = np.identity(dm.nValidAct)
 
+#%% save KL modes
+
+if modal_basis_name == 'KL':
+    np.save(path / "M2C_KL.npy", M2C)
+
 #%% Callibration - No SR
 
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
@@ -177,8 +192,8 @@ calib = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C, stroke = stroke, si
 
 sr_amplitude = 0.25
 
-sx = [-sr_amplitude, sr_amplitude, -sr_amplitude, sr_amplitude] # pixels 
-sy = [sr_amplitude, sr_amplitude, -sr_amplitude, -sr_amplitude] # pixels
+sx = [sr_amplitude, -sr_amplitude, sr_amplitude, -sr_amplitude] # pixels 
+sy = [sr_amplitude, -sr_amplitude, -sr_amplitude, sr_amplitude] # pixels
 
 sx = np.array(sx)
 sy = np.array(sy)
@@ -216,7 +231,7 @@ wfs_oversampled = BioEdge(nSubap = 2*n_subaperture,
               telescope = tel, 
               modulation = 0.,
               grey_width = grey_width, 
-              lightRatio = 0.,
+              lightRatio = 0.5,
               n_pix_separation = 10,
               postProcessing = 'fullFrame', 
               psfCentering=False)
@@ -241,7 +256,7 @@ sensitivity_matrix_oversampled = np.abs(calib_oversampled.D.T @ calib_oversample
 #%% Reconstructor computation 1 - Truncate calibration basis
 
 R_oversampled = np.linalg.pinv(calib_oversampled.D)
-noise_propagation_oversampled = np.diag(R_oversampled @ R_oversampled.T)
+noise_propagation_oversampled = np.diag(R_oversampled @ R_oversampled.T)/wfs_oversampled.nSignal
 
 for n_modes in range(n_modes_list.shape[0]):
 
@@ -251,8 +266,8 @@ for n_modes in range(n_modes_list.shape[0]):
     R = np.linalg.pinv(calib.D[:,:n_modes_no_sr])
     R_sr = np.linalg.pinv(calib_sr.D[:,:n_modes_sr])
 
-    noise_propagation_no_sr.append(np.diag(R @ R.T))
-    noise_propagation_sr.append(np.diag(R_sr @ R_sr.T))
+    noise_propagation_no_sr.append(np.diag(R @ R.T)/wfs.nSignal)
+    noise_propagation_sr.append(np.diag(R_sr @ R_sr.T)/wfs.nSignal)
 
 #%% Reconstructor computation 2 - Trucate eigen basis
 
@@ -308,31 +323,31 @@ plt.ylabel('normalized eigen value')
 #%% Noise propagation - Log Scale - no SR
 
 plt.figure()
-plt.plot(noise_propagation_oversampled, 'c', label="oversampled")
+plt.plot(noise_propagation_oversampled, 'k', label="40x40")
 
 for n_modes in range(n_modes_list.shape[0]):
     plt.plot(noise_propagation_no_sr[n_modes], label= str(n_modes_list[n_modes])+" modes")
 
 plt.yscale('log')
-plt.title("Uniform noise propagation\n"
+plt.title("20x20 Grey Bi-O-Edge Uniform noise propagation\n"
           "Without Super Resolution")
-plt.xlabel("mode ("+modal_basis_name+") index i")
+plt.xlabel("mode ("+modal_basis_name+") index")
 plt.ylabel("np.diag(R @ R.T)")
 plt.legend()
 
 #%% Noise propagation - Log Scale - SR
 
 plt.figure()
-plt.plot(noise_propagation_oversampled, 'c', label="oversampled")
+plt.plot(noise_propagation_oversampled, 'k', label="40x40")
 
 for n_modes in range(n_modes_list.shape[0]):
     plt.plot(noise_propagation_sr[n_modes], label= str(n_modes_list[n_modes])+" modes")
 
 plt.yscale('log')
-plt.title("Uniform noise propagation\n"
+plt.title("20x20 Grey Bi-O-Edge Uniform noise propagation\n"
           "With Super Resolution")
-plt.xlabel("mode ("+modal_basis_name+") index i")
-plt.ylabel("np.diag(R @ R.T)")
+plt.xlabel("mode ("+modal_basis_name+") index")
+plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
 plt.legend()
 
 # #%% Noise propagation - Log-Log Scale - no SR
