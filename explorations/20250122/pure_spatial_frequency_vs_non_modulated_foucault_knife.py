@@ -10,7 +10,15 @@ import numpy as np
 
 from OOPAO.tools.tools import compute_fourier_mode, zero_pad_array
 
-from fanch.tools import get_circular_pupil
+def get_circular_pupil(npx):
+    D = npx + 1
+    x = np.linspace(-npx/2,npx/2,npx)
+    xx,yy = np.meshgrid(x,x)
+    circle = xx**2+yy**2
+    pupil  = circle<(D/2)**2
+    
+    return pupil
+
 
 n = 256
 

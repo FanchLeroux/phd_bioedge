@@ -284,12 +284,6 @@ for i in range(3):
     tmp = propa[i][50:]
     plt.plot(tmp[np.argsort(tmp)])
 
-
-
-
-
-
-
 #%%
 # modal projector
 
