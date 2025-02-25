@@ -309,7 +309,7 @@ plt.legend()
 plt.figure()
 plt.plot(noise_propagation_oversampled, 'k', label="40x40")
 
-for n_modes in range(n_modes_list.shape[0]-1):
+for n_modes in range(n_modes_list.shape[0]-2):
     plt.plot(noise_propagation_sr[n_modes], label= str(n_modes_list[n_modes])+" modes")
 
 plt.yscale('log')

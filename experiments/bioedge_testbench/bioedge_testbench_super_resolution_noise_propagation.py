@@ -20,6 +20,8 @@ path = Path(__file__).parent
 
 #%% Parameters
 
+KL_computed = True
+
 n_subaperture = 20
 
 modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D' ; 'Fourier2D', 'Fourier2Dsmall'
@@ -106,18 +108,19 @@ atm = Atmosphere(telescope     = tel,                               # Telescope
 
 
 #%% Load KL modes
-
-M2C = np.load(path / "M2C_KL.npy")
+if KL_computed:
+    M2C = np.load(path / "M2C_KL.npy")
 
 #%% Modal basis
 
 from OOPAO.DeformableMirror import DeformableMirror
 
 if modal_basis_name == 'KL':
-    from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
     dm = DeformableMirror(tel, nSubap=2*n_subaperture)
-    M2C = compute_KL_basis(tel, atm, dm) # matrix to apply modes on the DM
-    #M2C = M2C[:,:200]
+    if not(KL_computed):
+        from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
+        M2C = compute_KL_basis(tel, atm, dm) # matrix to apply modes on the DM
+        #M2C = M2C[:,:200]
 
 elif modal_basis_name == 'poke':
     dm = DeformableMirror(tel, nSubap=2*n_subaperture)
@@ -175,7 +178,7 @@ elif modal_basis_name == 'Fourier2DsmallBis':
 
 #%% save KL modes
 
-if modal_basis_name == 'KL':
+if modal_basis_name == 'KL' and not(KL_computed):
     np.save(path / "M2C_KL.npy", M2C)
 
 #%% Callibration - No SR
@@ -340,11 +343,12 @@ plt.legend()
 plt.figure()
 plt.plot(noise_propagation_oversampled, 'k', label="40x40")
 
-for n_modes in range(n_modes_list.shape[0]):
+for n_modes in range(n_modes_list.shape[0]-1):
     plt.plot(noise_propagation_sr[n_modes], label= str(n_modes_list[n_modes])+" modes")
 
 plt.yscale('log')
 plt.title("20x20 Grey Bi-O-Edge Uniform noise propagation\n"
+          "Grey width = " + str(int(grey_width)) + " lambda/D\n"
           "With Super Resolution")
 plt.xlabel("mode ("+modal_basis_name+") index")
 plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
