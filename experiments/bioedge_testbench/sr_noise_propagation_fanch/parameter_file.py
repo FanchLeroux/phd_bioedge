@@ -63,10 +63,31 @@ def get_parameters():
     # ----------------------- WFS ----------------------
 
     param['modulation'            ] = 5.                  # [lambda/D] modulation radius or grey width
-    param['n_pix_separation'      ] = 0                   # [pixel] separation ratio between the PWFS pupils
+    param['n_pix_separation'      ] = 10                   # [pixel] separation ratio between the PWFS pupils
     param['psf_centering'          ] = False              # centering of the FFT and of the PWFS mask on the 4 central pixels
     param['light_threshold'        ] = 0.3                # light threshold to select the valid pixels
     param['post_processing'        ] = 'fullFrame'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
+
+    # super resolution
+    param['sr_amplitude']        = 0.25                   # [pixel] super resolution shifts amplitude
+    param['pupil_shift_bioedge'] = [[param['sr_amplitude'],\
+                                     -param['sr_amplitude'],\
+                                     param['sr_amplitude'],\
+                                     -param['sr_amplitude']],\
+                                    [param['sr_amplitude'],\
+                                    -param['sr_amplitude'],\
+                                    -param['sr_amplitude'],\
+                                    param['sr_amplitude']]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for bioedge)
+        
+        
+    param['pupil_shift_pyramid'] = [[param['sr_amplitude'],\
+                                     -param['sr_amplitude'],\
+                                     -param['sr_amplitude'],\
+                                     param['sr_amplitude']],\
+                                    [-param['sr_amplitude'],\
+                                    -param['sr_amplitude'],\
+                                    param['sr_amplitude'],\
+                                    param['sr_amplitude']]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for pyramid)
     
     # --------------------- FILENAME --------------------
 

@@ -107,6 +107,109 @@ elif param['modal_basis'] == 'Fourier2DsmallBis':
 if param['is_dm_modal']:
     dm = DeformableMirror(tel, nSubap=param['n_actuator'], modes = modes)
 
+#%% --------------------------- WFSs -----------------------------------
+
+# pramid
+pyramid = Pyramid(nSubap = param['n_subaperture'], 
+              telescope = tel, 
+              modulation = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              n_pix_edge = param['n_pix_separation'],
+              postProcessing = param['post_processing'],
+              psfCentering = param['psf_centering'])
+
+# pyramid SR
+pyramid_sr = Pyramid(nSubap = param['n_subaperture'], 
+              telescope = tel, 
+              modulation = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              n_pix_edge = param['n_pix_separation'],
+              postProcessing = param['post_processing'],
+              psfCentering = param['psf_centering'])
+
+pyramid_sr.apply_shift_wfs(param['pupil_shift_pyramid'][0], param['pupil_shift_pyramid'][1], units='pixels')
+pyramid_sr.modulation = param['modulation'] # update reference intensities etc.
+
+# pyramid oversampled
+pyramid_oversampled = Pyramid(nSubap = 2*param['n_subaperture'], 
+              telescope = tel, 
+              modulation = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              n_pix_edge = param['n_pix_separation'],
+              postProcessing = param['post_processing'],
+              psfCentering = param['psf_centering'])
+
+
+# grey bioedge
+gbioedge = BioEdge(nSubap = param['n_subaperture'], 
+              telescope = tel, 
+              modulation = 0.,
+              grey_width = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+# grey bioedge SR
+gbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
+              telescope = tel, 
+              modulation = 0.,
+              grey_width = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+gbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
+gbioedge_sr.modulation = 0. # update reference intensities etc.
+
+# grey bioedge oversampled
+gbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
+              telescope = tel, 
+              modulation = 0.,
+              grey_width = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+# sharp bioedge
+sbioedge = BioEdge(nSubap = param['n_subaperture'], 
+              telescope = tel, 
+              modulation = param['modulation'],
+              grey_width = 0., 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+# sharp bioedge SR
+sbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
+              telescope = tel, 
+              modulation = param['modulation'],
+              grey_width = 0., 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+gbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
+gbioedge_sr.modulation = 0. # update reference intensities etc.
+
+# sharp bioedge oversampled
+sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
+              telescope = tel, 
+              modulation = param['modulation'],
+              grey_width = 0., 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+
 #%% ------- Save objects under dictionary ----------
 
 obj = dict()
