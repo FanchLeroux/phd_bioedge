@@ -14,7 +14,7 @@ from fanch.tools import get_tilt
 
 #%% Parameters
 
-n_subaperture = 20
+n_subaperture = 8
 
 modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D' ; 'Fourier2D', 'Fourier2Dsmall'
 #modal_basis_name = 'poke'
@@ -24,7 +24,7 @@ modal_basis_name = 'KL' # 'Poke' ; 'Fourier1D' ; 'Fourier2D', 'Fourier2Dsmall'
 #modal_basis_name = 'Fourier2Dsmall'
 #modal_basis_name = 'Fourier2DsmallBis'
 
-modulation = 5.
+modulation = 0.
 
 n_modes_list = np.arange(100, 1300, 100)
 
@@ -175,8 +175,8 @@ calib = InteractionMatrix(ngs, atm, tel, dm, wfs, M2C = M2C, stroke = stroke, si
 
 sr_amplitude = 0.25
 
-sx = [sr_amplitude, -sr_amplitude, -sr_amplitude, sr_amplitude] # pixels 
-sy = [-sr_amplitude, -sr_amplitude, sr_amplitude, sr_amplitude] # pixels
+sx = [0*sr_amplitude, -0*sr_amplitude, -0*sr_amplitude, sr_amplitude] # pixels 
+sy = [-0*sr_amplitude, -0*sr_amplitude, 0*sr_amplitude, sr_amplitude] # pixels
 
 sx = np.array(sx)
 sy = np.array(sy)

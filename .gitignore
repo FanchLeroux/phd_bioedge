@@ -1,2 +1,4 @@
 *.ZDA
 *.npy
+*.pickle
+*.fits
