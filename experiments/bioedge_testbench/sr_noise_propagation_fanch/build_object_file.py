@@ -5,8 +5,9 @@ Created on Wed Feb 26 13:45:38 2025
 @author: fleroux
 """
 
-import pickle
 import numpy as np
+
+from pathlib import Path
 
 from parameter_file import get_parameters
 
@@ -208,14 +209,11 @@ sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
+    
+#%% save all variables
 
+import dill
 
-#%% ------- Save objects under dictionary ----------
+origin = Path(__file__) # keep a trace of where the saved objects come from
 
-obj = dict()
-
-obj['dm'] = dm
-
-# Store data (serialize)
-with open(param['path_object']/'obj.pickle', 'wb') as handle:
-    pickle.dump(obj, handle, protocol=None)
+dill.dump_session(param['path_object'] / Path('object'+str(param['filename'])+'.pkl'))

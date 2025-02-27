@@ -37,8 +37,8 @@ def get_parameters():
                                                                                  # telescope pupil space
     param['resolution'             ] = param['n_subaperture']*\
                                        param['n_pixel_per_subaperture']          # resolution of the telescope driven by the WFS
-    param['size_subaperture'       ] = param['diameter']/param['n_subaperture'] # [m] size of a sub-aperture projected in the M1 space
-    param['sampling_time'          ] = 1/1000                                   # [s] loop sampling time
+    param['size_subaperture'       ] = param['diameter']/param['n_subaperture']  # [m] size of a sub-aperture projected in the M1 space
+    param['sampling_time'          ] = 1/1000                                    # [s] loop sampling time
     param['centralObstruction'     ] = 0                                         # central obstruction in percentage of the diameter
     
     # ---------------------- NGS ----------------------
@@ -48,12 +48,6 @@ def get_parameters():
     # GHOST wavelength : 770 nm, full bandwidth = 20 nm
     # 'I2' band : 750 nm, bandwidth? = 33 nm
     param['optical_band'          ] = 'I2'                                      # optical band of the guide star
-    
-    # -------------------- MODAL BASIS ----------------
-    
-    param['modal_basis'] = 'KL'
-    param['list_modes_to_keep'] = np.linspace(int(0.5*(np.pi * (param['n_subaperture']/2)**2)), 
-                                              int(np.pi * param['n_subaperture']**2), num=5, dtype=int)
     
     # ------------------------ DM ---------------------
     
@@ -89,10 +83,18 @@ def get_parameters():
                                     param['sr_amplitude'],\
                                     param['sr_amplitude']]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for pyramid)
     
+    # -------------------- MODAL BASIS ----------------
+    
+    param['modal_basis'] = 'KL'
+    param['list_modes_to_keep'] = np.linspace(int(0.5*(np.pi * (param['n_subaperture']/2)**2)), 
+                                              int(np.pi * param['n_subaperture']**2), num=5, dtype=int)
+    param['stroke'] = 1e-9 # [m] actuator stoke for calibration matrices computation
+    param['single_pass'] = False    
+    
     # --------------------- FILENAME --------------------
 
     # name of the system
-    param['filename'] = '_' +  param['optical_band'] +'_band_'+ str(param['n_subaperture'])+'x'+ str(param['n_subaperture'])\
+    param['filename'] = '_sr_noise_prop_' +  param['optical_band'] +'_band_'+ str(param['n_subaperture'])+'x'+ str(param['n_subaperture'])\
                         + '_' + param['modal_basis'] + '_basis'
     
     # --------------------- FOLDERS ---------------------
