@@ -6,6 +6,8 @@ Created on Wed Feb 26 13:45:55 2025
 """
 
 # pylint: disable=undefined-variable
+# pylint: disable=undefined-loop-variable
+
 
 from pathlib import Path
 
@@ -25,10 +27,12 @@ dill.load_session(param['path_object'] / Path('object'+str(param['filename'])+'.
 
 #%% Make calibrations
 
-calib_pyramid = InteractionMatrix(ngs, atm, tel, dm, pyramid, M2C = M2C, stroke = param['stroke'], single_pass=False, display=True)
-calib_pyramid_sr = InteractionMatrix(ngs, atm, tel, dm, pyramid_sr, M2C = M2C, stroke = param['stroke'], single_pass=False, display=True)
+calib_pyramid = InteractionMatrix(ngs, atm, tel, dm, pyramid, M2C = M2C, 
+                                  stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+calib_pyramid_sr = InteractionMatrix(ngs, atm, tel, dm, pyramid_sr, M2C = M2C, 
+                                     stroke = param['stroke'], single_pass=param['single_pass'], display=True)
 calib_pyramid_oversampled = InteractionMatrix(ngs, atm, tel, dm, pyramid_oversampled, M2C = M2C, 
-                                              stroke = param['stroke'], single_pass=False, display=True)
+                                              stroke = param['stroke'], single_pass=param['single_pass'], display=True)
 
 calib_gbioedge = InteractionMatrix(ngs, atm, tel, dm, gbioedge, M2C = M2C, 
                                    stroke = param['stroke'], single_pass=param['single_pass'], display=True)
@@ -56,6 +60,6 @@ del obj
 
 #%% save all variables
 
-origin = Path(__file__) # keep a trace of where the saved objects come from
+origin = str(Path(__file__)) # keep a trace of where the saved objects come from
 
 dill.dump_session(param['path_calibration'] / Path('calibration'+str(param['filename'])+'.pkl'))

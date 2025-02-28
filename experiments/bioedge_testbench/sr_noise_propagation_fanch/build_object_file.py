@@ -197,8 +197,8 @@ sbioedge_sr = BioEdge(nSubap = param['n_subaperture'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
 
-gbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
-gbioedge_sr.modulation = 0. # update reference intensities etc.
+sbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
+sbioedge_sr.modulation = 0. # update reference intensities etc.
 
 # sharp bioedge oversampled
 sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
@@ -214,6 +214,6 @@ sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
 
 import dill
 
-origin = Path(__file__) # keep a trace of where the saved objects come from
+origin = str(Path(__file__)) # keep a trace of where the saved objects come from
 
 dill.dump_session(param['path_object'] / Path('object'+str(param['filename'])+'.pkl'))
