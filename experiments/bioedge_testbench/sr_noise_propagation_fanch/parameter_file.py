@@ -108,4 +108,7 @@ def get_parameters():
     # location of the analysis data
     param['path_analysis'] = path / 'data_analysis'
     
+    # location of the plots
+    param['path_plots'] = path / 'plots'
+    
     return param
