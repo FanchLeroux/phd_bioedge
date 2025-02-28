@@ -198,7 +198,7 @@ sbioedge_sr = BioEdge(nSubap = param['n_subaperture'],
               psfCentering = param['psf_centering'])
 
 sbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
-sbioedge_sr.modulation = 0. # update reference intensities etc.
+sbioedge_sr.modulation = param['modulation'] # update reference intensities etc.
 
 # sharp bioedge oversampled
 sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 

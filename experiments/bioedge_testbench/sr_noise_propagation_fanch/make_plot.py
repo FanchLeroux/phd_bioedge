@@ -70,11 +70,13 @@ plt.legend()
 plt.xlabel('# eigen mode')
 plt.ylabel('normalized eigen value')
 
+#%%
+
     # --------------- sbioedge --------------------
 
 plt.figure()
 plt.semilogy(singular_values_sbioedge/singular_values_sbioedge.max(), 'b', label='no SR')
-plt.semilogy(singular_values_sbioedge_sr/singular_values_sbioedge_sr.max(), '--r', label='SR')
+plt.semilogy(singular_values_sbioedge_sr/singular_values_sbioedge_sr.max(), 'r', label='SR')
 plt.semilogy(singular_values_sbioedge_oversampled/singular_values_sbioedge_oversampled.max(), 'c', label='oversampled')
 plt.title('singular_values_sbioedge, '+str(param['n_subaperture'])+' subapertures, ' + param['modal_basis'] + ' modes used, 0.25 pixels shift')
 plt.legend()
