@@ -18,7 +18,7 @@ path = Path(__file__).parent
 def get_parameters():
     
     # initialize the dictionary
-    param = dict()
+    param = {}
     
     # ------------------ ATMOSPHERE -----------------
    
@@ -64,24 +64,25 @@ def get_parameters():
 
     # super resolution
     param['sr_amplitude']        = 0.25                   # [pixel] super resolution shifts amplitude
-    param['pupil_shift_bioedge'] = [[param['sr_amplitude'],\
-                                     -param['sr_amplitude'],\
-                                     param['sr_amplitude'],\
-                                     -param['sr_amplitude']],\
-                                    [param['sr_amplitude'],\
-                                    -param['sr_amplitude'],\
-                                    -param['sr_amplitude'],\
-                                    param['sr_amplitude']]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for bioedge)
+    param['pupil_shift_bioedge'] = [[param['sr_amplitude']+0.25,\
+                                     -param['sr_amplitude']+0.25,\
+                                     param['sr_amplitude']+0.25,\
+                                     -param['sr_amplitude']+0.25],\
+                                    [param['sr_amplitude']+0.25,\
+                                    -param['sr_amplitude']+0.25,\
+                                    -param['sr_amplitude']+0.25,\
+                                    param['sr_amplitude']+0.25]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method 
+                                                                 # (for bioedge)
         
         
-    param['pupil_shift_pyramid'] = [[param['sr_amplitude'],\
-                                     -param['sr_amplitude'],\
-                                     -param['sr_amplitude'],\
-                                     param['sr_amplitude']],\
-                                    [-param['sr_amplitude'],\
-                                    -param['sr_amplitude'],\
-                                    param['sr_amplitude'],\
-                                    param['sr_amplitude']]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for pyramid)
+    param['pupil_shift_pyramid'] = [[param['sr_amplitude']+0.25,\
+                                     -param['sr_amplitude']+0.25,\
+                                     -param['sr_amplitude']+0.25,\
+                                     param['sr_amplitude']+0.25],\
+                                    [-param['sr_amplitude']+0.25,\
+                                    -param['sr_amplitude']+0.25,\
+                                    param['sr_amplitude']+0.25,\
+                                    param['sr_amplitude']+0.25]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for pyramid)
     
     # -------------------- MODAL BASIS ----------------
     

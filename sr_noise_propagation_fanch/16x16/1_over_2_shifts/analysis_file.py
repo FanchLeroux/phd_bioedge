@@ -37,7 +37,7 @@ dill.load_session(path_calibration / pathlib.Path('calibration_sbioedge'+param['
 if platform.system() == 'Windows':
     pathlib.PosixPath = temp
 
-param = get_parameters()
+param = get_parameters() # to get current machine path (cluster or laptop issue ...)
 
 #%% Analysis
 

@@ -8,11 +8,12 @@ Created on Wed Feb 26 13:45:55 2025
 # pylint: disable=undefined-variable
 # pylint: disable=undefined-loop-variable
 
-
+import platform
 import pathlib
 
 import dill
 
+from copy import deepcopy
 from parameter_file import get_parameters
 
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
@@ -23,7 +24,16 @@ param = get_parameters()
 
 #%% Load objects computed in build_object_file.py
 
+if platform.system() == 'Windows':
+    temp = deepcopy(pathlib.PosixPath)
+    pathlib.PosixPath = pathlib.WindowsPath
+
 dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
+
+if platform.system() == 'Windows':
+    pathlib.PosixPath = temp
+
+param = get_parameters()
 
 #%% Make calibrations
 
