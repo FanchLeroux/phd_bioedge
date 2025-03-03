@@ -75,17 +75,19 @@ plt.xlabel('# eigen mode')
 plt.ylabel('normalized eigen value')
 
 
-#%% Noise Propagation - With or Without SR - gbioedge
+#%% Noise Propagation - With SR - All WFS
 
 i = 0
 for n_modes in param['list_modes_to_keep']:
 
     plt.figure()
     plt.plot(noise_propagation_gbioedge_oversampled, 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+    plt.plot(noise_propagation_sbioedge_oversampled, 'g', label='sbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
     plt.plot(noise_propagation_pyramid_oversampled, 'm', label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
 
     #plt.plot(noise_propagation_gbioedge[i], label= str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' '+str(n_modes)+" modes")
     plt.plot(noise_propagation_gbioedge_sr[i], 'r' , label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
+    plt.plot(noise_propagation_sbioedge_sr[i] , 'y', label= 'sbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
     plt.plot(noise_propagation_pyramid_sr[i], 'b' , label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
     i+=1
     plt.yscale('log')
@@ -93,4 +95,38 @@ for n_modes in param['list_modes_to_keep']:
     plt.xlabel("mode ("+param['modal_basis']+") index")
     plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
     plt.legend()
-    plt.savefig(param['path_plots'] / pathlib.Path('figure_'+str(i)+'.png'), bbox_inches = 'tight')
+    plt.savefig(param['path_plots'] / pathlib.Path(str(n_modes) + '_modes' + param['filename'] + '.png'), bbox_inches = 'tight')
+
+
+#%% SR vs no SR behaviour with LO modes
+
+index_n_modes_no_sr = 0
+index_n_modes_sr = -4
+
+plt.figure()
+plt.plot(noise_propagation_gbioedge_oversampled, 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+plt.plot(noise_propagation_gbioedge_sr[index_n_modes_no_sr], 'b' , 
+         label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - no SR - '+str(param['list_modes_to_keep'][index_n_modes_no_sr])+" modes")
+plt.plot(noise_propagation_gbioedge_sr[index_n_modes_sr], 'r--' , 
+         label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(param['list_modes_to_keep'][index_n_modes_sr])+" modes")
+plt.yscale('log')
+plt.title("Grey Bi-O-Edge SR and no SR, uniform noise propagation\n"+str(param['modulation'])+' lambda/D')
+plt.xlabel("mode ("+param['modal_basis']+") index")
+plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
+plt.legend()
+plt.savefig(param['path_plots'] / pathlib.Path(param['filename'] + '.png'), bbox_inches = 'tight')
+
+# zoom on LO
+plt.figure()
+plt.plot(noise_propagation_gbioedge_oversampled, 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+plt.plot(noise_propagation_gbioedge_sr[index_n_modes_no_sr], 'b' , 
+         label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - no SR - '+str(param['list_modes_to_keep'][index_n_modes_no_sr])+" modes")
+plt.plot(noise_propagation_gbioedge_sr[index_n_modes_sr], 'r--' , 
+         label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(param['list_modes_to_keep'][index_n_modes_sr])+" modes")
+plt.yscale('log')
+plt.title("ZOOM - Grey Bi-O-Edge SR and no SR, uniform noise propagation\n"+str(param['modulation'])+' lambda/D')
+plt.xlabel("mode ("+param['modal_basis']+") index")
+plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
+plt.xlim(0,120)
+plt.legend()
+plt.savefig(param['path_plots'] / pathlib.Path('ZOOM'+ param['filename'] + '.png'), bbox_inches = 'tight')
