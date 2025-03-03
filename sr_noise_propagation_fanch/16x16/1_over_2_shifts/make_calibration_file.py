@@ -27,11 +27,16 @@ param = get_parameters()
 if platform.system() == 'Windows':
     temp = deepcopy(pathlib.PosixPath)
     pathlib.PosixPath = pathlib.WindowsPath
+elif platform.system() == 'Linux':
+    temp = deepcopy(pathlib.WindowsPath)
+    pathlib.WindowsPath = pathlib.PosixPath
 
 dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
 
 if platform.system() == 'Windows':
     pathlib.PosixPath = temp
+elif platform.system() == 'Linux':
+    pathlib.WindowsPath = temp
 
 param = get_parameters()
 
