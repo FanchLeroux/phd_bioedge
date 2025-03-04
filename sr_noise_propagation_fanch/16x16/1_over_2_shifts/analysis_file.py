@@ -90,8 +90,6 @@ for n_modes in param['list_modes_to_keep']:
     noise_propagation_gbioedge.append(np.diag(R @ R.T)/calib_gbioedge.D.shape[0])
     noise_propagation_gbioedge_sr.append(np.diag(R_sr @ R_sr.T)/calib_gbioedge_sr.D.shape[0])
 
-#%%
-
     # ------------------ sbioedge ---------------------- #
 
 # extract singular values
