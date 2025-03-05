@@ -55,7 +55,6 @@ noise_propagation_sbioedge_oversampled_1_over_2_shifts = noise_propagation_sbioe
 path_1_over_4 = pathlib.Path(__file__).parent / '1_over_4_shifts' / 'data_analysis'
 dill.load_session(path_1_over_4 / filename)
 
-
 #%%
 
 # pyramid
