@@ -22,7 +22,7 @@ from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
 param = get_parameters()
 
-#%% Load objects computed in build_object_file.py
+#%% path type compatibility issues
 
 if platform.system() == 'Windows':
     temp = deepcopy(pathlib.PosixPath)
@@ -31,12 +31,9 @@ elif platform.system() == 'Linux':
     temp = deepcopy(pathlib.WindowsPath)
     pathlib.WindowsPath = pathlib.PosixPath
 
-dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
+#%% Load objects computed in build_object_file.py
 
-if platform.system() == 'Windows':
-    pathlib.PosixPath = temp
-elif platform.system() == 'Linux':
-    pathlib.WindowsPath = temp
+dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
 
 param = get_parameters()
 
@@ -53,8 +50,8 @@ calib_pyramid_oversampled = InteractionMatrix(ngs, atm, tel, dm, pyramid_oversam
 
 for obj in dir():
     #checking for built-in variables/functions
-    if not (obj.startswith('calib_pyramid') or obj.startswith('__') or obj.startswith('param')\
-            or obj.startswith('pathlib') or obj.startswith('dill') or obj.startswith('InteractionMatrix')):
+    if not obj in ['calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled', 'param', 'pathlib', 'dill', 'InteractionMatrix']\
+    and not obj.startswith('_'): 
         #deleting the said obj, since a user-defined function
         del globals()[obj]
 del obj
@@ -80,8 +77,8 @@ calib_gbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, gbioedge_overs
 
 for obj in dir():
     #checking for built-in variables/functions
-    if not (obj.startswith('calib_gbioedge') or obj.startswith('__') or obj.startswith('param')\
-            or obj.startswith('pathlib') or obj.startswith('dill') or obj.startswith('InteractionMatrix')):
+    if not obj in ['calib_gbioedge', 'calib_gbioedge_sr', 'calib_gbioedge_oversampled', 'param', 'pathlib', 'dill', 'InteractionMatrix']\
+    and not obj.startswith('_'): 
         #deleting the said obj, since a user-defined function
         del globals()[obj]
 del obj
@@ -107,8 +104,8 @@ calib_sbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, sbioedge_overs
 
 for obj in dir():
     #checking for built-in variables/functions
-    if not (obj.startswith('calib_sbioedge') or obj.startswith('__') or obj.startswith('param')\
-            or obj.startswith('pathlib') or obj.startswith('dill') or obj.startswith('InteractionMatrix')):
+    if not obj in ['calib_sbioedge', 'calib_sbioedge_sr', 'calib_sbioedge_oversampled', 'param', 'pathlib', 'dill', 'InteractionMatrix']\
+    and not obj.startswith('_'): 
         #deleting the said obj, since a user-defined function
         del globals()[obj]
 del obj
@@ -118,3 +115,4 @@ del obj
 origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
 
 dill.dump_session(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+str(param['filename'])+'.pkl'))
+
