@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 
 param = get_parameters()
 
-#%% Load OOPAO calibration objects computed in analysis_file.py
+#%% Load analysis results computed in analysis_file.py
 
 if platform.system() == 'Windows':
     temp = deepcopy(pathlib.PosixPath)
@@ -82,13 +82,14 @@ for n_modes in param['list_modes_to_keep']:
 
     plt.figure()
     plt.plot(noise_propagation_gbioedge_oversampled, 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-    plt.plot(noise_propagation_pyramid_oversampled, 'm', label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+    #plt.plot(noise_propagation_pyramid_oversampled, 'm', label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
 
     #plt.plot(noise_propagation_gbioedge[i], label= str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' '+str(n_modes)+" modes")
     plt.plot(noise_propagation_gbioedge_sr[i], 'r' , label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_pyramid_sr[i], 'b' , label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
+    #plt.plot(noise_propagation_pyramid_sr[i], 'b' , label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
     i+=1
     plt.yscale('log')
+    plt.ylim(1e-15, 1e-9)
     plt.title("Grey Bi-O-Edge VS MPYWFS Uniform noise propagation\n"+str(param['modulation'])+' lambda/D')
     plt.xlabel("mode ("+param['modal_basis']+") index")
     plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")

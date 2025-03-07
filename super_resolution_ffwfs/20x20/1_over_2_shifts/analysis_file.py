@@ -124,8 +124,8 @@ for obj in dir():
                    'singular_values_pyramid','singular_values_pyramid_sr', 'singular_values_pyramid_oversampled',\
                    'singular_values_gbioedge','singular_values_gbioedge_sr', 'singular_values_gbioedge_oversampled',\
                    'singular_values_sbioedge','singular_values_sbioedge_sr', 'singular_values_sbioedge_oversampled',\
-                   'get_parameters', 'dill', 'pathlib']
-                   ,or not obj.startswith('__'):
+                   'get_parameters', 'dill', 'pathlib', 'param']\
+    and not obj.startswith('__'):
         #deleting the said obj, since a user-defined function
         del globals()[obj]
 del obj
