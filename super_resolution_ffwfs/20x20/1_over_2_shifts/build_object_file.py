@@ -217,7 +217,7 @@ for obj in dir():
     #checking for built-in variables/functions
     if not obj in ['atm', 'dm', 'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled', 'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
                    'pyramid', 'pyramid_sr', 'pyramid_oversampled', 'M2C', 'ngs', 'param', 'tel', 'pathlib', 'dill']\
-        and not(obj.startswith('_')):
+        and not obj.startswith('_'):
         #deleting the said obj, since a user-defined function
         del globals()[obj]
 del obj

@@ -50,7 +50,7 @@ calib_pyramid_oversampled = InteractionMatrix(ngs, atm, tel, dm, pyramid_oversam
 
 for obj in dir():
     #checking for built-in variables/functions
-    if not obj in ['calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled', 'param', 'pathlib', 'dill', 'InteractionMatrix']\
+    if not obj in ['calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled', 'param', 'pathlib', 'dill', 'InteractionMatrix', 'get_parameters']\
     and not obj.startswith('_'): 
         #deleting the said obj, since a user-defined function
         del globals()[obj]
@@ -77,7 +77,7 @@ calib_gbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, gbioedge_overs
 
 for obj in dir():
     #checking for built-in variables/functions
-    if not obj in ['calib_gbioedge', 'calib_gbioedge_sr', 'calib_gbioedge_oversampled', 'param', 'pathlib', 'dill', 'InteractionMatrix']\
+    if not obj in ['calib_gbioedge', 'calib_gbioedge_sr', 'calib_gbioedge_oversampled', 'param', 'pathlib', 'dill', 'InteractionMatrix', 'get_parameters']\
     and not obj.startswith('_'): 
         #deleting the said obj, since a user-defined function
         del globals()[obj]
@@ -104,7 +104,7 @@ calib_sbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, sbioedge_overs
 
 for obj in dir():
     #checking for built-in variables/functions
-    if not obj in ['calib_sbioedge', 'calib_sbioedge_sr', 'calib_sbioedge_oversampled', 'param', 'pathlib', 'dill', 'InteractionMatrix']\
+    if not obj in ['calib_sbioedge', 'calib_sbioedge_sr', 'calib_sbioedge_oversampled', 'param', 'pathlib', 'dill', 'InteractionMatrix', 'get_parameters']\
     and not obj.startswith('_'): 
         #deleting the said obj, since a user-defined function
         del globals()[obj]

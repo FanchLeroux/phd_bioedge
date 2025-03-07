@@ -118,8 +118,14 @@ for n_modes in param['list_modes_to_keep']:
 
 for obj in dir():
     #checking for built-in variables/functions
-    if not (obj.startswith('noise_propagation_') or obj.startswith('singular_values_') or obj.startswith('__') or obj.startswith('param')\
-            or obj.startswith('pathlib') or obj.startswith('dill')):
+    if not obj in ['noise_propagation_pyramid','noise_propagation_pyramid_sr', 'noise_propagation_pyramid_oversampled',\
+                   'noise_propagation_gbioedge','noise_propagation_gbioedge_sr', 'noise_propagation_gbioedge_oversampled',\
+                   'noise_propagation_sbioedge','noise_propagation_sbioedge_sr', 'noise_propagation_sbioedge_oversampled',\
+                   'singular_values_pyramid','singular_values_pyramid_sr', 'singular_values_pyramid_oversampled',\
+                   'singular_values_gbioedge','singular_values_gbioedge_sr', 'singular_values_gbioedge_oversampled',\
+                   'singular_values_sbioedge','singular_values_sbioedge_sr', 'singular_values_sbioedge_oversampled',\
+                   'get_parameters', 'dill', 'pathlib']
+                   ,or not obj.startswith('__'):
         #deleting the said obj, since a user-defined function
         del globals()[obj]
 del obj
