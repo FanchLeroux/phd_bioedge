@@ -29,7 +29,11 @@ from ao_cockpit_syn import plt_imshow_expa
 import importlib
 
 import ao_cockpit_syn as aou
+
+#%%
 importlib.reload(aou)
+
+#%%
 
 #from aotools.turbulence import ft_phase_screen
 
@@ -53,7 +57,7 @@ exec(open(file2exec).read())
 file2exec='FUNC_PYR_EDGE.py'
 exec(open(file2exec).read())
 
-
+#%%
 
 
 def ONE_HF(TFcase):
@@ -66,6 +70,8 @@ def ONE_LF(TFcase):
     TFcase_0 = TFcase*0.
     TFcase_0[ SZ//2-idx_fc:SZ//2+idx_fc , SZ//2-idx_fc:SZ//2+idx_fc] = TFcase[ SZ//2-idx_fc:SZ//2+idx_fc , SZ//2-idx_fc:SZ//2+idx_fc]
     return TFcase_0
+
+#%%
 
 ###### DEFINITIONS
 nwfs=4

@@ -7,7 +7,8 @@ Created on Wed Feb 26 13:45:38 2025
 
 import numpy as np
 
-from pathlib import Path
+import pathlib
+import dill
 
 from parameter_file import get_parameters
 
@@ -209,11 +210,20 @@ sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
-    
+
+#%% remove all the variables we do not want to save in the pickle file provided by dill.load_session
+
+for obj in dir():
+    #checking for built-in variables/functions
+    if not obj in ['atm', 'dm', 'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled', 'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
+                   'pyramid', 'pyramid_sr', 'pyramid_oversampled', 'M2C', 'ngs', 'param', 'tel', 'pathlib', 'dill']\
+        and not(obj.startswith('_')):
+        #deleting the said obj, since a user-defined function
+        del globals()[obj]
+del obj
+
 #%% save all variables
 
-import dill
+origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
 
-origin = str(Path(__file__)) # keep a trace of where the saved objects come from
-
-dill.dump_session(param['path_object'] / Path('object'+str(param['filename'])+'.pkl'))
+dill.dump_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
