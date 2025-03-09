@@ -51,21 +51,25 @@ elif platform.system() == 'Linux':
 dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
 
 #%% load calibrations
-
+param = foo.get_parameters()
 dill.load_session(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+str(param['filename'])+'.pkl'))
 
 #%% reconstructors
 
 n_modes_to_keep_gbioedge = 250 #int(gbioedge.nSignal/4 - 50)
-n_modes_to_keep_gbioedge_sr = 850
+n_modes_to_keep_gbioedge_sr = 800
 n_modes_to_keep_gbioedge_oversampled = 980
+
+n_modes_to_control_sr = 250
+M2C_sr = deepcopy(M2C)
+M2C_sr[:, n_modes_to_control_sr:] = 0.
 
 R_gbioedge = np.linalg.pinv(calib_gbioedge.D[:,:n_modes_to_keep_gbioedge])
 R_gbioedge_sr = np.linalg.pinv(calib_gbioedge_sr.D[:,:n_modes_to_keep_gbioedge_sr])
 R_gbioedge_oversampled = np.linalg.pinv(calib_gbioedge_oversampled.D[:,:n_modes_to_keep_gbioedge_oversampled])
 
 reconstructor_gbioedge = M2C[:, :n_modes_to_keep_gbioedge]@R_gbioedge
-reconstructor_gbioedge_sr = M2C[:, :n_modes_to_keep_gbioedge_sr]@R_gbioedge_sr
+reconstructor_gbioedge_sr = M2C_sr[:, :n_modes_to_keep_gbioedge_sr]@R_gbioedge_sr
 reconstructor_gbioedge_oversampled = M2C[:, :n_modes_to_keep_gbioedge_oversampled]@R_gbioedge_oversampled
 
 #%% Close the loop - gbioedge
@@ -75,7 +79,7 @@ reconstructor_gbioedge_oversampled = M2C[:, :n_modes_to_keep_gbioedge_oversample
 tel.computePSF()
 
 loop_gain = 0.5
-n_iter = 2000
+n_iter = 500
 
 total_gbioedge = np.zeros(n_iter)
 residual_gbioedge = np.zeros(n_iter)
@@ -148,7 +152,7 @@ for k in range(n_iter):
 tel.computePSF()
 
 loop_gain = 0.5
-n_iter = 2000
+n_iter = 500
 
 total_gbioedge_sr = np.zeros(n_iter)
 residual_gbioedge_sr = np.zeros(n_iter)
@@ -213,8 +217,27 @@ for k in range(n_iter):
     strehl_gbioedge_sr[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
     residual_gbioedge_sr[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
     
-    
+# %%
+
+np.save(path/("residual_gbiodege_"+str(n_iter)+"_iter.npy"), residual_gbioedge)
+np.save(path/("residual_gbiodege_sr_"+str(n_iter)+"_iter.npy"), residual_gbioedge)
+
 #%%
 
-plt.plot(residual_gbioedge, 'b')
-plt.plot(residual_gbioedge_sr, 'r')
+plt.close('all')
+
+plt.figure()
+plt.plot(residual_gbioedge, 'b', label=str(param['n_subaperture'])+'x'+
+         str(param['n_subaperture'])+', no SR '+str(n_modes_to_keep_gbioedge)+' modes')
+plt.plot(residual_gbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
+         str(param['n_subaperture'])+', SR ' +str(n_modes_to_keep_gbioedge_sr)+' modes')
+plt.title('Closed Loop residuals\n'
+          'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
+          'Telescope diameter: '+str(tel.D) + ' m\n'
+          'Half grey width : '+str(param['modulation'])+' lambda/D')
+plt.xlabel('Iteration')
+plt.ylabel('residuals (nm)')
+plt.legend()
+
+plt.savefig(param['path_plots'] / pathlib.Path("residual_gbiodege_sr_"+str(n_iter)+"_iter.png"), 
+            bbox_inches = 'tight')
