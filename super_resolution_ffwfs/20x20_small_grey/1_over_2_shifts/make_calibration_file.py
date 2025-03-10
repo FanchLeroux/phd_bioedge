@@ -20,14 +20,10 @@ from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
 #%%
 
-do_pyramid = False
-do_sbioedge = False
-do_gbioedge = False
+do_pyramid = True
+do_sbioedge = True
+do_gbioedge = True
 do_sgbioedge = True
-
-#%% Import parameter file
-
-
 
 #%% path type compatibility issues
 
@@ -49,6 +45,7 @@ if do_pyramid:
     # Load objects computed in build_object_file.py
     dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
     
+    #%%
     calib_pyramid = InteractionMatrix(ngs, atm, tel, dm, pyramid, M2C = M2C, 
                                       stroke = param['stroke'], single_pass=param['single_pass'], 
                                       display=True)
@@ -77,7 +74,7 @@ if do_pyramid:
     
     origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
     
-    dill.dump_session(param['path_calibration'] / pathlib.Path('calibration_pyramid'+str(param['filename'])+'.pkl'))
+    dill.dump_session(parameters['path_calibration'] / pathlib.Path('calibration_pyramid'+str(parameters['filename'])+'.pkl'))
 
 
 #%% -------------------- Make sbioedge calibrations --------------------------
@@ -88,6 +85,7 @@ if do_sbioedge:
     
     dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
     
+    #%%
     calib_sbioedge = InteractionMatrix(ngs, atm, tel, dm, sbioedge, M2C = M2C, 
                                       stroke = param['stroke'], single_pass=param['single_pass'], display=True)
     calib_sbioedge_sr = InteractionMatrix(ngs, atm, tel, dm, sbioedge_sr, M2C = M2C, 
@@ -102,7 +100,7 @@ if do_sbioedge:
     for obj in dir():
         #checking for built-in variables/functions
         if not obj in ['parameters',\
-                       'calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled',\
+                       'calib_sbioedge', 'calib_sbioedge_sr', 'calib_sbioedge_oversampled',\
                        'pathlib', 'dill', 'InteractionMatrix', 'get_parameters']\
         and not obj.startswith('_'): 
             #deleting the said obj, since a user-defined function
@@ -113,7 +111,7 @@ if do_sbioedge:
     
     origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
     
-    dill.dump_session(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+str(param['filename'])+'.pkl'))
+    dill.dump_session(parameters['path_calibration'] / pathlib.Path('calibration_sbioedge'+str(parameters['filename'])+'.pkl'))
 
 
 #%% -------------------- Make gbioedge calibrations -----------------------
@@ -124,6 +122,7 @@ if do_gbioedge:
     
     dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
     
+    #%%
     calib_gbioedge = InteractionMatrix(ngs, atm, tel, dm, gbioedge, M2C = M2C, 
                                       stroke = param['stroke'], single_pass=param['single_pass'], display=True)
     calib_gbioedge_sr = InteractionMatrix(ngs, atm, tel, dm, gbioedge_sr, M2C = M2C, 
@@ -138,7 +137,7 @@ if do_gbioedge:
     for obj in dir():
         #checking for built-in variables/functions
         if not obj in ['parameters',\
-                       'calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled',\
+                       'calib_gbioedge', 'calib_gbioedge_sr', 'calib_gbioedge_oversampled',\
                        'pathlib', 'dill', 'InteractionMatrix', 'get_parameters']\
         and not obj.startswith('_'): 
             #deleting the said obj, since a user-defined function
@@ -149,7 +148,7 @@ if do_gbioedge:
     
     origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
     
-    dill.dump_session(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+str(param['filename'])+'.pkl'))
+    dill.dump_session(parameters['path_calibration'] / pathlib.Path('calibration_gbioedge'+str(parameters['filename'])+'.pkl'))
 
 
 #%% -------------------- Make sgbioedge calibrations -----------------------
@@ -160,6 +159,7 @@ if do_sgbioedge:
     
     dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
     
+    #%%
     calib_sgbioedge = InteractionMatrix(ngs, atm, tel, dm, sgbioedge, M2C = M2C, 
                                       stroke = param['stroke'], single_pass=param['single_pass'], display=True)
     calib_sgbioedge_sr = InteractionMatrix(ngs, atm, tel, dm, sgbioedge_sr, M2C = M2C, 
@@ -174,7 +174,7 @@ if do_sgbioedge:
     for obj in dir():
         #checking for built-in variables/functions
         if not obj in ['parameters',\
-                       'calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled',\
+                       'calib_sgbioedge', 'calib_sgbioedge_sr', 'calib_sgbioedge_oversampled',\
                        'pathlib', 'dill', 'InteractionMatrix', 'get_parameters']\
         and not obj.startswith('_'): 
             #deleting the said obj, since a user-defined function
@@ -185,5 +185,5 @@ if do_sgbioedge:
     
     origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
     
-    dill.dump_session(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+str(param['filename'])+'.pkl'))
+    dill.dump_session(parameters['path_calibration'] / pathlib.Path('calibration_sgbioedge'+str(parameters['filename'])+'.pkl'))
 

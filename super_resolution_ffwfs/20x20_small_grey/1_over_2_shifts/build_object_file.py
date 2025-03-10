@@ -243,6 +243,7 @@ sgbioedge_sr = BioEdge(nSubap = param['n_subaperture'],
 sgbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
 sgbioedge_sr.modulation = 0. # update reference intensities etc.
 
+#%%
 # small grey bioedge oversampled
 sgbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
               telescope = tel, 
@@ -261,13 +262,13 @@ parameters = deepcopy(param)
 for obj in dir():
     
     #checking for built-in variables/functions
-    if not obj in ['parameters',\
+    if not obj in ['parameters','sgbioedge_oversampled',\
                    'tel','atm', 'dm', 'ngs', 'M2C',\
                    'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
                    'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
-                   'sgbioedge', 'sgbioedge_sr', 'sgbioedge_oversampled'\
+                   'sgbioedge', 'sgbioedge_sr',\
                    'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
-                   'pathlib', 'dill']
+                   'pathlib', 'dill']\
     and not obj.startswith('_'):
         
         #deleting the said obj, since a user-defined function
@@ -279,4 +280,4 @@ del obj
 
 origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
 
-dill.dump_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
+dill.dump_session(parameters['path_object'] / pathlib.Path('object'+str(parameters['filename'])+'.pkl'))
