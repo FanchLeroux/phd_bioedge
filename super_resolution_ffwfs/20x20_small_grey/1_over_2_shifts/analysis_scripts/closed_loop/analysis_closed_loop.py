@@ -83,7 +83,7 @@ seed = 1 # 0 is bad, 10 is ok
 tel.computePSF()
 
 loop_gain = 0.5
-n_iter = 2000
+n_iter = 20000
 
 total_gbioedge = np.zeros(n_iter)
 residual_gbioedge = np.zeros(n_iter)
@@ -156,8 +156,8 @@ for k in range(n_iter):
 
 tel.computePSF()
 
-loop_gain = 0.5
-n_iter = 2000
+#loop_gain = 0.5
+#n_iter = 2000
 
 total_gbioedge_sr = np.zeros(n_iter)
 residual_gbioedge_sr = np.zeros(n_iter)
@@ -233,8 +233,8 @@ if ref:
 
     tel.computePSF()
 
-    loop_gain = 0.5
-    n_iter = 2000
+    #loop_gain = 0.5
+    #n_iter = 2000
     
     total_gbioedge_oversampled = np.zeros(n_iter)
     residual_gbioedge_oversampled = np.zeros(n_iter)
@@ -317,7 +317,7 @@ plt.plot(residual_gbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
          str(param['n_subaperture'])+', SR ' +str(n_modes_to_keep_gbioedge_sr)+' modes shown\n'
          +str(n_modes_to_control_sr)+' modes controlled')
 plt.plot(residual_gbioedge_oversampled, 'k', label=str(2*param['n_subaperture'])+'x'+
-         str(2*param['n_subaperture'])+', '+str(n_modes_to_keep_gbioedge)+' modes')
+         str(2*param['n_subaperture'])+', '+str(n_modes_to_keep_gbioedge_oversampled)+' modes')
 plt.title('Closed Loop residuals\n'
           'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
           'Telescope diameter: '+str(tel.D) + ' m\n'
@@ -328,4 +328,27 @@ plt.ylabel('residuals (nm)')
 plt.legend()
 
 plt.savefig(param['path_plots'] / pathlib.Path("residual_gbiodege_sr_"+str(n_iter)+"_iter.png"), 
+            bbox_inches = 'tight')
+
+# zoom
+plt.figure()
+plt.plot(residual_gbioedge, 'b', label=str(param['n_subaperture'])+'x'+
+         str(param['n_subaperture'])+', no SR '+str(n_modes_to_keep_gbioedge)+' modes')
+plt.plot(residual_gbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
+         str(param['n_subaperture'])+', SR ' +str(n_modes_to_keep_gbioedge_sr)+' modes shown\n'
+         +str(n_modes_to_control_sr)+' modes controlled')
+plt.plot(residual_gbioedge_oversampled, 'k', label=str(2*param['n_subaperture'])+'x'+
+         str(2*param['n_subaperture'])+', '+str(n_modes_to_keep_gbioedge_oversampled)+' modes')
+plt.title('Closed Loop residuals\n'
+          'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
+          'Telescope diameter: '+str(tel.D) + ' m\n'
+          'Half grey width : '+str(param['modulation'])+' lambda/D\n'
+          'seed : '+str(seed))
+plt.xlabel('Iteration')
+plt.ylabel('residuals (nm)')
+plt.xlim(5600, 6000)
+plt.ylim(0, 400)
+plt.legend()
+
+plt.savefig(param['path_plots'] / pathlib.Path("zoom_residual_gbiodege_sr_"+str(n_iter)+"_iter.png"), 
             bbox_inches = 'tight')

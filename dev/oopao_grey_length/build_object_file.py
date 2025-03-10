@@ -10,8 +10,6 @@ import numpy as np
 import pathlib
 import dill
 
-from copy import deepcopy
-
 from parameter_file import get_parameters
 
 from OOPAO.Telescope import Telescope
@@ -22,6 +20,8 @@ from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
 from fanch.basis.fourier import compute_real_fourier_basis, extract_subset, extract_vertical_frequencies, extract_diagonal_frequencies
 from OOPAO.Pyramid import Pyramid
 from OOPAO.BioEdge import BioEdge
+
+#%%
 
 param = get_parameters()
 
@@ -112,39 +112,6 @@ if param['is_dm_modal']:
     dm = DeformableMirror(tel, nSubap=param['n_actuator'], modes = modes)
 
 #%% --------------------------- WFSs -----------------------------------
-
-# pramid
-pyramid = Pyramid(nSubap = param['n_subaperture'], 
-              telescope = tel, 
-              modulation = param['modulation'], 
-              lightRatio = param['light_threshold'],
-              n_pix_separation = param['n_pix_separation'],
-              n_pix_edge = param['n_pix_separation'],
-              postProcessing = param['post_processing'],
-              psfCentering = param['psf_centering'])
-
-# pyramid SR
-pyramid_sr = Pyramid(nSubap = param['n_subaperture'], 
-              telescope = tel, 
-              modulation = param['modulation'], 
-              lightRatio = param['light_threshold'],
-              n_pix_separation = param['n_pix_separation'],
-              n_pix_edge = param['n_pix_separation'],
-              postProcessing = param['post_processing'],
-              psfCentering = param['psf_centering'])
-
-pyramid_sr.apply_shift_wfs(param['pupil_shift_pyramid'][0], param['pupil_shift_pyramid'][1], units='pixels')
-pyramid_sr.modulation = param['modulation'] # update reference intensities etc.
-
-# pyramid oversampled
-pyramid_oversampled = Pyramid(nSubap = 2*param['n_subaperture'], 
-              telescope = tel, 
-              modulation = param['modulation'], 
-              lightRatio = param['light_threshold'],
-              n_pix_separation = param['n_pix_separation'],
-              n_pix_edge = param['n_pix_separation'],
-              postProcessing = param['post_processing'],
-              psfCentering = param['psf_centering'])
 
 # --------------------------------------------------------------------------- #
 
@@ -253,30 +220,3 @@ sgbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
-
-#%% remove all the variables we do not want to save in the pickle file provided by dill.load_session
-
-parameters = deepcopy(param)
-
-for obj in dir():
-    
-    #checking for built-in variables/functions
-    if not obj in ['parameters',\
-                   'tel','atm', 'dm', 'ngs', 'M2C',\
-                   'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
-                   'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
-                   'sgbioedge', 'sgbioedge_sr', 'sgbioedge_oversampled'\
-                   'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
-                   'pathlib', 'dill']
-    and not obj.startswith('_'):
-        
-        #deleting the said obj, since a user-defined function
-        del globals()[obj]
-
-del obj
-
-#%% save all variables
-
-origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
-
-dill.dump_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))

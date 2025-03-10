@@ -56,9 +56,9 @@ def get_parameters():
     
     # ----------------------- WFS ----------------------
 
-    param['modulation'            ] = 2.                  # [lambda/D] modulation radius or grey width
-    param['grey_length']            = param['modulation'] # [lambda/D] grey length in case of small grey bioedge WFS
-    param['n_pix_separation'      ] = 10                  # [pixel] separation ratio between the PWFS pupils
+    param['modulation'             ] = 2.                 # [lambda/D] modulation radius or grey width
+    param['grey_length'            ] = 2.                 # [lambda/D] grey length (Small Grey Bi-O-Edge)
+    param['n_pix_separation'       ] = 10                 # [pixel] separation ratio between the PWFS pupils
     param['psf_centering'          ] = False              # centering of the FFT and of the PWFS mask on the 4 central pixels
     param['light_threshold'        ] = 0.3                # light threshold to select the valid pixels
     param['post_processing'        ] = 'fullFrame'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
@@ -87,7 +87,7 @@ def get_parameters():
     
     # -------------------- MODAL BASIS ----------------
     
-    param['modal_basis'] = 'KL'
+    param['modal_basis'] = 'poke'
     param['list_modes_to_keep'] = np.linspace(int(0.5*(np.pi * (param['n_subaperture']/2)**2)), 
                                               int(np.pi * param['n_subaperture']**2), num=10, dtype=int)
     param['stroke'] = 1e-9 # [m] actuator stoke for calibration matrices computation
