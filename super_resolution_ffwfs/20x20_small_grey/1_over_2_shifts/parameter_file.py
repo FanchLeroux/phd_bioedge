@@ -105,12 +105,6 @@ def get_parameters():
     param['path_object'] = path / 'data_object'
     
     # location of the calibration data
-    param['path_calibration'] = path / 'data_calibration' 
-    
-    # location of the analysis data
-    param['path_analysis'] = path / 'data_analysis'
-    
-    # location of the plots
-    param['path_plots'] = path / 'plots'
+    param['path_calibration'] = path / 'data_calibration'
     
     return param
