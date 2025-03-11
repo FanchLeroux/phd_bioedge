@@ -113,11 +113,13 @@ i = 0
 for n_modes in param['list_modes_to_keep']:
 
     plt.figure()
-    plt.plot(noise_propagation_sgbioedge_oversampled, 'k', label='sgbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+    plt.plot(noise_propagation_sgbioedge_oversampled, 'k', 
+             label='sgbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
     #plt.plot(noise_propagation_pyramid_oversampled, 'm', label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
 
     #plt.plot(noise_propagation_sgbioedge[i], label= str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_sgbioedge_sr[i], 'r' , label= 'sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
+    plt.plot(noise_propagation_sgbioedge_sr[i], 'r' , 
+             label= 'sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
     #plt.plot(noise_propagation_pyramid_sr[i], 'b' , label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
     i+=1
     plt.yscale('log')
@@ -134,11 +136,13 @@ i = 0
 for n_modes in param['list_modes_to_keep']:
 
     plt.figure()
-    plt.plot(noise_propagation_gbioedge_oversampled, 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+    plt.plot(noise_propagation_gbioedge_oversampled, 'k', 
+             label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
     #plt.plot(noise_propagation_pyramid_oversampled, 'm', label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
 
     #plt.plot(noise_propagation_gbioedge[i], label= str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_gbioedge_sr[i], 'b' , label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
+    plt.plot(noise_propagation_gbioedge_sr[i], 'b' , 
+             label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
     #plt.plot(noise_propagation_pyramid_sr[i], 'b' , label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
     i+=1
     plt.yscale('log')
@@ -173,22 +177,31 @@ for n_modes in param['list_modes_to_keep']:
     plt.legend()
     plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')
     
-#%% --------------- pyramid, sgb,  gbioedge and sbioedge -------------------- #
+#%% --------------- pyramid, gbioedge and sbioedge -------------------- #
 
 i = 0
 for n_modes in param['list_modes_to_keep']:
 
     plt.figure()
-    plt.plot(noise_propagation_gbioedge_oversampled, 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-    #plt.plot(noise_propagation_pyramid_oversampled, 'm', label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-
-    #plt.plot(noise_propagation_gbioedge[i], label= str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_gbioedge_sr[i], 'b' , label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    #plt.plot(noise_propagation_pyramid_sr[i], 'b' , label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
+    
+    plt.plot(noise_propagation_pyramid_oversampled, 'm', 
+             label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+    plt.plot(noise_propagation_gbioedge_oversampled, 'k', 
+             label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+    
+    plt.plot(noise_propagation_pyramid_sr[i], 'g' , 
+             label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
+    plt.plot(noise_propagation_gbioedge_sr[i], '--b' , 
+             label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
+    plt.plot(noise_propagation_sgbioedge_sr[i], 'r' , 
+             label= 'sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
+    
+    
     i+=1
     plt.yscale('log')
     plt.ylim(1e-15, 1e-9)
-    plt.title("Grey Bi-O-Edge VS MPYWFS Uniform noise propagation\n"+str(param['modulation'])+' lambda/D')
+    plt.title("Pyramid VS Grey Bi-O-Edge VS Small Grey Bi-O-Edge\nUniform noise propagation\n"
+              +str(param['modulation'])+' lambda/D')
     plt.xlabel("mode ("+param['modal_basis']+") index")
     plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
     plt.legend()

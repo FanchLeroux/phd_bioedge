@@ -20,7 +20,7 @@ def get_parameters():
     # initialize the dictionary
     param = {}
     
-    # ------------------ ATMOSPHERE -----------------
+    # ------------------ ATMOSPHERE ----------------- #
    
     param['r0'            ] = 0.15                                           # [m] value of r0 in the visibile
     param['L0'            ] = 30                                             # [m] value of L0 in the visibile
@@ -29,7 +29,7 @@ def get_parameters():
     param['wind_direction'] = [0,72,144,216,288]                             # [degrees] wind direction of the different layers
     param['altitude'      ] = [0, 1000,5000,10000,12000 ]                    # [m] altitude of the different layers
     
-    # ------------------- TELESCOPE ------------------
+    # ------------------- TELESCOPE ------------------ #
     
     param['diameter'               ] = 8                                         # [m] telescope diameter
     param['n_subaperture'          ] = 20                                        # number of WFS subaperture along the telescope diameter
@@ -41,7 +41,7 @@ def get_parameters():
     param['sampling_time'          ] = 1/1000                                    # [s] loop sampling time
     param['centralObstruction'     ] = 0                                         # central obstruction in percentage of the diameter
     
-    # ---------------------- NGS ----------------------
+    # ---------------------- NGS ---------------------- #
     
     param['magnitude'            ] = 0                                          # magnitude of the guide star
     
@@ -49,12 +49,12 @@ def get_parameters():
     # 'I2' band : 750 nm, bandwidth? = 33 nm
     param['optical_band'          ] = 'I2'                                      # optical band of the guide star
     
-    # ------------------------ DM ---------------------
+    # ------------------------ DM --------------------- #
     
     param['n_actuator'] = 2*param['n_subaperture'] # number of actuators
     param['is_dm_modal'] = False                   # set to True if the dm is a modal dm
     
-    # ----------------------- WFS ----------------------
+    # ----------------------- WFS ---------------------- #
 
     param['modulation'            ] = 2.                  # [lambda/D] modulation radius or grey width
     param['grey_length']            = param['modulation'] # [lambda/D] grey length in case of small grey bioedge WFS
@@ -85,7 +85,7 @@ def get_parameters():
                                     0.,\
                                     0.]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for pyramid)
     
-    # -------------------- MODAL BASIS ----------------
+    # -------------------- MODAL BASIS ---------------- #
     
     param['modal_basis'] = 'KL'
     param['list_modes_to_keep'] = np.linspace(int(0.5*(np.pi * (param['n_subaperture']/2)**2)), 
@@ -93,13 +93,26 @@ def get_parameters():
     param['stroke'] = 1e-9 # [m] actuator stoke for calibration matrices computation
     param['single_pass'] = False    
     
-    # --------------------- FILENAME --------------------
+    # -------------------- LOOP ----------------------- #
+    
+    param['n_modes_to_show'] = 250
+    
+    param['n_modes_to_show_sr'] = 850
+    param['n_modes_to_control_sr'] = 700 # should be inferior to param['n_modes_to_show_sr']
+    
+    param['n_modes_to_show_oversampled'] = 250
+    
+    param['loop_gain'] = 0.5
+    
+    param['n_iter'] = 10000
+    
+    # --------------------- FILENAME -------------------- #
 
     # name of the system
     param['filename'] = '_sr_noise_prop_' +  param['optical_band'] +'_band_'+ str(param['n_subaperture'])+'x'+ str(param['n_subaperture'])\
                         + '_' + param['modal_basis'] + '_basis'
     
-    # --------------------- FOLDERS ---------------------
+    # --------------------- FOLDERS --------------------- #
     
     # location of the modal basis data
     param['path_object'] = path / 'data_object'

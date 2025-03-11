@@ -51,16 +51,17 @@ elif platform.system() == 'Linux':
 dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
 
 #%% load calibrations
+
 param = foo.get_parameters()
 dill.load_session(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+str(param['filename'])+'.pkl'))
 
 #%% reconstructors
 
 n_modes_to_keep_gbioedge = 250 #int(gbioedge.nSignal/4 - 50)
-n_modes_to_keep_gbioedge_sr = 1000
+n_modes_to_keep_gbioedge_sr = 700
 n_modes_to_keep_gbioedge_oversampled = 980
 
-n_modes_to_control_sr = 800
+n_modes_to_control_sr = 600
 M2C_sr = deepcopy(M2C)
 M2C_sr[:, n_modes_to_control_sr:] = 0.
 
@@ -74,7 +75,20 @@ reconstructor_gbioedge_oversampled = M2C[:, :n_modes_to_keep_gbioedge_oversample
 
 #%%
 
-seed = 1 # 0 is bad, 10 is ok
+dm.coefs = M2C[:,:20]
+
+from OOPAO.tools.displayTools import displayMap
+displayMap(dm.OPD)
+
+
+#%%
+
+ngs*tel*dm*gbioedge
+
+plt.figure(),plt.plot(R_gbioedge@gbioedge.signal)
+
+#%%
+seed = 10 # 0 is bad, 10 is ok
 
 #%% Close the loop - gbioedge
 
@@ -83,7 +97,7 @@ seed = 1 # 0 is bad, 10 is ok
 tel.computePSF()
 
 loop_gain = 0.5
-n_iter = 20000
+n_iter = 500
 
 total_gbioedge = np.zeros(n_iter)
 residual_gbioedge = np.zeros(n_iter)
@@ -116,7 +130,7 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,gbioedge.ca
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
     
 
-display = False
+display = True
 
 for k in range(n_iter):
     
@@ -155,9 +169,6 @@ for k in range(n_iter):
 # Setup
 
 tel.computePSF()
-
-#loop_gain = 0.5
-#n_iter = 2000
 
 total_gbioedge_sr = np.zeros(n_iter)
 residual_gbioedge_sr = np.zeros(n_iter)
