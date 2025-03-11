@@ -101,18 +101,18 @@ reconstructor_sgbioedge = M2C[:, :param['n_modes_to_show']]@R_sgbioedge
 reconstructor_sgbioedge_sr = M2C_sr[:, :param['n_modes_to_show_sr']]@R_sgbioedge_sr
 reconstructor_sgbioedge_oversampled = M2C[:, :param['n_modes_to_show_oversampled']]@R_sgbioedge_oversampled
 
-#%%
-dm.coefs = M2C[:,10]*1e-9
+#%% check
+# dm.coefs = M2C[:,10]*1e-9
 
-ngs*tel*dm*sgbioedge
+# ngs*tel*dm*sgbioedge
 
-plt.figure(),plt.plot(R_sgbioedge@sgbioedge.signal)
+# plt.figure(),plt.plot(R_sgbioedge@sgbioedge.signal)
 
-#%%
-dm.coefs = M2C[:,:20]
+# #%%
+# dm.coefs = M2C[:,:20]
 
-from OOPAO.tools.displayTools import displayMap
-displayMap(dm.OPD)
+# from OOPAO.tools.displayTools import displayMap
+# displayMap(dm.OPD)
 
 
 #%%
@@ -155,7 +155,7 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,gbioedge.ca
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
     
 
-display = True
+display = False
 
 for k in range(param['n_iter']):
     
@@ -229,7 +229,7 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,gbioedge_sr
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
     
 
-display = True
+display = False
 
 for k in range(param['n_iter']):
     
@@ -306,7 +306,7 @@ if ref:
                             list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
         
     
-    display = True
+    display = False
     
     for k in range(param['n_iter']):
         
@@ -376,7 +376,7 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,sgbioedge.c
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
     
 
-display = True
+display = False
 
 for k in range(param['n_iter']):
     
@@ -527,7 +527,7 @@ if ref:
                             list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
         
     
-    display = True
+    display = False
     
     for k in range(param['n_iter']):
         
@@ -587,7 +587,7 @@ plt.xlabel('Iteration')
 plt.ylabel('residuals (nm)')
 plt.legend()
 
-plt.savefig(param['path_plots'] / pathlib.Path("residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
+plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path("residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
             bbox_inches = 'tight')
 
 # zoom
@@ -610,7 +610,7 @@ plt.xlim(5600, 6000)
 plt.ylim(0, 400)
 plt.legend()
 
-plt.savefig(param['path_plots'] / pathlib.Path("zoom_residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
+plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path("zoom_residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
             bbox_inches = 'tight')
 
 #%% plots - sgbioedge
@@ -634,7 +634,7 @@ plt.xlabel('Iteration')
 plt.ylabel('residuals (nm)')
 plt.legend()
 
-plt.savefig(param['path_plots'] / pathlib.Path("residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
+plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path("residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
             bbox_inches = 'tight')
 
 # zoom
@@ -657,5 +657,5 @@ plt.xlim(5600, 6000)
 plt.ylim(0, 400)
 plt.legend()
 
-plt.savefig(param['path_plots'] / pathlib.Path("zoom_residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
+plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path("zoom_residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
             bbox_inches = 'tight')

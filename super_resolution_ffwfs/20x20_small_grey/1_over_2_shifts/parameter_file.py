@@ -100,7 +100,7 @@ def get_parameters():
     param['n_modes_to_show_sr'] = 850
     param['n_modes_to_control_sr'] = 700 # should be inferior to param['n_modes_to_show_sr']
     
-    param['n_modes_to_show_oversampled'] = 250
+    param['n_modes_to_show_oversampled'] = 980
     
     param['loop_gain'] = 0.5
     
