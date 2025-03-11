@@ -5,25 +5,40 @@ Created on Wed Feb 26 13:45:38 2025
 @author: fleroux
 """
 
-import numpy as np
-
 import pathlib
+
+import importlib.util
+import sys
+
 import dill
 
-from copy import deepcopy
+import numpy as np
 
-from parameter_file import get_parameters
+from copy import deepcopy
 
 from OOPAO.Telescope import Telescope
 from OOPAO.Atmosphere import Atmosphere
 from OOPAO.Source import Source
 from OOPAO.DeformableMirror import DeformableMirror
 from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
-from fanch.basis.fourier import compute_real_fourier_basis, extract_subset, extract_vertical_frequencies, extract_diagonal_frequencies
+from fanch.basis.fourier import compute_real_fourier_basis, extract_subset, extract_vertical_frequencies,\
+    extract_diagonal_frequencies
 from OOPAO.Pyramid import Pyramid
 from OOPAO.BioEdge import BioEdge
 
-param = get_parameters()
+
+#%% import parameter file from any repository
+
+# weird method from https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
+
+path_parameters = pathlib.Path(__file__).parent / "parameter_file.py"
+
+spec = importlib.util.spec_from_file_location("get_parameters", path_parameters)
+foo = importlib.util.module_from_spec(spec)
+sys.modules["parameter_file"] = foo
+spec.loader.exec_module(foo)
+
+param = foo.get_parameters()
 
 #%% -----------------------    TELESCOPE   -----------------------------
 
@@ -113,6 +128,8 @@ if param['is_dm_modal']:
 
 #%% --------------------------- WFSs -----------------------------------
 
+# ---------------------- Pyramid ----------------------------- #
+
 # pramid
 pyramid = Pyramid(nSubap = param['n_subaperture'], 
               telescope = tel, 
@@ -146,7 +163,7 @@ pyramid_oversampled = Pyramid(nSubap = 2*param['n_subaperture'],
               postProcessing = param['post_processing'],
               psfCentering = param['psf_centering'])
 
-# --------------------------------------------------------------------------- #
+# ----------------------- Sharp Bi-O-Edge ---------------------------- #
 
 # sharp bioedge
 sbioedge = BioEdge(nSubap = param['n_subaperture'], 
@@ -181,7 +198,7 @@ sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
 
-# --------------------------------------------------------------------------- #
+# ----------------------- Grey Bi-O-Edge ---------------------------- #
 
 # grey bioedge
 gbioedge = BioEdge(nSubap = param['n_subaperture'], 
@@ -216,7 +233,7 @@ gbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
 
-# --------------------------------------------------------------------------- #
+# ---------------------- Small Grey Bi-O-Edge ------------------------------- #
 
 # small grey bioedge
 sgbioedge = BioEdge(nSubap = param['n_subaperture'], 
@@ -243,7 +260,6 @@ sgbioedge_sr = BioEdge(nSubap = param['n_subaperture'],
 sgbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
 sgbioedge_sr.modulation = 0. # update reference intensities etc.
 
-#%%
 # small grey bioedge oversampled
 sgbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
               telescope = tel, 
@@ -257,17 +273,17 @@ sgbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
 
 #%% remove all the variables we do not want to save in the pickle file provided by dill.load_session
 
-parameters = deepcopy(param)
+parameters_object = deepcopy(param)
 
 for obj in dir():
     
     #checking for built-in variables/functions
-    if not obj in ['parameters','sgbioedge_oversampled',\
+    if not obj in ['parameters_object',\
                    'tel','atm', 'dm', 'ngs', 'M2C',\
                    'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
                    'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
-                   'sgbioedge', 'sgbioedge_sr',\
                    'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
+                   'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled',\
                    'pathlib', 'dill']\
     and not obj.startswith('_'):
         
@@ -280,4 +296,4 @@ del obj
 
 origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
 
-dill.dump_session(parameters['path_object'] / pathlib.Path('object'+str(parameters['filename'])+'.pkl'))
+dill.dump_session(parameters_object['path_object'] / pathlib.Path('object'+str(parameters_object['filename'])+'.pkl'))

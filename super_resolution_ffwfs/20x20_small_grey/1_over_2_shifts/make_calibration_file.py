@@ -18,13 +18,6 @@ from parameter_file import get_parameters
 
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
-#%%
-
-do_pyramid = True
-do_sbioedge = True
-do_gbioedge = True
-do_sgbioedge = True
-
 #%% path type compatibility issues
 
 if platform.system() == 'Windows':
@@ -34,47 +27,57 @@ elif platform.system() == 'Linux':
     temp = deepcopy(pathlib.WindowsPath)
     pathlib.WindowsPath = pathlib.PosixPath
 
+#%% import parameter file from any repository
+
+# weird method from https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
+
+path_parameters = pathlib.Path(__file__).parent / "parameter_file.py"
+
+spec = importlib.util.spec_from_file_location("get_parameters", path_parameters)
+foo = importlib.util.module_from_spec(spec)
+sys.modules["parameter_file"] = foo
+spec.loader.exec_module(foo)
+
+param = foo.get_parameters()
 
 #%% ------------------------- Make pyramid calibrations ------------------------------------
 
-if do_pyramid:
+# Import parameter file
+param = get_parameters()
 
-    # Import parameter file
-    param = get_parameters()
-    
-    # Load objects computed in build_object_file.py
-    dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
-    
-    #%%
-    calib_pyramid = InteractionMatrix(ngs, atm, tel, dm, pyramid, M2C = M2C, 
+# Load objects computed in build_object_file.py
+dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
+
+#%%
+calib_pyramid = InteractionMatrix(ngs, atm, tel, dm, pyramid, M2C = M2C, 
+                                  stroke = param['stroke'], single_pass=param['single_pass'], 
+                                  display=True)
+calib_pyramid_sr = InteractionMatrix(ngs, atm, tel, dm, pyramid_sr, M2C = M2C, 
                                       stroke = param['stroke'], single_pass=param['single_pass'], 
                                       display=True)
-    calib_pyramid_sr = InteractionMatrix(ngs, atm, tel, dm, pyramid_sr, M2C = M2C, 
-                                          stroke = param['stroke'], single_pass=param['single_pass'], 
-                                          display=True)
-    calib_pyramid_oversampled = InteractionMatrix(ngs, atm, tel, dm, pyramid_oversampled, M2C = M2C, 
-                                                  stroke = param['stroke'], single_pass=param['single_pass'], 
-                                                  display=True)
-    
-    #%% remove all the variables we do not want to save in the pickle file provided by dill.load_session
-    
-    parameters = deepcopy(param)
-    
-    for obj in dir():
-        #checking for built-in variables/functions
-        if not obj in ['parameters',\
-                       'calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled',\
-                       'pathlib', 'dill', 'InteractionMatrix', 'get_parameters']\
-        and not obj.startswith('_'): 
-            #deleting the said obj, since a user-defined function
-            del globals()[obj]
-    del obj
-    
-    #%% save all variables
-    
-    origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
-    
-    dill.dump_session(parameters['path_calibration'] / pathlib.Path('calibration_pyramid'+str(parameters['filename'])+'.pkl'))
+calib_pyramid_oversampled = InteractionMatrix(ngs, atm, tel, dm, pyramid_oversampled, M2C = M2C, 
+                                              stroke = param['stroke'], single_pass=param['single_pass'], 
+                                              display=True)
+
+#%% remove all the variables we do not want to save in the pickle file provided by dill.load_session
+
+parameters = deepcopy(param)
+
+for obj in dir():
+    #checking for built-in variables/functions
+    if not obj in ['parameters',\
+                   'calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled',\
+                   'pathlib', 'dill', 'InteractionMatrix', 'get_parameters']\
+    and not obj.startswith('_'): 
+        #deleting the said obj, since a user-defined function
+        del globals()[obj]
+del obj
+
+#%% save all variables
+
+origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
+
+dill.dump_session(parameters['path_calibration'] / pathlib.Path('calibration_pyramid'+str(parameters['filename'])+'.pkl'))
 
 
 #%% -------------------- Make sbioedge calibrations --------------------------

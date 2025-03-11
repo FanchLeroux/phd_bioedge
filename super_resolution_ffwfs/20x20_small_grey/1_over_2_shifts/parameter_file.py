@@ -114,7 +114,7 @@ def get_parameters():
     
     # --------------------- FOLDERS --------------------- #
     
-    # location of the modal basis data
+    # location of the objects data
     param['path_object'] = path / 'data_object'
     
     # location of the calibration data
