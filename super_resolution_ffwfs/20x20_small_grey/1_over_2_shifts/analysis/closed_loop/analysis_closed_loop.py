@@ -18,6 +18,8 @@ from copy import deepcopy
 
 from OOPAO.tools.displayTools import cl_plot
 
+path_test = pathlib.Path(__file__).parent
+
 #%%
 
 path = pathlib.Path(__file__).parent.parent.parent # location of parameter_file.py
@@ -32,6 +34,9 @@ spec = importlib.util.spec_from_file_location("get_parameters", path / "paramete
 foo = importlib.util.module_from_spec(spec)
 sys.modules["parameter_file"] = foo
 spec.loader.exec_module(foo)
+
+
+
 
 #%%
 
@@ -116,6 +121,7 @@ reconstructor_sgbioedge_oversampled = M2C[:, :param['n_modes_to_show_oversampled
 
 
 #%%
+
 seed = 10 # 0 is bad, 10 is ok
 
 #%% Close the loop - gbioedge
@@ -149,7 +155,7 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,gbioedge.ca
                         list_title        = ['Turbulence OPD','Residual OPD','bio Detector',None,None,None,None],\
                         list_lim          = [None,None,None,None,None,[2,6],[2,6]],\
                         list_label        = [None,None,None,['Time','WFE [nm]'],['DM Commands',''],['Short Exposure PSF',''],
-                                             ['Long Exposure_PSF','']],\
+                                              ['Long Exposure_PSF','']],\
                         n_subplot         = [4,2],\
                         list_display_axis = [None,None,None,True,None,None,None],\
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
@@ -223,7 +229,7 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,gbioedge_sr
                         list_title        = ['Turbulence OPD','Residual OPD','bio Detector',None,None,None,None],\
                         list_lim          = [None,None,None,None,None,[2,6],[2,6]],\
                         list_label        = [None,None,None,['Time','WFE [nm]'],['DM Commands',''],['Short Exposure PSF',''],
-                                             ['Long Exposure_PSF','']],\
+                                              ['Long Exposure_PSF','']],\
                         n_subplot         = [4,2],\
                         list_display_axis = [None,None,None,True,None,None,None],\
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
@@ -300,7 +306,7 @@ if ref:
                             list_title        = ['Turbulence OPD','Residual OPD','bio Detector',None,None,None,None],\
                             list_lim          = [None,None,None,None,None,[2,6],[2,6]],\
                             list_label        = [None,None,None,['Time','WFE [nm]'],['DM Commands',''],['Short Exposure PSF',''],
-                                                 ['Long Exposure_PSF','']],\
+                                                  ['Long Exposure_PSF','']],\
                             n_subplot         = [4,2],\
                             list_display_axis = [None,None,None,True,None,None,None],\
                             list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
@@ -370,7 +376,7 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,sgbioedge.c
                         list_title        = ['Turbulence OPD','Residual OPD','bio Detector',None,None,None,None],\
                         list_lim          = [None,None,None,None,None,[2,6],[2,6]],\
                         list_label        = [None,None,None,['Time','WFE [nm]'],['DM Commands',''],['Short Exposure PSF',''],
-                                             ['Long Exposure_PSF','']],\
+                                              ['Long Exposure_PSF','']],\
                         n_subplot         = [4,2],\
                         list_display_axis = [None,None,None,True,None,None,None],\
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
@@ -444,7 +450,7 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,sgbioedge_s
                         list_title        = ['Turbulence OPD','Residual OPD','bio Detector',None,None,None,None],\
                         list_lim          = [None,None,None,None,None,[2,6],[2,6]],\
                         list_label        = [None,None,None,['Time','WFE [nm]'],['DM Commands',''],['Short Exposure PSF',''],
-                                             ['Long Exposure_PSF','']],\
+                                              ['Long Exposure_PSF','']],\
                         n_subplot         = [4,2],\
                         list_display_axis = [None,None,None,True,None,None,None],\
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
@@ -521,7 +527,7 @@ if ref:
                             list_title        = ['Turbulence OPD','Residual OPD','bio Detector',None,None,None,None],\
                             list_lim          = [None,None,None,None,None,[2,6],[2,6]],\
                             list_label        = [None,None,None,['Time','WFE [nm]'],['DM Commands',''],['Short Exposure PSF',''],
-                                                 ['Long Exposure_PSF','']],\
+                                                  ['Long Exposure_PSF','']],\
                             n_subplot         = [4,2],\
                             list_display_axis = [None,None,None,True,None,None,None],\
                             list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
@@ -572,12 +578,12 @@ plt.close('all')
 
 plt.figure()
 plt.plot(residual_gbioedge, 'b', label=str(param['n_subaperture'])+'x'+
-         str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
+          str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
 plt.plot(residual_gbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
-         str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
-         +str(param['n_modes_to_control_sr'])+' modes controlled')
+          str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
+          +str(param['n_modes_to_control_sr'])+' modes controlled')
 plt.plot(residual_gbioedge_oversampled, 'k', label=str(2*param['n_subaperture'])+'x'+
-         str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
+          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
 plt.title('Closed Loop residuals gbioedge\n'
           'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
           'Telescope diameter: '+str(tel.D) + ' m\n'
@@ -587,18 +593,20 @@ plt.xlabel('Iteration')
 plt.ylabel('residuals (nm)')
 plt.legend()
 
-plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path("residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
+
+
+plt.savefig(path_test / "plots" / pathlib.Path("residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
             bbox_inches = 'tight')
 
 # zoom
 plt.figure()
 plt.plot(residual_gbioedge, 'b', label=str(param['n_subaperture'])+'x'+
-         str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
+          str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
 plt.plot(residual_gbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
-         str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
-         +str(param['n_modes_to_control_sr'])+' modes controlled')
+          str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
+          +str(param['n_modes_to_control_sr'])+' modes controlled')
 plt.plot(residual_gbioedge_oversampled, 'k', label=str(2*param['n_subaperture'])+'x'+
-         str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
+          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
 plt.title('zoom Closed Loop residuals gbioedge\n'
           'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
           'Telescope diameter: '+str(tel.D) + ' m\n'
@@ -610,21 +618,19 @@ plt.xlim(4000, 6000)
 plt.ylim(0, 400)
 plt.legend()
 
-plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path("zoom_residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
+plt.savefig(path_test / "plots" / pathlib.Path("residual_sgbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
             bbox_inches = 'tight')
 
 #%% plots - sgbioedge
 
-plt.close('all')
-
 plt.figure()
 plt.plot(residual_sgbioedge, 'b', label=str(param['n_subaperture'])+'x'+
-         str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'])+' modes')
+          str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'])+' modes')
 plt.plot(residual_sgbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
-         str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'])+' modes shown\n'
-         +str(param['n_modes_to_control_sr'])+' modes controlled')
+          str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'])+' modes shown\n'
+          +str(param['n_modes_to_control_sr'])+' modes controlled')
 plt.plot(residual_sgbioedge_oversampled, 'k', label=str(2*param['n_subaperture'])+'x'+
-         str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'])+' modes')
+          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'])+' modes')
 plt.title('Closed Loop residuals sgbioedge\n'
           'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
           'Telescope diameter: '+str(tel.D) + ' m\n'
@@ -634,18 +640,18 @@ plt.xlabel('Iteration')
 plt.ylabel('residuals (nm)')
 plt.legend()
 
-plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path("residual_sgbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
+plt.savefig(path_test / "plots" / pathlib.Path("residual_sgbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
             bbox_inches = 'tight')
 
 # zoom
 plt.figure()
 plt.plot(residual_sgbioedge, 'b', label=str(param['n_subaperture'])+'x'+
-         str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'])+' modes')
+          str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'])+' modes')
 plt.plot(residual_sgbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
-         str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'])+' modes shown\n'
-         +str(param['n_modes_to_control_sr'])+' modes controlled')
+          str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'])+' modes shown\n'
+          +str(param['n_modes_to_control_sr'])+' modes controlled')
 plt.plot(residual_sgbioedge_oversampled, 'k', label=str(2*param['n_subaperture'])+'x'+
-         str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'])+' modes')
+          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'])+' modes')
 plt.title('Zoom Closed Loop residuals sgbioedge\n'
           'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
           'Telescope diameter: '+str(tel.D) + ' m\n'
@@ -657,5 +663,5 @@ plt.xlim(4000, 6000)
 plt.ylim(0, 400)
 plt.legend()
 
-plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path("zoom_residual_sgbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
+plt.savefig(path_test / "plots" / pathlib.Path("zoom_residual_sgbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
             bbox_inches = 'tight')

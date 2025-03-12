@@ -104,7 +104,7 @@ def get_parameters():
     
     param['loop_gain'] = 0.5
     
-    param['n_iter'] = 1000000
+    param['n_iter'] = 100
     
     # --------------------- FILENAME -------------------- #
 
