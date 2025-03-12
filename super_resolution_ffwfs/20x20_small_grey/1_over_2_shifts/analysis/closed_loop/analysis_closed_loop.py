@@ -35,9 +35,6 @@ foo = importlib.util.module_from_spec(spec)
 sys.modules["parameter_file"] = foo
 spec.loader.exec_module(foo)
 
-
-
-
 #%%
 
 param = foo.get_parameters()
