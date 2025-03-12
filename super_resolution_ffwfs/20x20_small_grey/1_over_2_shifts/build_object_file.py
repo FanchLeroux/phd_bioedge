@@ -288,15 +288,3 @@ save_vars(parameters_object['path_object'] / pathlib.Path('object'+str(parameter
            'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
            'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
            'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled'])
-
-#dill.dump_session(parameters_object['path_object'] / pathlib.Path('test_object'+str(parameters_object['filename'])+'.pkl'))
-
-#%% test load vars
-
-load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'), 
-          ['parameters_object', 'origin_object',\
-           'tel','atm', 'dm', 'ngs', 'M2C',\
-           'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
-           'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
-           'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
-           'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled','yolo'])
