@@ -71,7 +71,7 @@ M2C_original = deepcopy(M2C)
 M2C = np.load(path/"M2C.npy")
 
 M2C_sr = deepcopy(M2C)
-M2C_sr[:, param['param['n_modes_to_control_sr']']:] = 0.
+M2C_sr[:, param['n_modes_to_control_sr']:] = 0.
 
 # ------------------- gbioedge -------------------- #
 
@@ -89,7 +89,7 @@ reconstructor_gbioedge_oversampled = M2C[:, :param['n_modes_to_show_oversampled'
 M2C = M2C_original
 
 M2C_sr = deepcopy(M2C)
-M2C_sr[:, param['param['n_modes_to_control_sr']']:] = 0.
+M2C_sr[:, param['n_modes_to_control_sr']:] = 0.
 
 # ------------------- sgbioedge -------------------- #
 
