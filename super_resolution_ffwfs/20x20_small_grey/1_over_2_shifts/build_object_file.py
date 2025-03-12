@@ -10,7 +10,9 @@ import pathlib
 import importlib.util
 import sys
 
-import dill
+from fanch.tools.save_load import save_vars
+
+#%%
 
 import numpy as np
 
@@ -271,29 +273,30 @@ sgbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
 
-#%% remove all the variables we do not want to save in the pickle file provided by dill.load_session
+#%% save all variables
 
 parameters_object = deepcopy(param)
 
-for obj in dir():
-    
-    #checking for built-in variables/functions
-    if not obj in ['parameters_object',\
-                   'tel','atm', 'dm', 'ngs', 'M2C',\
-                   'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
-                   'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
-                   'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
-                   'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled',\
-                   'pathlib', 'dill']\
-    and not obj.startswith('_'):
-        
-        #deleting the said obj, since a user-defined function
-        del globals()[obj]
+origin_object = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
 
-del obj
+#%%
 
-#%% save all variables
+save_vars(parameters_object['path_object'] / pathlib.Path('object'+str(parameters_object['filename'])+'.pkl'), 
+          ['parameters_object', 'origin_object',\
+           'tel','atm', 'dm', 'ngs', 'M2C',\
+           'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
+           'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
+           'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
+           'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled'])
 
-origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
+#dill.dump_session(parameters_object['path_object'] / pathlib.Path('test_object'+str(parameters_object['filename'])+'.pkl'))
 
-dill.dump_session(parameters_object['path_object'] / pathlib.Path('object'+str(parameters_object['filename'])+'.pkl'))
+#%% test load vars
+
+load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'), 
+          ['parameters_object', 'origin_object',\
+           'tel','atm', 'dm', 'ngs', 'M2C',\
+           'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
+           'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
+           'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
+           'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled','yolo'])

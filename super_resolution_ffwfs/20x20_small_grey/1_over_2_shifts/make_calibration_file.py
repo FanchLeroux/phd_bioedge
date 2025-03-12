@@ -16,6 +16,8 @@ import pathlib
 
 import dill
 
+from fanch.tools.save_load import save_vars, load_vars
+
 from copy import deepcopy
 
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
@@ -81,40 +83,40 @@ dill.dump_session(parameters['path_calibration'] / pathlib.Path('calibration_pyr
 
 #%% -------------------- Make sbioedge calibrations --------------------------
 
-if do_sbioedge:
+#param = get_parameters()
 
-    param = get_parameters()
-    
-    dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
-    
-    #%%
-    calib_sbioedge = InteractionMatrix(ngs, atm, tel, dm, sbioedge, M2C = M2C, 
+dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
+
+#%%
+calib_sbioedge = InteractionMatrix(ngs, atm, tel, dm, sbioedge, M2C = M2C, 
+                                  stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+calib_sbioedge_sr = InteractionMatrix(ngs, atm, tel, dm, sbioedge_sr, M2C = M2C, 
                                       stroke = param['stroke'], single_pass=param['single_pass'], display=True)
-    calib_sbioedge_sr = InteractionMatrix(ngs, atm, tel, dm, sbioedge_sr, M2C = M2C, 
-                                          stroke = param['stroke'], single_pass=param['single_pass'], display=True)
-    calib_sbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, sbioedge_oversampled, M2C = M2C, 
-                                                  stroke = param['stroke'], single_pass=param['single_pass'], display=True)
-    
-    #%% remove all the variables we do not want to save in the pickle file provided by dill.load_session
-    
-    parameters = deepcopy(param)
-    
-    for obj in dir():
-        #checking for built-in variables/functions
-        if not obj in ['parameters',\
-                       'calib_sbioedge', 'calib_sbioedge_sr', 'calib_sbioedge_oversampled',\
-                       'pathlib', 'dill', 'InteractionMatrix', 'get_parameters']\
-        and not obj.startswith('_'): 
-            #deleting the said obj, since a user-defined function
-            del globals()[obj]
-    del obj
-    
-    #%% save all variables
-    
-    origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
-    
-    dill.dump_session(parameters['path_calibration'] / pathlib.Path('calibration_sbioedge'+str(parameters['filename'])+'.pkl'))
+calib_sbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, sbioedge_oversampled, M2C = M2C, 
+                                              stroke = param['stroke'], single_pass=param['single_pass'], display=True)
 
+#%% remove all the variables we do not want to save in the pickle file provided by dill.load_session
+
+parameters = deepcopy(param)
+
+for obj in dir():
+    #checking for built-in variables/functions
+    if not obj in ['parameters',\
+                   'calib_sbioedge', 'calib_sbioedge_sr', 'calib_sbioedge_oversampled',\
+                   'pathlib', 'dill', 'InteractionMatrix', 'get_parameters']\
+    and not obj.startswith('_'): 
+        #deleting the said obj, since a user-defined function
+        del globals()[obj]
+del obj
+
+#%% save all variables
+
+origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
+
+#dill.dump_session(parameters['path_calibration'] / pathlib.Path('calibration_sbioedge'+str(parameters['filename'])+'.pkl'))
+
+save_vars(parameters['path_calibration'] / pathlib.Path('test_calibration_sbioedge'+str(parameters['filename'])+'.pkl'), 
+          ['parameters', 'calib_sbioedge', 'calib_sbioedge_sr', 'calib_sbioedge_oversampled'])
 
 #%% -------------------- Make gbioedge calibrations -----------------------
 
