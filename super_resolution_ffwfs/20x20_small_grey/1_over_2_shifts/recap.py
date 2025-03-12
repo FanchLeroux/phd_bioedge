@@ -7,9 +7,6 @@ Created on Mon Mar  3 09:08:49 2025
 
 # pylint: disable=undefined-variable
 
-import importlib.util
-import sys
-
 import platform
 import pathlib
 
@@ -26,22 +23,14 @@ elif platform.system() == 'Linux':
     temp = deepcopy(pathlib.WindowsPath)
     pathlib.WindowsPath = pathlib.PosixPath
 
-#%% import parameter file from any repository
+#%% Get parameter file
 
-# weird method from https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
-
-path_parameters = pathlib.Path(__file__).parent / "parameter_file.py"
-
-spec = importlib.util.spec_from_file_location("get_parameters", path_parameters)
-foo = importlib.util.module_from_spec(spec)
-sys.modules["parameter_file"] = foo
-spec.loader.exec_module(foo)
-
-param = foo.get_parameters()
+path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'])
 
 #%% load objects
 
-#load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
+load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
 
 #%% load calibrations
 
@@ -57,8 +46,8 @@ load_vars(path_calibration / pathlib.Path('calibration_sgbioedge'+param['filenam
 origin_recap = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
 
 #%%
-
-save_vars(param['path_calibration'].parent / pathlib.Path('recap'+str(param['filename'])+'.pkl'), var_names=['calib_sgbioedge'])
+a=7
+save_vars(param['path_calibration'].parent / pathlib.Path('recap'+str(param['filename'])+'.pkl'))
 
 #%% load recap
 

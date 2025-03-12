@@ -7,12 +7,7 @@ Created on Wed Feb 26 13:45:38 2025
 
 import pathlib
 
-import importlib.util
-import sys
-
-from fanch.tools.save_load import save_vars
-
-#%%
+from fanch.tools.save_load import save_vars, load_vars
 
 import numpy as np
 
@@ -29,18 +24,10 @@ from OOPAO.Pyramid import Pyramid
 from OOPAO.BioEdge import BioEdge
 
 
-#%% import parameter file from any repository
+#%% Get parameter file
 
-# weird method from https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
-
-path_parameters = pathlib.Path(__file__).parent / "parameter_file.py"
-
-spec = importlib.util.spec_from_file_location("get_parameters", path_parameters)
-foo = importlib.util.module_from_spec(spec)
-sys.modules["parameter_file"] = foo
-spec.loader.exec_module(foo)
-
-param = foo.get_parameters()
+path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'])
 
 #%% -----------------------    TELESCOPE   -----------------------------
 

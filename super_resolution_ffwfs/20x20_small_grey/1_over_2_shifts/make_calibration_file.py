@@ -8,9 +8,6 @@ Created on Wed Feb 26 13:45:55 2025
 # pylint: disable=undefined-variable
 # pylint: disable=undefined-loop-variable
 
-import importlib.util
-import sys
-
 import platform
 import pathlib
 
@@ -29,18 +26,10 @@ elif platform.system() == 'Linux':
     temp = deepcopy(pathlib.WindowsPath)
     pathlib.WindowsPath = pathlib.PosixPath
 
-#%% import parameter file from any repository
+#%% Get parameter file
 
-# weird method from https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
-
-path_parameters = pathlib.Path(__file__).parent / "parameter_file.py"
-
-spec = importlib.util.spec_from_file_location("get_parameters", path_parameters)
-foo = importlib.util.module_from_spec(spec)
-sys.modules["parameter_file"] = foo
-spec.loader.exec_module(foo)
-
-param = foo.get_parameters()
+path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'])
 
 #%% Load objects computed in build_object_file.py 
 

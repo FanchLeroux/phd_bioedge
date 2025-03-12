@@ -24,20 +24,10 @@ path_test = pathlib.Path(__file__).parent
 
 path = pathlib.Path(__file__).parent.parent.parent # location of parameter_file.py
 
-#%% import parameter file from a distinct repository than the one of this file (relou)
+#%% Get parameter file
 
-# weird method from https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
-
-import importlib.util
-import sys
-spec = importlib.util.spec_from_file_location("get_parameters", path / "parameter_file.py")
-foo = importlib.util.module_from_spec(spec)
-sys.modules["parameter_file"] = foo
-spec.loader.exec_module(foo)
-
-#%%
-
-param = foo.get_parameters()
+path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'])
 
 #%% path type compatibility issues
 
@@ -48,24 +38,24 @@ elif platform.system() == 'Linux':
     temp = deepcopy(pathlib.WindowsPath)
     pathlib.WindowsPath = pathlib.PosixPath
 
-#%% load objects
+#%% Load objects computed in build_object_file.py 
 
-dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
+load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'), 
+          ['parameters_object', 'origin_object',\
+           'tel','atm', 'dm', 'ngs', 'M2C',\
+           'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
+           'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
+           'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
+           'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled'])
 
-#%% Load parameter file
-
-param = foo.get_parameters()
-
-#%% Load calibration
+#%% load calibrations
 
 path_calibration = param['path_calibration']
 
-dill.load_session(path_calibration / pathlib.Path('calibration_gbioedge'+str(param['filename'])+'.pkl'))
-dill.load_session(path_calibration / pathlib.Path('calibration_sgbioedge'+str(param['filename'])+'.pkl'))
-
-#%% Load parameter file
-
-param = foo.get_parameters()
+load_vars(path_calibration / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
+load_vars(path_calibration / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
+load_vars(path_calibration / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
+load_vars(path_calibration / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
 #%% reconstructors - gbioedge
 
