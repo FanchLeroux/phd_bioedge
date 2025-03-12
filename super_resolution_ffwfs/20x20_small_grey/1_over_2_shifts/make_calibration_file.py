@@ -8,13 +8,15 @@ Created on Wed Feb 26 13:45:55 2025
 # pylint: disable=undefined-variable
 # pylint: disable=undefined-loop-variable
 
+import importlib.util
+import sys
+
 import platform
 import pathlib
 
 import dill
 
 from copy import deepcopy
-from parameter_file import get_parameters
 
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
@@ -41,9 +43,6 @@ spec.loader.exec_module(foo)
 param = foo.get_parameters()
 
 #%% ------------------------- Make pyramid calibrations ------------------------------------
-
-# Import parameter file
-param = get_parameters()
 
 # Load objects computed in build_object_file.py
 dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
