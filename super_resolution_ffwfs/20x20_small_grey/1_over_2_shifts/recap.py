@@ -36,9 +36,9 @@ load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.
 
 path_calibration = param['path_calibration']
 
-#load_vars(path_calibration / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
-#load_vars(path_calibration / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
-#load_vars(path_calibration / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
+load_vars(path_calibration / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
+load_vars(path_calibration / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
+load_vars(path_calibration / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
 load_vars(path_calibration / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
 #%% save all variables
@@ -46,9 +46,10 @@ load_vars(path_calibration / pathlib.Path('calibration_sgbioedge'+param['filenam
 origin_recap = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
 
 #%%
-a=7
+
 save_vars(param['path_calibration'].parent / pathlib.Path('recap'+str(param['filename'])+'.pkl'))
 
 #%% load recap
 
-load_vars(param['path_calibration'].parent / pathlib.Path('recap'+str(param['filename'])+'.pkl'))
+load_vars(param['path_calibration'].parent / pathlib.Path('recap'+str(param['filename'])+'.pkl'), load_session=True)
+
