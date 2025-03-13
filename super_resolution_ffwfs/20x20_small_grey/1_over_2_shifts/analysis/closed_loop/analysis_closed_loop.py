@@ -16,17 +16,13 @@ import matplotlib.pyplot as plt
 
 from copy import deepcopy
 
+from fanch.tools.save_load import save_vars, load_vars
+
 from OOPAO.tools.displayTools import cl_plot
-
-path_test = pathlib.Path(__file__).parent
-
-#%%
-
-path = pathlib.Path(__file__).parent.parent.parent # location of parameter_file.py
 
 #%% Get parameter file
 
-path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
+path_parameter_file = pathlib.Path(__file__).parent.parent.parent / "parameter_file.pkl"
 load_vars(path_parameter_file, ['param'])
 
 #%% path type compatibility issues
@@ -50,12 +46,12 @@ load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.
 
 #%% load calibrations
 
-path_calibration = param['path_calibration']
+load_vars(param['path_calibration'] / pathlib.Path('calibration_all_wfs'+param['filename']+'.pkl'))
 
-load_vars(path_calibration / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
-load_vars(path_calibration / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
-load_vars(path_calibration / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
-load_vars(path_calibration / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
+# load_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
+# load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
+# load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
+# load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
 #%% reconstructors - gbioedge
 

@@ -7,16 +7,26 @@ Created on Wed Feb 26 13:46:18 2025
 
 # pylint: disable=undefined-variable
 
-import platform
+#%%
+
 import pathlib
+import sys
+import platform
+import dill
+
+import numpy as np
+import matplotlib.pyplot as plt
 
 from copy import deepcopy
 
-import dill
+from fanch.tools.save_load import save_vars, load_vars
 
-from parameter_file import get_parameters
+from OOPAO.tools.displayTools import cl_plot
 
-import numpy as np
+#%% Get parameter file
+
+path_parameter_file = pathlib.Path(__file__).parent.parent.parent / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'])
 
 #%% path type compatibility issues
 
@@ -27,25 +37,15 @@ elif platform.system() == 'Linux':
     temp = deepcopy(pathlib.WindowsPath)
     pathlib.WindowsPath = pathlib.PosixPath
 
+#%% Load objects computed in build_object_file.py 
 
-#%%
-
-path = pathlib.Path(__file__).parent.parent.parent # location of parameter_file.py
-
-#%% import parameter file from a distinct repository than the one of this file (relou)
-
-# weird method from https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
-
-import importlib.util
-import sys
-spec = importlib.util.spec_from_file_location("get_parameters", path / "parameter_file.py")
-foo = importlib.util.module_from_spec(spec)
-sys.modules["parameter_file"] = foo
-spec.loader.exec_module(foo)
-
-#%%
-
-param = foo.get_parameters()
+# load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'), 
+#           ['parameters_object', 'origin_object',\
+#            'tel','atm', 'dm', 'ngs', 'M2C',\
+#            'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
+#            'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
+#            'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
+#            'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled'])
 
 #%% Load OOPAO calibration objects computed in make_calibration_file.py
 
