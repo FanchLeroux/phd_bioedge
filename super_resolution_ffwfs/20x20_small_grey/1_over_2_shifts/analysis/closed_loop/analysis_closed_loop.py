@@ -53,15 +53,12 @@ load_vars(param['path_calibration'] / pathlib.Path('calibration_all_wfs'+param['
 # load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
 # load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
-#%% reconstructors - gbioedge
-
-M2C_original = deepcopy(M2C)
-M2C = np.load(path/"M2C.npy")
+#%% Modal Basis
 
 M2C_sr = deepcopy(M2C)
 M2C_sr[:, param['n_modes_to_control_sr']:] = 0.
 
-# ------------------- gbioedge -------------------- #
+#%% reconstructors - gbioedge
 
 R_gbioedge = np.linalg.pinv(calib_gbioedge.D[:,:param['n_modes_to_show']])
 R_gbioedge_sr = np.linalg.pinv(calib_gbioedge_sr.D[:,:param['n_modes_to_show_sr']])
@@ -73,14 +70,6 @@ reconstructor_gbioedge_oversampled = M2C[:, :param['n_modes_to_show_oversampled'
 
 #%% reconstructors - sgbioedge
 
-#M2C = np.load(path/"M2C.npy")
-M2C = M2C_original
-
-M2C_sr = deepcopy(M2C)
-M2C_sr[:, param['n_modes_to_control_sr']:] = 0.
-
-# ------------------- sgbioedge -------------------- #
-
 R_sgbioedge = np.linalg.pinv(calib_sgbioedge.D[:,:param['n_modes_to_show']])
 R_sgbioedge_sr = np.linalg.pinv(calib_sgbioedge_sr.D[:,:param['n_modes_to_show_sr']])
 R_sgbioedge_oversampled = np.linalg.pinv(calib_sgbioedge_oversampled.D[:,:param['n_modes_to_show_oversampled']])
@@ -89,23 +78,11 @@ reconstructor_sgbioedge = M2C[:, :param['n_modes_to_show']]@R_sgbioedge
 reconstructor_sgbioedge_sr = M2C_sr[:, :param['n_modes_to_show_sr']]@R_sgbioedge_sr
 reconstructor_sgbioedge_oversampled = M2C[:, :param['n_modes_to_show_oversampled']]@R_sgbioedge_oversampled
 
-#%% check
-# dm.coefs = M2C[:,10]*1e-9
-
-# ngs*tel*dm*sgbioedge
-
-# plt.figure(),plt.plot(R_sgbioedge@sgbioedge.signal)
-
-# #%%
-# dm.coefs = M2C[:,:20]
-
-# from OOPAO.tools.displayTools import displayMap
-# displayMap(dm.OPD)
-
-
 #%%
 
-seed = 10 # 0 is bad, 10 is ok
+seed = 10
+
+display = True
 
 #%% Close the loop - gbioedge
 
@@ -131,8 +108,8 @@ n = 200
 SE_PSF = []
 LE_PSF = np.log10(tel.PSF)[n:-n,n:-n]
 
-plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,gbioedge.cam.frame,[[0,0],[0,0]],
-                                        [dm.coordinates[:,0],np.flip(dm.coordinates[:,1]),dm.coefs],
+plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD, gbioedge.cam.frame,[[0,0],[0,0]],
+                                        [dm.coordinates[:,0], np.flip(dm.coordinates[:,1]), dm.coefs],
                                         np.log10(tel.PSF),np.log10(tel.PSF)],\
                         type_fig          = ['imshow','imshow','imshow','plot','scatter','imshow','imshow'],\
                         list_title        = ['Turbulence OPD','Residual OPD','bio Detector',None,None,None,None],\
@@ -144,7 +121,9 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,gbioedge.ca
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
     
 
-display = False
+
+
+# close the loop
 
 for k in range(param['n_iter']):
     
@@ -184,9 +163,6 @@ for k in range(param['n_iter']):
 
 tel.computePSF()
 
-#param['loop_gain'] = 0.5
-#param['n_iter'] = 2000
-
 total_gbioedge_sr = np.zeros(param['n_iter'])
 residual_gbioedge_sr = np.zeros(param['n_iter'])
 strehl_gbioedge_sr = np.zeros(param['n_iter'])
@@ -216,9 +192,8 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,gbioedge_sr
                         n_subplot         = [4,2],\
                         list_display_axis = [None,None,None,True,None,None,None],\
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
-    
 
-display = False
+# close the loop
 
 for k in range(param['n_iter']):
     
@@ -260,9 +235,6 @@ if ref:
 # Setup
 
     tel.computePSF()
-
-    #param['loop_gain'] = 0.5
-    #param['n_iter'] = 2000
     
     total_gbioedge_oversampled = np.zeros(param['n_iter'])
     residual_gbioedge_oversampled = np.zeros(param['n_iter'])
@@ -293,9 +265,8 @@ if ref:
                             n_subplot         = [4,2],\
                             list_display_axis = [None,None,None,True,None,None,None],\
                             list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
-        
     
-    display = False
+    # close the loop
     
     for k in range(param['n_iter']):
         
@@ -365,7 +336,7 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,sgbioedge.c
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
     
 
-display = False
+display = True
 
 for k in range(param['n_iter']):
     
@@ -405,9 +376,6 @@ for k in range(param['n_iter']):
 
 tel.computePSF()
 
-#param['loop_gain'] = 0.5
-#param['n_iter'] = 2000
-
 total_sgbioedge_sr = np.zeros(param['n_iter'])
 residual_sgbioedge_sr = np.zeros(param['n_iter'])
 strehl_sgbioedge_sr = np.zeros(param['n_iter'])
@@ -437,9 +405,6 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD,sgbioedge_s
                         n_subplot         = [4,2],\
                         list_display_axis = [None,None,None,True,None,None,None],\
                         list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
-    
-
-display = False
 
 for k in range(param['n_iter']):
     
@@ -481,9 +446,6 @@ if ref:
 # Setup
 
     tel.computePSF()
-
-    #param['loop_gain'] = 0.5
-    #param['n_iter'] = 2000
     
     total_sgbioedge_oversampled = np.zeros(param['n_iter'])
     residual_sgbioedge_oversampled = np.zeros(param['n_iter'])
@@ -515,9 +477,6 @@ if ref:
                             list_display_axis = [None,None,None,True,None,None,None],\
                             list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
         
-    
-    display = False
-    
     for k in range(param['n_iter']):
         
         atm.update()
@@ -540,7 +499,8 @@ if ref:
             
             SE_PSF.append(np.log10(tel.PSF)[n:-n,n:-n])
             LE_PSF = np.mean(SE_PSF, axis=0)
-            cl_plot(list_fig   = [atm.OPD,tel.mean_removed_OPD, sgbioedge_oversampled.cam.frame,[np.arange(k+1),residual_sgbioedge_oversampled[:k+1]],dm.coefs,SE_PSF[-1], LE_PSF],
+            cl_plot(list_fig   = [atm.OPD,tel.mean_removed_OPD, sgbioedge_oversampled.cam.frame,[np.arange(k+1),residual_sgbioedge_oversampled[:k+1]],
+                                  dm.coefs,SE_PSF[-1], LE_PSF],
                     list_lim =[None,None,None,None,None,[SE_PSF[-1].max()-4,SE_PSF[-1].max()],[LE_PSF.max()-4,LE_PSF.max()]],plt_obj = plot_obj)
             plt.pause(0.1)
             if plot_obj.keep_going is False:
@@ -549,11 +509,20 @@ if ref:
         strehl_sgbioedge_oversampled[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
         residual_sgbioedge_oversampled[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9    
 
-# %%
+#%% Save analysis results
 
-np.save(path/("residual_gbiodege_"+str(param['n_iter'])+"_iter.npy"), residual_gbioedge)
-np.save(path/("residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.npy"), residual_gbioedge_sr)
-np.save(path/("residual_gbioedge_oversampled"+str(param['n_iter'])+"_iter.npy"), residual_gbioedge_oversampled)
+path_analysis_data = pathlib.Path(__file__) / 'data_analysis'
+
+parameters_analysis = deepcopy(param)
+
+save_vars(path_analysis_data / pathlib.Path('analysis' + param['filename']), 
+          ['parameters_analysis',\
+           'total_gbioedge', 'residual_gbioedge', 'strehl_gbioedge',\
+           'total_gbioedge_sr', 'residual_gbioedge_sr', 'strehl_gbioedge_sr',\
+           'total_gbioedge_oversampled', 'residual_gbioedge_oversampled', 'strehl_gbioedge_oversampled',\
+           'total_sgbioedge', 'residual_sgbioedge', 'strehl_sgbioedge',\
+           'total_sgbioedge_sr', 'residual_sgbioedge_sr', 'strehl_sgbioedge_sr',\
+           'total_sgbioedge_oversampled', 'residual_sgbioedge_oversampled', 'strehl_sgbioedge_oversampled'])
 
 #%% plots - gbioedge
 

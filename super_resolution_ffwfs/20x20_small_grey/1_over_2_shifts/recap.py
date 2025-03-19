@@ -34,12 +34,10 @@ load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.
 
 #%% load calibrations
 
-path_calibration = param['path_calibration']
-
-load_vars(path_calibration / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
-load_vars(path_calibration / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
-load_vars(path_calibration / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
-load_vars(path_calibration / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
 #%% save all variables
 

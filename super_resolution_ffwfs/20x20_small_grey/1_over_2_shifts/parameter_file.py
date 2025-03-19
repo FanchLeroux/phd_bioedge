@@ -111,7 +111,7 @@ param['n_iter'] = 100
 # --------------------- FILENAME -------------------- #
 
 # name of the system
-param['filename'] = '_sr_noise_prop_' +  param['optical_band'] +'_band_'+ str(param['n_subaperture'])+'x'+ str(param['n_subaperture'])\
+param['filename'] = '_' +  param['optical_band'] +'_band_'+ str(param['n_subaperture'])+'x'+ str(param['n_subaperture'])\
                     + '_' + param['modal_basis'] + '_basis'
 
 # --------------------- FOLDERS --------------------- #

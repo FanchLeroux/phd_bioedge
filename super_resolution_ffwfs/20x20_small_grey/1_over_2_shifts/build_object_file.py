@@ -5,6 +5,11 @@ Created on Wed Feb 26 13:45:38 2025
 @author: fleroux
 """
 
+# pylint: disable=undefined-variable
+# pylint: disable=undefined-loop-variable
+
+#%%
+
 import pathlib
 
 from fanch.tools.save_load import save_vars, load_vars
@@ -23,11 +28,10 @@ from fanch.basis.fourier import compute_real_fourier_basis, extract_subset, extr
 from OOPAO.Pyramid import Pyramid
 from OOPAO.BioEdge import BioEdge
 
-
 #%% Get parameter file
 
 path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
-load_vars(path_parameter_file, ['param'])
+load_vars(path_parameter_file, ['param'], ['param'])
 
 #%% -----------------------    TELESCOPE   -----------------------------
 
@@ -268,7 +272,10 @@ origin_object = str(pathlib.Path(__file__)) # keep a trace of where the saved ob
 
 #%%
 
-save_vars(parameters_object['path_object'] / pathlib.Path('object'+str(parameters_object['filename'])+'.pkl'), 
+save_vars(parameters_object['path_object'] / pathlib.Path('object_dm'+str(parameters_object['filename'])+'.pkl'), 
+          ['parameters_object']
+
+save_vars(parameters_object['path_object'] / pathlib.Path('all_objects'+str(parameters_object['filename'])+'.pkl'), 
           ['parameters_object', 'origin_object',\
            'tel','atm', 'dm', 'ngs', 'M2C',\
            'pyramid', 'pyramid_sr', 'pyramid_oversampled',\

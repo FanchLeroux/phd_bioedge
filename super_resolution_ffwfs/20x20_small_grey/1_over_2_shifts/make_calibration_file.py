@@ -17,15 +17,6 @@ from copy import deepcopy
 
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
-#%% path type compatibility issues
-
-if platform.system() == 'Windows':
-    temp = deepcopy(pathlib.PosixPath)
-    pathlib.PosixPath = pathlib.WindowsPath
-elif platform.system() == 'Linux':
-    temp = deepcopy(pathlib.WindowsPath)
-    pathlib.WindowsPath = pathlib.PosixPath
-
 #%% Get parameter file
 
 path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
