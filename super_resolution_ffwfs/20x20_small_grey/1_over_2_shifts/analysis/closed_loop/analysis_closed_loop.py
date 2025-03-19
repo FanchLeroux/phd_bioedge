@@ -39,19 +39,19 @@ elif platform.system() == 'Linux':
 load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'), 
           ['parameters_object', 'origin_object',\
            'tel','atm', 'dm', 'ngs', 'M2C',\
-           'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
-           'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
+           #'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
+           #'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
            'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
            'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled'])
 
 #%% load calibrations
 
-load_vars(param['path_calibration'] / pathlib.Path('calibration_all_wfs'+param['filename']+'.pkl'))
+#load_vars(param['path_calibration'] / pathlib.Path('calibration_all_wfs'+param['filename']+'.pkl'))
 
 # load_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
-# load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
-# load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
-# load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
+#load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
 #%% Modal Basis
 
@@ -80,38 +80,38 @@ reconstructor_sgbioedge_oversampled = M2C[:, :param['n_modes_to_show_oversampled
 
 #%% Allocate memory
 
-total_gbioedge = np.zeros((len(param['seeds'], param['n_iter'])))
-residual_gbioedge = np.zeros((len(param['seeds'], param['n_iter'])))
-strehl_gbioedge = np.zeros((len(param['seeds'], param['n_iter'])))
+total_gbioedge = np.zeros((len(param['seeds']), param['n_iter']))
+residual_gbioedge = np.zeros((len(param['seeds']), param['n_iter']))
+strehl_gbioedge = np.zeros((len(param['seeds']), param['n_iter']))
 
-total_gbioedge_sr = np.zeros((len(param['seeds'], param['n_iter'])))
-residual_gbioedge_sr = np.zeros((len(param['seeds'], param['n_iter'])))
-strehl_gbioedge_sr = np.zeros((len(param['seeds'], param['n_iter'])))         
+total_gbioedge_sr = np.zeros((len(param['seeds']), param['n_iter']))
+residual_gbioedge_sr = np.zeros((len(param['seeds']), param['n_iter']))
+strehl_gbioedge_sr = np.zeros((len(param['seeds']), param['n_iter']))         
                               
-total_gbioedge_oversampled = np.zeros((len(param['seeds'], param['n_iter'])))
-residual_gbioedge_oversampled = np.zeros((len(param['seeds'], param['n_iter'])))
-strehl_gbioedge_oversampled = np.zeros((len(param['seeds'], param['n_iter'])))
+total_gbioedge_oversampled = np.zeros((len(param['seeds']), param['n_iter']))
+residual_gbioedge_oversampled = np.zeros((len(param['seeds']), param['n_iter']))
+strehl_gbioedge_oversampled = np.zeros((len(param['seeds']), param['n_iter']))
                                        
-total_sgbioedge = np.zeros((len(param['seeds'], param['n_iter'])))
-residual_sgbioedge = np.zeros((len(param['seeds'], param['n_iter'])))
-strehl_sgbioedge = np.zeros((len(param['seeds'], param['n_iter'])))
+total_sgbioedge = np.zeros((len(param['seeds']), param['n_iter']))
+residual_sgbioedge = np.zeros((len(param['seeds']), param['n_iter']))
+strehl_sgbioedge = np.zeros((len(param['seeds']), param['n_iter']))
 
-total_sgbioedge_sr = np.zeros((len(param['seeds'], param['n_iter'])))
-residual_sgbioedge_sr = np.zeros((len(param['seeds'], param['n_iter'])))
-strehl_sgbioedge_sr = np.zeros((len(param['seeds'], param['n_iter'])))
+total_sgbioedge_sr = np.zeros((len(param['seeds']), param['n_iter']))
+residual_sgbioedge_sr = np.zeros((len(param['seeds']), param['n_iter']))
+strehl_sgbioedge_sr = np.zeros((len(param['seeds']), param['n_iter']))
                                
-total_sgbioedge_oversampled = np.zeros((len(param['seeds'], param['n_iter'])))
-residual_sgbioedge_oversampled = np.zeros((len(param['seeds'], param['n_iter'])))
-strehl_sgbioedge_oversampled = np.zeros((len(param['seeds'], param['n_iter'])))
+total_sgbioedge_oversampled = np.zeros((len(param['seeds']), param['n_iter']))
+residual_sgbioedge_oversampled = np.zeros((len(param['seeds']), param['n_iter']))
+strehl_sgbioedge_oversampled = np.zeros((len(param['seeds']), param['n_iter']))
 
 #%%
 
 display = False
 
-for k in range(len(param['seeds'])):
-    seed = param['seeds'][k]
+for m in range(len(param['seeds'])):
+    seed = param['seeds'][m]
 
-    #%% Close the loop - gbioedge
+    #% Close the loop - gbioedge
     
     # Setup
     
@@ -151,7 +151,7 @@ for k in range(len(param['seeds'])):
     for k in range(param['n_iter']):
         
         atm.update()
-        total_gbioedge[k] = np.std(tel.OPD[np.where(tel.pupil==1)])
+        total_gbioedge[m, k] = np.std(tel.OPD[np.where(tel.pupil==1)])*1e9
         phase_turb = tel.src.phase
         
         tel*dm*gbioedge
@@ -162,7 +162,7 @@ for k in range(len(param['seeds'])):
         
         # gbioedge_measure = gbioedge.signal # tune delay (2 frames here)
         
-        strehl_gbioedge[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        strehl_gbioedge[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
         
         
         if k>15 and display:
@@ -176,11 +176,11 @@ for k in range(len(param['seeds'])):
             if plot_obj.keep_going is False:
                     break
                 
-        strehl_gbioedge[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
-        residual_gbioedge[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
+        strehl_gbioedge[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        residual_gbioedge[m, k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
         
         
-    #%% Close the loop - gbioedge_sr
+    #% Close the loop - gbioedge_sr
     
     # Setup
     
@@ -219,7 +219,6 @@ for k in range(len(param['seeds'])):
     for k in range(param['n_iter']):
         
         atm.update()
-        total_gbioedge_sr[k] = np.std(tel.OPD[np.where(tel.pupil==1)])
         phase_turb = tel.src.phase
         
         tel*dm*gbioedge_sr
@@ -230,7 +229,7 @@ for k in range(len(param['seeds'])):
         
         # gbioedge_sr_measure = gbioedge_sr.signal # tune delay (2 frames here)
         
-        strehl_gbioedge_sr[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        strehl_gbioedge_sr[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
         
         
         if k>15 and display:
@@ -244,10 +243,10 @@ for k in range(len(param['seeds'])):
             if plot_obj.keep_going is False:
                     break
                 
-        strehl_gbioedge_sr[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
-        residual_gbioedge_sr[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
+        strehl_gbioedge_sr[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        residual_gbioedge_sr[m, k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
         
-    #%% Close the loop - gbioedge_oversampled
+    #% Close the loop - gbioedge_oversampled
     
     # Setup
     
@@ -286,7 +285,7 @@ for k in range(len(param['seeds'])):
     for k in range(param['n_iter']):
         
         atm.update()
-        total_gbioedge_oversampled[k] = np.std(tel.OPD[np.where(tel.pupil==1)])
+        total_gbioedge_oversampled[m, k] = np.std(tel.OPD[np.where(tel.pupil==1)])
         phase_turb = tel.src.phase
         
         tel*dm*gbioedge_oversampled
@@ -297,7 +296,7 @@ for k in range(len(param['seeds'])):
         
         # gbioedge_oversampled_measure = gbioedge_oversampled.signal # tune delay (2 frames here)
         
-        strehl_gbioedge_oversampled[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        strehl_gbioedge_oversampled[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
         
         
         if k>15 and display:
@@ -311,10 +310,10 @@ for k in range(len(param['seeds'])):
             if plot_obj.keep_going is False:
                     break
                 
-        strehl_gbioedge_oversampled[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
-        residual_gbioedge_oversampled[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9    
+        strehl_gbioedge_oversampled[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        residual_gbioedge_oversampled[m, k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9    
     
-    #%% Close the loop - sgbioedge
+    #% Close the loop - sgbioedge
     
     # Setup
     
@@ -351,7 +350,7 @@ for k in range(len(param['seeds'])):
     for k in range(param['n_iter']):
         
         atm.update()
-        total_sgbioedge[k] = np.std(tel.OPD[np.where(tel.pupil==1)])
+        total_sgbioedge[m, k] = np.std(tel.OPD[np.where(tel.pupil==1)])
         phase_turb = tel.src.phase
         
         tel*dm*sgbioedge
@@ -362,7 +361,7 @@ for k in range(len(param['seeds'])):
         
         # sgbioedge_measure = sgbioedge.signal # tune delay (2 frames here)
         
-        strehl_sgbioedge[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        strehl_sgbioedge[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
         
         
         if k>15 and display:
@@ -376,11 +375,11 @@ for k in range(len(param['seeds'])):
             if plot_obj.keep_going is False:
                     break
                 
-        strehl_sgbioedge[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
-        residual_sgbioedge[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
+        strehl_sgbioedge[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        residual_sgbioedge[m, k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
         
         
-    #%% Close the loop - sgbioedge_sr
+    #% Close the loop - sgbioedge_sr
     
     # Setup
     
@@ -415,7 +414,7 @@ for k in range(len(param['seeds'])):
     for k in range(param['n_iter']):
         
         atm.update()
-        total_sgbioedge_sr[k] = np.std(tel.OPD[np.where(tel.pupil==1)])
+        total_sgbioedge_sr[m, k] = np.std(tel.OPD[np.where(tel.pupil==1)])
         phase_turb = tel.src.phase
         
         tel*dm*sgbioedge_sr
@@ -426,7 +425,7 @@ for k in range(len(param['seeds'])):
         
         # sgbioedge_sr_measure = sgbioedge_sr.signal # tune delay (2 frames here)
         
-        strehl_sgbioedge_sr[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        strehl_sgbioedge_sr[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
         
         
         if k>15 and display:
@@ -440,10 +439,10 @@ for k in range(len(param['seeds'])):
             if plot_obj.keep_going is False:
                     break
                 
-        strehl_sgbioedge_sr[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
-        residual_sgbioedge_sr[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
+        strehl_sgbioedge_sr[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        residual_sgbioedge_sr[m, k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
         
-    #%% Close the loop - sgbioedge_oversampled
+    #% Close the loop - sgbioedge_oversampled
     
     # Setup
     
@@ -478,7 +477,7 @@ for k in range(len(param['seeds'])):
     for k in range(param['n_iter']):
         
         atm.update()
-        total_sgbioedge_oversampled[k] = np.std(tel.OPD[np.where(tel.pupil==1)])
+        total_sgbioedge_oversampled[m, k] = np.std(tel.OPD[np.where(tel.pupil==1)])
         phase_turb = tel.src.phase
         
         tel*dm*sgbioedge_oversampled
@@ -489,7 +488,7 @@ for k in range(len(param['seeds'])):
         
         # sgbioedge_oversampled_measure = sgbioedge_oversampled.signal # tune delay (2 frames here)
         
-        strehl_sgbioedge_oversampled[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        strehl_sgbioedge_oversampled[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
         
         
         if k>15 and display:
@@ -504,114 +503,21 @@ for k in range(len(param['seeds'])):
             if plot_obj.keep_going is False:
                     break
                 
-        strehl_sgbioedge_oversampled[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
-        residual_sgbioedge_oversampled[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9    
+        strehl_sgbioedge_oversampled[m, k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+        residual_sgbioedge_oversampled[m, k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9    
 
 #%% Save analysis results
 
-path_analysis_data = pathlib.Path(__file__) / 'data_analysis'
+path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
 
 parameters_analysis = deepcopy(param)
 
-save_vars(path_analysis_data / pathlib.Path('analysis' + param['filename']), 
+save_vars(path_analysis_data / pathlib.Path('analysis_closed_loop' + param['filename']), 
           ['parameters_analysis',\
            'total_gbioedge', 'residual_gbioedge', 'strehl_gbioedge',\
-           'total_gbioedge_sr', 'residual_gbioedge_sr', 'strehl_gbioedge_sr',\
-           'total_gbioedge_oversampled', 'residual_gbioedge_oversampled', 'strehl_gbioedge_oversampled',\
-           'total_sgbioedge', 'residual_sgbioedge', 'strehl_sgbioedge',\
-           'total_sgbioedge_sr', 'residual_sgbioedge_sr', 'strehl_sgbioedge_sr',\
-           'total_sgbioedge_oversampled', 'residual_sgbioedge_oversampled', 'strehl_sgbioedge_oversampled'])
+           'residual_gbioedge_sr', 'strehl_gbioedge_sr',\
+           'residual_gbioedge_oversampled', 'strehl_gbioedge_oversampled',\
+           'residual_sgbioedge', 'strehl_sgbioedge',\
+           'residual_sgbioedge_sr', 'strehl_sgbioedge_sr',\
+           'residual_sgbioedge_oversampled', 'strehl_sgbioedge_oversampled'])
 
-#%% plots - gbioedge
-
-plt.close('all')
-
-plt.figure()
-plt.plot(residual_gbioedge, 'b', label=str(param['n_subaperture'])+'x'+
-          str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
-plt.plot(residual_gbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
-          str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
-          +str(param['n_modes_to_control_sr'])+' modes controlled')
-plt.plot(residual_gbioedge_oversampled, 'k', label=str(2*param['n_subaperture'])+'x'+
-          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
-plt.title('Closed Loop residuals gbioedge\n'
-          'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
-          'Telescope diameter: '+str(tel.D) + ' m\n'
-          'Half grey width : '+str(param['modulation'])+' lambda/D\n'
-          'seed : '+str(seed))
-plt.xlabel('Iteration')
-plt.ylabel('residuals (nm)')
-plt.legend()
-
-
-
-plt.savefig(path_test / "plots" / pathlib.Path("residual_gbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
-            bbox_inches = 'tight')
-
-# zoom
-plt.figure()
-plt.plot(residual_gbioedge, 'b', label=str(param['n_subaperture'])+'x'+
-          str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
-plt.plot(residual_gbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
-          str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
-          +str(param['n_modes_to_control_sr'])+' modes controlled')
-plt.plot(residual_gbioedge_oversampled, 'k', label=str(2*param['n_subaperture'])+'x'+
-          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
-plt.title('zoom Closed Loop residuals gbioedge\n'
-          'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
-          'Telescope diameter: '+str(tel.D) + ' m\n'
-          'Half grey width : '+str(param['modulation'])+' lambda/D\n'
-          'seed : '+str(seed))
-plt.xlabel('Iteration')
-plt.ylabel('residuals (nm)')
-plt.xlim(4000, 6000)
-plt.ylim(0, 400)
-plt.legend()
-
-plt.savefig(path_test / "plots" / pathlib.Path("residual_sgbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
-            bbox_inches = 'tight')
-
-#%% plots - sgbioedge
-
-plt.figure()
-plt.plot(residual_sgbioedge, 'b', label=str(param['n_subaperture'])+'x'+
-          str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'])+' modes')
-plt.plot(residual_sgbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
-          str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'])+' modes shown\n'
-          +str(param['n_modes_to_control_sr'])+' modes controlled')
-plt.plot(residual_sgbioedge_oversampled, 'k', label=str(2*param['n_subaperture'])+'x'+
-          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'])+' modes')
-plt.title('Closed Loop residuals sgbioedge\n'
-          'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
-          'Telescope diameter: '+str(tel.D) + ' m\n'
-          'Half grey width : '+str(param['modulation'])+' lambda/D\n'
-          'seed : '+str(seed))
-plt.xlabel('Iteration')
-plt.ylabel('residuals (nm)')
-plt.legend()
-
-plt.savefig(path_test / "plots" / pathlib.Path("residual_sgbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
-            bbox_inches = 'tight')
-
-# zoom
-plt.figure()
-plt.plot(residual_sgbioedge, 'b', label=str(param['n_subaperture'])+'x'+
-          str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'])+' modes')
-plt.plot(residual_sgbioedge_sr, 'r', label=str(param['n_subaperture'])+'x'+
-          str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'])+' modes shown\n'
-          +str(param['n_modes_to_control_sr'])+' modes controlled')
-plt.plot(residual_sgbioedge_oversampled, 'k', label=str(2*param['n_subaperture'])+'x'+
-          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'])+' modes')
-plt.title('Zoom Closed Loop residuals sgbioedge\n'
-          'loop frequency : '+str(np.round(1/tel.samplingTime/1e3, 1))+'kHz\n'
-          'Telescope diameter: '+str(tel.D) + ' m\n'
-          'Half grey width : '+str(param['modulation'])+' lambda/D\n'
-          'seed : '+str(seed))
-plt.xlabel('Iteration')
-plt.ylabel('residuals (nm)')
-plt.xlim(4000, 6000)
-plt.ylim(0, 400)
-plt.legend()
-
-plt.savefig(path_test / "plots" / pathlib.Path("zoom_residual_sgbiodege_sr_"+str(param['n_iter'])+"_iter.png"), 
-            bbox_inches = 'tight')

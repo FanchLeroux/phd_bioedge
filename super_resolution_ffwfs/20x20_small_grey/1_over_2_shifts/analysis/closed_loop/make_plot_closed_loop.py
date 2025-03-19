@@ -7,16 +7,26 @@ Created on Fri Feb 28 10:29:55 2025
 
 # pylint: disable=undefined-variable
 
-import platform
+#%%
+
 import pathlib
+import sys
+import platform
+import dill
+
+import numpy as np
+import matplotlib.pyplot as plt
 
 from copy import deepcopy
 
-import dill
+from fanch.tools.save_load import load_vars
 
-from parameter_file import get_parameters
+from OOPAO.tools.displayTools import cl_plot
 
-import matplotlib.pyplot as plt
+#%% Get parameter file
+
+path_parameter_file = pathlib.Path(__file__).parent.parent.parent / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'])
 
 #%% path type compatibility issues
 
@@ -27,182 +37,64 @@ elif platform.system() == 'Linux':
     temp = deepcopy(pathlib.WindowsPath)
     pathlib.WindowsPath = pathlib.PosixPath
 
-#%%
+#%% Load objects computed inanalysis_closed_loop.py 
 
-path = pathlib.Path(__file__).parent.parent.parent # location of parameter_file.py
+path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
 
-#%% import parameter file from a distinct repository than the one of this file (relou)
+load_vars(path_analysis_data / pathlib.Path('analysis_closed_loop' + param['filename']), 
+          ['parameters_analysis',\
+           'total_gbioedge', 'residual_gbioedge', 'strehl_gbioedge',\
+           'residual_gbioedge_sr', 'strehl_gbioedge_sr',\
+           'residual_gbioedge_oversampled', 'strehl_gbioedge_oversampled',\
+           'residual_sgbioedge', 'strehl_sgbioedge',\
+           'residual_sgbioedge_sr', 'strehl_sgbioedge_sr',\
+           'residual_sgbioedge_oversampled', 'strehl_sgbioedge_oversampled'])
+    
+    
+#%% path plots
 
-# weird method from https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
+path_plots = pathlib.Path(__file__).parent / 'plots'
+    
+#%% plots
 
-import importlib.util
-import sys
-spec = importlib.util.spec_from_file_location("get_parameters", path / "parameter_file.py")
-foo = importlib.util.module_from_spec(spec)
-sys.modules["parameter_file"] = foo
-spec.loader.exec_module(foo)
+for k in range(len(param['seeds'])):
 
-#%%
-
-param = foo.get_parameters()
-
-#%% Load analysis results
-
-dill.load_session(pathlib.Path(__file__).parent / "data_analysis" /pathlib.Path('analysis_noise_propagation'+
-                                                                                str(param['filename'])+'.pkl'))
-
-#%%###################### Plots #################
-
-# SVD - Normalized Eigenvalues  
-
-    # --------------- pyramid --------------------
-
-plt.figure()
-plt.semilogy(singular_values_pyramid/singular_values_pyramid.max(), 'b', label='no SR')
-plt.semilogy(singular_values_pyramid_sr/singular_values_pyramid_sr.max(), 'r', label='SR')
-plt.semilogy(singular_values_pyramid_oversampled/singular_values_pyramid_oversampled.max(), 'c', label='oversampled')
-plt.title('singular_values_pyramid, '+str(param['n_subaperture'])+' subapertures, ' + param['modal_basis'] 
-          + ' modes used, 0.5 pixels shift')
-plt.legend()
-plt.xlabel('# eigen mode')
-plt.ylabel('normalized eigen value')
-
-    # --------------- sbioedge -------------------- #
-
-plt.figure()
-plt.semilogy(singular_values_sbioedge/singular_values_sbioedge.max(), 'b', label='no SR')
-plt.semilogy(singular_values_sbioedge_sr/singular_values_sbioedge_sr.max(), 'r', label='SR')
-plt.semilogy(singular_values_sbioedge_oversampled/singular_values_sbioedge_oversampled.max(), 'c', label='oversampled')
-plt.title('singular_values_sbioedge, '+str(param['n_subaperture'])+' subapertures, ' + param['modal_basis'] + 
-          ' modes used, 0.5 pixels shift')
-plt.legend()
-plt.xlabel('# eigen mode')
-plt.ylabel('normalized eigen value')
-
-    # --------------- sgbioedge -------------------- #
-
-plt.figure()
-plt.semilogy(singular_values_sgbioedge/singular_values_sgbioedge.max(), 'b', label='no SR')
-plt.semilogy(singular_values_sgbioedge_sr/singular_values_sgbioedge_sr.max(), 'r', label='SR')
-plt.semilogy(singular_values_sgbioedge_oversampled/singular_values_sgbioedge_oversampled.max(), 'c', label='oversampled')
-plt.title('singular_values_sgbioedge, '+str(param['n_subaperture'])+' subapertures, ' + param['modal_basis'] 
-          + ' modes used, 0.5 pixels shift')
-plt.legend()
-plt.xlabel('# eigen mode')
-plt.ylabel('normalized eigen value')
-
-
-# --------------- gbioedge -------------------- #
-
-plt.figure()
-plt.semilogy(singular_values_gbioedge/singular_values_gbioedge.max(), 'b', label='no SR')
-plt.semilogy(singular_values_gbioedge_sr/singular_values_gbioedge_sr.max(), 'r', label='SR')
-plt.semilogy(singular_values_gbioedge_oversampled/singular_values_gbioedge_oversampled.max(), 'c', label='oversampled')
-plt.title('singular_values_gbioedge, '+str(param['n_subaperture'])+' subapertures, ' + param['modal_basis'] + 
-          ' modes used, 0.5 pixels shift')
-plt.legend()
-plt.xlabel('# eigen mode')
-plt.ylabel('normalized eigen value')
-
-
-#%% Noise Propagation - With or Without SR - gbioedge
-
-# --------------- sgbioedge -------------------- #
-
-i = 0
-for n_modes in param['list_modes_to_keep']:
-
+    seed = param['seeds'][k]
+    
     plt.figure()
-    plt.plot(noise_propagation_sgbioedge_oversampled, 'k', 
-             label='sgbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-    #plt.plot(noise_propagation_pyramid_oversampled, 'm', label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-
-    #plt.plot(noise_propagation_sgbioedge[i], label= str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_sgbioedge_sr[i], 'r' , 
-             label= 'sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    #plt.plot(noise_propagation_pyramid_sr[i], 'b' , label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    i+=1
-    plt.yscale('log')
-    plt.ylim(1e-15, 1e-9)
-    plt.title("Grey Bi-O-Edge VS MPYWFS Uniform noise propagation\n"+str(param['modulation'])+' lambda/D')
-    plt.xlabel("mode ("+param['modal_basis']+") index")
-    plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
+    plt.plot(1e9*total_gbioedge[k, :], 'g', label='Open loop',)
+    plt.plot(residual_gbioedge[k, :], 'b', label=str(param['n_subaperture'])+'x'+
+              str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
+    plt.plot(residual_gbioedge_sr[k, :], 'r', label=str(param['n_subaperture'])+'x'+
+              str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
+              +str(param['n_modes_to_control_sr'])+' modes controlled')
+    plt.plot(residual_gbioedge_oversampled[k, :], 'k', label=str(2*param['n_subaperture'])+'x'+
+              str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
+    plt.title('Closed Loop residuals gbioedge\n'
+              'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
+              'Telescope diameter: '+str(param['diameter']) + ' m\n'
+              'Half grey width : '+str(param['modulation'])+' lambda/D\n'
+              'seed : '+str(seed))
+    plt.xlabel('Iteration')
+    plt.ylabel('residuals (nm)')
     plt.legend()
-    plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_sgb'+str(i)+'.png'), bbox_inches = 'tight')
-
-#%% --------------- gbioedge -------------------- #
-
-i = 0
-for n_modes in param['list_modes_to_keep']:
-
+    plt.savefig(path_plots / "gbioedge_closed_loop_severals_seeds.png", bbox_inches = 'tight')
+    
     plt.figure()
-    plt.plot(noise_propagation_gbioedge_oversampled, 'k', 
-             label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-    #plt.plot(noise_propagation_pyramid_oversampled, 'm', label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-
-    #plt.plot(noise_propagation_gbioedge[i], label= str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_gbioedge_sr[i], 'b' , 
-             label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    #plt.plot(noise_propagation_pyramid_sr[i], 'b' , label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    i+=1
-    plt.yscale('log')
-    plt.ylim(1e-15, 1e-9)
-    plt.title("Grey Bi-O-Edge VS MPYWFS Uniform noise propagation\n"+str(param['modulation'])+' lambda/D')
-    plt.xlabel("mode ("+param['modal_basis']+") index")
-    plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
+    plt.plot(1e9*total_gbioedge[k, :], 'g', label='Open loop')
+    plt.plot(residual_sgbioedge[k, :], 'b', label=str(param['n_subaperture'])+'x'+
+              str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
+    plt.plot(residual_sgbioedge_sr[k, :], 'r', label=str(param['n_subaperture'])+'x'+
+              str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
+              +str(param['n_modes_to_control_sr'])+' modes controlled')
+    plt.plot(residual_sgbioedge_oversampled[k, :], 'k', label=str(2*param['n_subaperture'])+'x'+
+              str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
+    plt.title('Closed Loop residuals sgbioedge\n'
+              'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
+              'Telescope diameter: '+str(param['diameter']) + ' m\n'
+              'Half grey width : '+str(param['modulation'])+' lambda/D\n'
+              'seed : '+str(seed))
+    plt.xlabel('Iteration')
+    plt.ylabel('residuals (nm)')
     plt.legend()
-    plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_gb_'+str(i)+'.png'), bbox_inches = 'tight')
-    
-    
-#%% --------------- gbioedge and sbioedge -------------------- #
-
-i = 0
-for n_modes in param['list_modes_to_keep']:
-
-    plt.figure()
-    plt.plot(noise_propagation_gbioedge_oversampled, 'k', 
-             label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-    plt.plot(noise_propagation_gbioedge_sr[i], '--b' , 
-             label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_sgbioedge_sr[i], 'r' , 
-             label= 'sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    
-    i+=1
-    plt.yscale('log')
-    plt.ylim(1e-15, 1e-9)
-    plt.title("Grey Bi-O-Edge VS Small Grey Bi-O-Edge\nUniform noise propagation\n"
-              +str(param['modulation'])+' lambda/D')
-    plt.xlabel("mode ("+param['modal_basis']+") index")
-    plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
-    plt.legend()
-    plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')
-    
-#%% --------------- pyramid, gbioedge and sbioedge -------------------- #
-
-i = 0
-for n_modes in param['list_modes_to_keep']:
-
-    plt.figure()
-    
-    plt.plot(noise_propagation_pyramid_oversampled, 'm', 
-             label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-    plt.plot(noise_propagation_gbioedge_oversampled, 'k', 
-             label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-    
-    plt.plot(noise_propagation_pyramid_sr[i], 'g' , 
-             label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_gbioedge_sr[i], '--b' , 
-             label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_sgbioedge_sr[i], 'r' , 
-             label= 'sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    
-    
-    i+=1
-    plt.yscale('log')
-    plt.ylim(1e-15, 1e-9)
-    plt.title("Pyramid VS Grey Bi-O-Edge VS Small Grey Bi-O-Edge\nUniform noise propagation\n"
-              +str(param['modulation'])+' lambda/D')
-    plt.xlabel("mode ("+param['modal_basis']+") index")
-    plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
-    plt.legend()
-    plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')
+    plt.savefig(path_plots / "sgbioedge_closed_loop_severals_seeds.png", bbox_inches = 'tight')
