@@ -107,8 +107,11 @@ strehl_sgbioedge_oversampled = np.zeros((len(param['seeds']), param['n_iter']))
 #%%
 
 display = False
+param['seeds'] = [22]
+param['n_iter'] = 1000
 
 for m in range(len(param['seeds'])):
+    
     seed = param['seeds'][m]
 
     #% Close the loop - gbioedge

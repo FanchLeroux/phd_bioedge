@@ -17,6 +17,8 @@ import dill
 import numpy as np
 import matplotlib.pyplot as plt
 
+from PIL import Image
+
 from copy import deepcopy
 
 from fanch.tools.save_load import load_vars
@@ -50,6 +52,7 @@ load_vars(path_analysis_data / pathlib.Path('analysis_closed_loop' + param['file
            'residual_sgbioedge_sr', 'strehl_sgbioedge_sr',\
            'residual_sgbioedge_oversampled', 'strehl_sgbioedge_oversampled'])
     
+param = parameters_analysis
     
 #%% path plots
 
@@ -57,44 +60,96 @@ path_plots = pathlib.Path(__file__).parent / 'plots'
     
 #%% plots
 
+images = []
+
+ylim = total_gbioedge.max() + 10
+
 for k in range(len(param['seeds'])):
 
     seed = param['seeds'][k]
     
     plt.figure()
-    plt.plot(1e9*total_gbioedge[k, :], 'g', label='Open loop',)
-    plt.plot(residual_gbioedge[k, :], 'b', label=str(param['n_subaperture'])+'x'+
+    plt.plot(total_gbioedge[k, :], 'g', label='Open loop')
+    plt.plot(residual_gbioedge[k, :], 'b', label='gbioedge '+str(param['n_subaperture'])+'x'+
               str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
-    plt.plot(residual_gbioedge_sr[k, :], 'r', label=str(param['n_subaperture'])+'x'+
-              str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
+    plt.plot(residual_gbioedge_sr[k, :], 'r', label='gbioedge_sr '+str(param['n_subaperture'])+'x'+
+              str(param['n_subaperture'])+', ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
               +str(param['n_modes_to_control_sr'])+' modes controlled')
-    plt.plot(residual_gbioedge_oversampled[k, :], 'k', label=str(2*param['n_subaperture'])+'x'+
+    plt.plot(residual_sgbioedge_sr[k, :], 'm', label='sgbioedge_sr '+str(param['n_subaperture'])+'x'+
+              str(param['n_subaperture'])+', ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
+              +str(param['n_modes_to_control_sr'])+' modes controlled')
+    plt.plot(residual_gbioedge_oversampled[k, :], 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+
               str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
-    plt.title('Closed Loop residuals gbioedge\n'
+    plt.title('Closed Loop residuals\n'
               'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
               'Telescope diameter: '+str(param['diameter']) + ' m\n'
               'Half grey width : '+str(param['modulation'])+' lambda/D\n'
               'seed : '+str(seed))
+    plt.ylim((0,ylim))
     plt.xlabel('Iteration')
     plt.ylabel('residuals (nm)')
-    plt.legend()
-    plt.savefig(path_plots / "gbioedge_closed_loop_severals_seeds.png", bbox_inches = 'tight')
+    plt.legend(loc='upper left')
     
-    plt.figure()
-    plt.plot(1e9*total_gbioedge[k, :], 'g', label='Open loop')
-    plt.plot(residual_sgbioedge[k, :], 'b', label=str(param['n_subaperture'])+'x'+
-              str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
-    plt.plot(residual_sgbioedge_sr[k, :], 'r', label=str(param['n_subaperture'])+'x'+
-              str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
-              +str(param['n_modes_to_control_sr'])+' modes controlled')
-    plt.plot(residual_sgbioedge_oversampled[k, :], 'k', label=str(2*param['n_subaperture'])+'x'+
-              str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
-    plt.title('Closed Loop residuals sgbioedge\n'
-              'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
-              'Telescope diameter: '+str(param['diameter']) + ' m\n'
-              'Half grey width : '+str(param['modulation'])+' lambda/D\n'
-              'seed : '+str(seed))
-    plt.xlabel('Iteration')
-    plt.ylabel('residuals (nm)')
-    plt.legend()
-    plt.savefig(path_plots / "sgbioedge_closed_loop_severals_seeds.png", bbox_inches = 'tight')
+    path_image = path_plots / pathlib.Path('gbioedge_sgbioedge_SR_closed_loop_'+str(k)+'_seed'+'.png')
+    
+    plt.savefig(path_image, bbox_inches = 'tight')
+    
+    images.append(Image.open(path_image))
+    
+#%% make gif
+    
+images[0].save(path_plots / 'animated_plot.gif', save_all=True, append_images=images, duration=1000, loop=0)
+    
+    # plt.figure()
+    # plt.plot(total_gbioedge[k, :], 'g', label='Open loop')
+    # plt.plot(residual_sgbioedge[k, :], 'b', label=str(param['n_subaperture'])+'x'+
+    #           str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
+    # plt.plot(residual_sgbioedge_sr[k, :], 'r', label=str(param['n_subaperture'])+'x'+
+    #           str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
+    #           +str(param['n_modes_to_control_sr'])+' modes controlled')
+    # plt.plot(residual_sgbioedge_oversampled[k, :], 'k', label=str(2*param['n_subaperture'])+'x'+
+    #           str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
+    # plt.title('Closed Loop residuals sgbioedge\n'
+    #           'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
+    #           'Telescope diameter: '+str(param['diameter']) + ' m\n'
+    #           'Half grey width : '+str(param['modulation'])+' lambda/D\n'
+    #           'seed : '+str(seed))
+    # plt.ylim((0,ylim))
+    # plt.xlabel('Iteration')
+    # plt.ylabel('residuals (nm)')
+    # plt.legend()
+    # plt.savefig(path_plots / "sgbioedge_closed_loop_severals_seeds.png", bbox_inches = 'tight')
+    
+#%%
+
+ylim = 1000
+
+plt.figure()
+
+plt.plot(residual_gbioedge[k,:], 'b', label='gbioedge '+str(param['n_subaperture'])+'x'+
+          str(param['n_subaperture'])+', '+str(param['n_modes_to_show'] )+' modes')
+plt.plot(residual_gbioedge_sr[k,:], 'r', label='gbioedge_sr '+str(param['n_subaperture'])+'x'+
+          str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
+          +str(param['n_modes_to_control_sr'])+' modes controlled')
+plt.plot(residual_sgbioedge_sr[k,:], 'm', label='sgbioedge_sr '+str(param['n_subaperture'])+'x'+
+          str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
+          +str(param['n_modes_to_control_sr'])+' modes controlled')
+plt.plot(residual_gbioedge_oversampled[k, :], 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+
+          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
+
+for k in range(1,len(param['seeds'])):
+    plt.plot(residual_gbioedge[k,:], 'b')
+    plt.plot(residual_gbioedge_sr[k,:], 'r')
+    plt.plot(residual_sgbioedge_sr[k,:], 'm')
+    plt.plot(residual_gbioedge_oversampled[k, :], 'k')
+    
+plt.legend()
+
+plt.title('Closed Loop residuals - all seeds\n'
+          'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
+          'Telescope diameter: '+str(param['diameter']) + ' m\n'
+          'Half grey width : '+str(param['modulation'])+' lambda/D\n'+ str(len(param['seeds']))+' seeds')
+plt.ylim((0,ylim))
+plt.xlabel('Iteration')
+plt.ylabel('residuals (nm)')
+plt.savefig(path_plots / "sr_broken_gbioedge_vs_sgbioedge.png", bbox_inches = 'tight')
