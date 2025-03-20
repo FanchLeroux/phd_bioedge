@@ -87,7 +87,7 @@ for k in range(len(param['seeds'])):
               'seed : '+str(seed))
     plt.ylim((0,ylim))
     plt.xlabel('Iteration')
-    plt.ylabel('residuals (nm)')
+    plt.ylabel('phase std (nm)')
     plt.legend(loc='upper left')
     
     path_image = path_plots / pathlib.Path('gbioedge_sgbioedge_SR_closed_loop_'+str(k)+'_seed'+'.png')
@@ -99,26 +99,6 @@ for k in range(len(param['seeds'])):
 #%% make gif
     
 images[0].save(path_plots / 'animated_plot.gif', save_all=True, append_images=images, duration=1000, loop=0)
-    
-    # plt.figure()
-    # plt.plot(total_gbioedge[k, :], 'g', label='Open loop')
-    # plt.plot(residual_sgbioedge[k, :], 'b', label=str(param['n_subaperture'])+'x'+
-    #           str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
-    # plt.plot(residual_sgbioedge_sr[k, :], 'r', label=str(param['n_subaperture'])+'x'+
-    #           str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
-    #           +str(param['n_modes_to_control_sr'])+' modes controlled')
-    # plt.plot(residual_sgbioedge_oversampled[k, :], 'k', label=str(2*param['n_subaperture'])+'x'+
-    #           str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
-    # plt.title('Closed Loop residuals sgbioedge\n'
-    #           'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
-    #           'Telescope diameter: '+str(param['diameter']) + ' m\n'
-    #           'Half grey width : '+str(param['modulation'])+' lambda/D\n'
-    #           'seed : '+str(seed))
-    # plt.ylim((0,ylim))
-    # plt.xlabel('Iteration')
-    # plt.ylabel('residuals (nm)')
-    # plt.legend()
-    # plt.savefig(path_plots / "sgbioedge_closed_loop_severals_seeds.png", bbox_inches = 'tight')
     
 #%%
 
@@ -151,5 +131,5 @@ plt.title('Closed Loop residuals - all seeds\n'
           'Half grey width : '+str(param['modulation'])+' lambda/D\n'+ str(len(param['seeds']))+' seeds')
 plt.ylim((0,ylim))
 plt.xlabel('Iteration')
-plt.ylabel('residuals (nm)')
+plt.ylabel('phase std (nm)')
 plt.savefig(path_plots / "sr_broken_gbioedge_vs_sgbioedge.png", bbox_inches = 'tight')

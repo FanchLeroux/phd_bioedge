@@ -46,10 +46,10 @@ load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.
 
 #%% load calibrations
 
-#load_vars(param['path_calibration'] / pathlib.Path('calibration_all_wfs'+param['filename']+'.pkl'))
+# load_vars(param['path_calibration'] / pathlib.Path('calibration_all_wfs'+param['filename']+'.pkl'))
 
 # load_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
-#load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
+# load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
 load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
 load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
@@ -107,8 +107,6 @@ strehl_sgbioedge_oversampled = np.zeros((len(param['seeds']), param['n_iter']))
 #%%
 
 display = False
-param['seeds'] = [22]
-param['n_iter'] = 1000
 
 for m in range(len(param['seeds'])):
     
@@ -523,4 +521,3 @@ save_vars(path_analysis_data / pathlib.Path('analysis_closed_loop' + param['file
            'residual_sgbioedge', 'strehl_sgbioedge',\
            'residual_sgbioedge_sr', 'strehl_sgbioedge_sr',\
            'residual_sgbioedge_oversampled', 'strehl_sgbioedge_oversampled'])
-
