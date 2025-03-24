@@ -39,6 +39,13 @@ load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param[
 load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
 load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
+#%% load analysis results
+
+path_results_closed_loop = pathlib.Path(__file__).parent\
+    / 'analysis' / 'closed_loop' / 'data_analysis' / pathlib.Path('analysis_closed_loop' + param['filename'])
+
+load_vars(path_results_closed_loop)
+
 #%% save all variables
 
 origin_recap = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from

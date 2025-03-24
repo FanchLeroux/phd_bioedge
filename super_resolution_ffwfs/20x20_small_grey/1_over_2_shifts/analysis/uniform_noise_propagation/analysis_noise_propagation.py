@@ -23,11 +23,6 @@ from fanch.tools.save_load import save_vars, load_vars
 
 from OOPAO.tools.displayTools import cl_plot
 
-#%% Get parameter file
-
-path_parameter_file = pathlib.Path(__file__).parent.parent.parent / "parameter_file.pkl"
-load_vars(path_parameter_file, ['param'])
-
 #%% path type compatibility issues
 
 if platform.system() == 'Windows':
@@ -37,34 +32,25 @@ elif platform.system() == 'Linux':
     temp = deepcopy(pathlib.WindowsPath)
     pathlib.WindowsPath = pathlib.PosixPath
 
-#%% Load objects computed in build_object_file.py 
+#%% Get parameter file
 
-# load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'), 
-#           ['parameters_object', 'origin_object',\
-#            'tel','atm', 'dm', 'ngs', 'M2C',\
-#            'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
-#            'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
-#            'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
-#            'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled'])
+path_parameter_file = pathlib.Path(__file__).parent.parent.parent / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'])
 
-#%% Load OOPAO calibration objects computed in make_calibration_file.py
+#%% load objects
 
-path_calibration = param['path_calibration']
+load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
 
-#%%
+#%% load calibrations
 
-dill.load_session(path_calibration / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
-dill.load_session(path_calibration / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
-dill.load_session(path_calibration / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
-dill.load_session(path_calibration / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
-
-#%%
-
-param = get_parameters() # to get current machine path (cluster or laptop issue ...)
+load_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
 #%% Analysis
 
-    # ------------------ pyramid ---------------------- #
+# ------------------ pyramid ---------------------- #
 
 # extract singular values
 
@@ -88,7 +74,8 @@ for n_modes in param['list_modes_to_keep']:
     noise_propagation_pyramid.append(np.diag(R @ R.T)/calib_pyramid.D.shape[0])
     noise_propagation_pyramid_sr.append(np.diag(R_sr @ R_sr.T)/calib_pyramid_sr.D.shape[0])
 
-    # ------------------ sbioedge ---------------------- #
+
+# ------------------ sbioedge ---------------------- #
 
 # extract singular values
 
@@ -112,7 +99,7 @@ for n_modes in param['list_modes_to_keep']:
     noise_propagation_sbioedge.append(np.diag(R @ R.T)/calib_sbioedge.D.shape[0])
     noise_propagation_sbioedge_sr.append(np.diag(R_sr @ R_sr.T)/calib_sbioedge_sr.D.shape[0])
     
-    # ------------------ gbioedge ---------------------- #
+# ------------------ gbioedge ---------------------- #
 
 # extract singular values
 
@@ -161,32 +148,20 @@ for n_modes in param['list_modes_to_keep']:
     noise_propagation_sgbioedge_sr.append(np.diag(R_sr @ R_sr.T)/calib_sgbioedge_sr.D.shape[0])
 
     
-#%% remove all the variables we do not want to save in the pickle file provided by dill.load_session
+#%% Save analysis results
 
-parameters = deepcopy(param)
+path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
 
-for obj in dir():
-    #checking for built-in variables/functions
-    if not obj in ['parameters',\
-                   'singular_values_pyramid','singular_values_pyramid_sr', 'singular_values_pyramid_oversampled',\
-                   'singular_values_sbioedge','singular_values_sbioedge_sr', 'singular_values_sbioedge_oversampled',\
-                   'singular_values_gbioedge','singular_values_gbioedge_sr', 'singular_values_gbioedge_oversampled',\
-                   'singular_values_sgbioedge','singular_values_sgbioedge_sr', 'singular_values_sgbioedge_oversampled',\
-                   'noise_propagation_pyramid','noise_propagation_pyramid_sr', 'noise_propagation_pyramid_oversampled',\
-                   'noise_propagation_sbioedge','noise_propagation_sbioedge_sr', 'noise_propagation_sbioedge_oversampled',\
-                   'noise_propagation_sgbioedge','noise_propagation_sgbioedge_sr', 'noise_propagation_sgbioedge_oversampled',\
-                   'noise_propagation_gbioedge','noise_propagation_gbioedge_sr', 'noise_propagation_gbioedge_oversampled',\
-                   'get_parameters', 'dill', 'pathlib']\
-    and not obj.startswith('__'):
-        #deleting the said obj, since a user-defined function
-        del globals()[obj]
-del obj
+parameters_analysis_uniform_noise_propagation = deepcopy(param)
 
-#%% save all variables
-
-origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
-
-#%%
-
-dill.dump_session(pathlib.Path(__file__).parent / "data_analysis" /pathlib.Path('analysis_noise_propagation'+
-                                                                                str(parameters['filename'])+'.pkl'))
+save_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation' + param['filename']), 
+          ['parameters_analysis_uniform_noise_propagation',\
+           'singular_values_pyramid', 'singular_values_pyramid_sr', 'singular_values_pyramid_oversampled',\
+           'singular_values_sbioedge', 'singular_values_sbioedge_sr', 'singular_values_sbioedge_oversampled',\
+           'singular_values_gbioedge', 'singular_values_gbioedge_sr', 'singular_values_gbioedge_oversampled',\
+           'singular_values_sgbioedge', 'singular_values_sgbioedge_sr', 'singular_values_sgbioedge_oversampled',\
+           'noise_propagation_pyramid', 'noise_propagation_pyramid_sr', 'noise_propagation_pyramid_oversampled',\
+           'noise_propagation_sbioedge', 'noise_propagation_sbioedge_sr', 'noise_propagation_sbioedge_oversampled',\
+           'noise_propagation_gbioedge', 'noise_propagation_gbioedge_sr', 'noise_propagation_gbioedge_oversampled',\
+           'noise_propagation_sgbioedge', 'noise_propagation_sgbioedge_sr', 'noise_propagation_sgbioedge_oversampled',\
+           ])

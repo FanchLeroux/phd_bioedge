@@ -43,7 +43,7 @@ elif platform.system() == 'Linux':
 
 path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
 
-load_vars(path_analysis_data / pathlib.Path('analysis_closed_loop' + param['filename']), 
+load_vars(path_analysis_data / pathlib.Path('analysis_closed_loop' + param['filename']+'.pkl'), 
           ['parameters_analysis',\
            'total_gbioedge', 'residual_gbioedge', 'strehl_gbioedge',\
            'residual_gbioedge_sr', 'strehl_gbioedge_sr',\

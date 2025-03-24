@@ -7,16 +7,28 @@ Created on Fri Feb 28 10:29:55 2025
 
 # pylint: disable=undefined-variable
 
-import platform
+#%%
+
 import pathlib
+import sys
+import platform
+import dill
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from PIL import Image
 
 from copy import deepcopy
 
-import dill
+from fanch.tools.save_load import load_vars
 
-from parameter_file import get_parameters
+from OOPAO.tools.displayTools import cl_plot
 
-import matplotlib.pyplot as plt
+#%% Get parameter file
+
+path_parameter_file = pathlib.Path(__file__).parent.parent.parent / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'])
 
 #%% path type compatibility issues
 
@@ -27,29 +39,14 @@ elif platform.system() == 'Linux':
     temp = deepcopy(pathlib.WindowsPath)
     pathlib.WindowsPath = pathlib.PosixPath
 
-#%%
+#%% load analysis results
 
-path = pathlib.Path(__file__).parent.parent.parent # location of parameter_file.py
+path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
+load_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation' + param['filename']))
 
-#%% import parameter file from a distinct repository than the one of this file (relou)
+#%% path plots
 
-# weird method from https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path
-
-import importlib.util
-import sys
-spec = importlib.util.spec_from_file_location("get_parameters", path / "parameter_file.py")
-foo = importlib.util.module_from_spec(spec)
-sys.modules["parameter_file"] = foo
-spec.loader.exec_module(foo)
-
-#%%
-
-param = foo.get_parameters()
-
-#%% Load analysis results
-
-dill.load_session(pathlib.Path(__file__).parent / "data_analysis" /pathlib.Path('analysis_noise_propagation'+
-                                                                                str(param['filename'])+'.pkl'))
+path_plots = pathlib.Path(__file__).parent / 'plots'
 
 #%%###################### Plots #################
 
