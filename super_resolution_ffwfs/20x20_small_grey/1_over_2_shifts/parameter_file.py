@@ -107,7 +107,7 @@ param['n_modes_to_show_oversampled'] = 980
 
 param['loop_gain'] = 0.5
 
-param['n_iter'] = 100
+param['n_iter'] = 1000
 
 # --------------------- FILENAME -------------------- #
 
