@@ -108,7 +108,7 @@ plt.figure()
 
 plt.plot(residual_gbioedge[k,:], 'b', label='gbioedge '+str(param['n_subaperture'])+'x'+
           str(param['n_subaperture'])+', '+str(param['n_modes_to_show'] )+' modes')
-plt.plot(residual_gbioedge_sr[k,:], 'r', label='gbioedge_sr '+str(param['n_subaperture'])+'x'+
+plt.plot(residual_gbioedge_sr[k,:], '--r', label='gbioedge_sr '+str(param['n_subaperture'])+'x'+
           str(param['n_subaperture'])+', SR ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
           +str(param['n_modes_to_control_sr'])+' modes controlled')
 plt.plot(residual_sgbioedge_sr[k,:], 'm', label='sgbioedge_sr '+str(param['n_subaperture'])+'x'+
@@ -119,7 +119,7 @@ plt.plot(residual_gbioedge_oversampled[k, :], 'k', label='gbioedge '+str(2*param
 
 for k in range(1,len(param['seeds'])):
     plt.plot(residual_gbioedge[k,:], 'b')
-    plt.plot(residual_gbioedge_sr[k,:], 'r')
+    plt.plot(residual_gbioedge_sr[k,:], '--r')
     plt.plot(residual_sgbioedge_sr[k,:], 'm')
     plt.plot(residual_gbioedge_oversampled[k, :], 'k')
     
@@ -133,3 +133,54 @@ plt.ylim((0,ylim))
 plt.xlabel('Iteration')
 plt.ylabel('phase std (nm)')
 plt.savefig(path_plots / "sr_broken_gbioedge_vs_sgbioedge.png", bbox_inches = 'tight')
+
+#%% Colect only  broken loops
+
+threshold = 96. # [nm] : std phase over which the loop is considered broken
+n_iter_bootstarp = 50
+
+broken_seeds_gbioedge = []
+broken_seeds_sgbioedge = []
+
+broken_loops_gbioedge = []
+broken_loops_sgbioedge = []
+
+for k in range(len(param['seeds'])):
+    
+    if residual_gbioedge_sr[k, n_iter_bootstarp:].max() >= threshold:
+        broken_seeds_gbioedge.append(param['seeds'][k])
+        broken_loops_gbioedge.append(residual_gbioedge_sr[k, :])
+        
+    if residual_sgbioedge_sr[k, n_iter_bootstarp:].max() >= threshold:
+        broken_seeds_sgbioedge.append(param['seeds'][k])
+        broken_loops_sgbioedge.append(residual_sgbioedge_sr[k, :])
+        
+broken_loops_gbioedge = np.asarray(broken_loops_gbioedge)
+broken_loops_sgbioedge = np.asarray(broken_loops_sgbioedge)
+
+#%% Plot only  broken loops
+
+figure=plt.figure()
+
+
+plt.title('Broken Closed Loop residuals\n'
+          'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
+          'Telescope diameter: '+str(param['diameter']) + ' m\n'
+          'Half grey width : '+str(param['modulation'])+' lambda/D\n'+ str(len(param['seeds']))+' seeds')
+
+plt.plot(residual_gbioedge[k,:], 'b', label='gbioedge '+str(param['n_subaperture'])+'x'+
+          str(param['n_subaperture'])+', '+str(param['n_modes_to_show'] )+' modes')
+plt.plot(residual_gbioedge_oversampled[k, :], 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+
+          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
+
+for n in range(broken_loops_sgbioedge.shape[0]):
+    plt.plot(broken_loops_sgbioedge[n,:], color = 'm',  label=str(n+1) + ') sgbioedge, seed '+str(broken_seeds_sgbioedge[n]))
+for m in range(broken_loops_gbioedge.shape[0]):
+    plt.plot(broken_loops_gbioedge[m,:], color = 'r', linestyle=(0,(5,1)), label= str(m+1) + ') gbioedge, seed '+ str(broken_seeds_gbioedge[m]))
+    
+plt.legend(loc='upper left')
+figure.set_size_inches(15, 8)
+plt.xlabel('Iteration')
+plt.ylabel('phase std (nm)')
+
+plt.savefig(path_plots / "sr_only_broken_gbioedge_vs_sgbioedge.png", bbox_inches = 'tight')
