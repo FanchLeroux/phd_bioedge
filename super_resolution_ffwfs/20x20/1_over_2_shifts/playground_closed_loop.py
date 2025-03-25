@@ -17,6 +17,8 @@ from copy import deepcopy
 
 from fanch.tools.save_load import save_vars, load_vars
 
+from OOPAO.calibration.compute_KL_modal_basis import compute_M2C
+
 from OOPAO.tools.displayTools import cl_plot
 
 #%% Get parameter file
@@ -43,13 +45,24 @@ load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.
            #'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
            'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled'])
 
+#%% get KL modes covariance matrix
+
+output = compute_M2C(tel, atm, dm, HHtName = 'KL_covariance_matrix', nameFolder=str(pathlib.Path(__file__).parent / "output_compute_M2C"))
+
+#%%
+
+import pickle
+
+with open(pathlib.Path(__file__).parent / "output_compute_M2CHHt_PSD_df_KL_covariance_matrix.pkl", 'rb') as f:
+    HHt, PSD_atm, df = pickle.load(f)
+    
 #%% load calibrations
 
 # load_vars(param['path_calibration'] / pathlib.Path('calibration_all_wfs'+param['filename']+'.pkl'))
 
 # load_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
 # load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
-#load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
+# load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
 load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
 #%% Modal Basis
@@ -577,3 +590,13 @@ for k in range(param['n_iter']):
             
     strehl_sgbioedge_oversampled[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
     residual_sgbioedge_oversampled[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
+    
+    
+#%% plots
+
+plt.figure()
+plt.imshow(HHt)
+plt.title('KL modes covariance matrix\n'
+          'r0 = '+str(param['r0'])+' m\n'
+          'windspeed ground layer = '+str(param['wind_speed'][0])+' m/s')
+plt.savefig(pathlib.Path(__file__).parent / "KL_cov.png", bbox_inches='tight')

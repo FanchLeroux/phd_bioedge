@@ -5,23 +5,33 @@ Created on Wed Feb 26 13:45:38 2025
 @author: fleroux
 """
 
-import numpy as np
+# pylint: disable=undefined-variable
+# pylint: disable=undefined-loop-variable
+
+#%%
 
 import pathlib
-import dill
 
-from parameter_file import get_parameters
+from fanch.tools.save_load import save_vars, load_vars
+
+import numpy as np
+
+from copy import deepcopy
 
 from OOPAO.Telescope import Telescope
 from OOPAO.Atmosphere import Atmosphere
 from OOPAO.Source import Source
 from OOPAO.DeformableMirror import DeformableMirror
 from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
-from fanch.basis.fourier import compute_real_fourier_basis, extract_subset, extract_vertical_frequencies, extract_diagonal_frequencies
+from fanch.basis.fourier import compute_real_fourier_basis, extract_subset, extract_vertical_frequencies,\
+    extract_diagonal_frequencies
 from OOPAO.Pyramid import Pyramid
 from OOPAO.BioEdge import BioEdge
 
-param = get_parameters()
+#%% Get parameter file
+
+path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'], ['param'])
 
 #%% -----------------------    TELESCOPE   -----------------------------
 
@@ -111,6 +121,8 @@ if param['is_dm_modal']:
 
 #%% --------------------------- WFSs -----------------------------------
 
+# ---------------------- Pyramid ----------------------------- #
+
 # pramid
 pyramid = Pyramid(nSubap = param['n_subaperture'], 
               telescope = tel, 
@@ -144,39 +156,7 @@ pyramid_oversampled = Pyramid(nSubap = 2*param['n_subaperture'],
               postProcessing = param['post_processing'],
               psfCentering = param['psf_centering'])
 
-
-# grey bioedge
-gbioedge = BioEdge(nSubap = param['n_subaperture'], 
-              telescope = tel, 
-              modulation = 0.,
-              grey_width = param['modulation'], 
-              lightRatio = param['light_threshold'],
-              n_pix_separation = param['n_pix_separation'],
-              postProcessing = param['post_processing'], 
-              psfCentering = param['psf_centering'])
-
-# grey bioedge SR
-gbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
-              telescope = tel, 
-              modulation = 0.,
-              grey_width = param['modulation'], 
-              lightRatio = param['light_threshold'],
-              n_pix_separation = param['n_pix_separation'],
-              postProcessing = param['post_processing'], 
-              psfCentering = param['psf_centering'])
-
-gbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
-gbioedge_sr.modulation = 0. # update reference intensities etc.
-
-# grey bioedge oversampled
-gbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
-              telescope = tel, 
-              modulation = 0.,
-              grey_width = param['modulation'], 
-              lightRatio = param['light_threshold'],
-              n_pix_separation = param['n_pix_separation'],
-              postProcessing = param['post_processing'], 
-              psfCentering = param['psf_centering'])
+# ----------------------- Sharp Bi-O-Edge ---------------------------- #
 
 # sharp bioedge
 sbioedge = BioEdge(nSubap = param['n_subaperture'], 
@@ -211,19 +191,94 @@ sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
 
-#%% remove all the variables we do not want to save in the pickle file provided by dill.load_session
+# ----------------------- Grey Bi-O-Edge ---------------------------- #
 
-for obj in dir():
-    #checking for built-in variables/functions
-    if not obj in ['atm', 'dm', 'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled', 'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
-                   'pyramid', 'pyramid_sr', 'pyramid_oversampled', 'M2C', 'ngs', 'param', 'tel', 'pathlib', 'dill']\
-        and not obj.startswith('_'):
-        #deleting the said obj, since a user-defined function
-        del globals()[obj]
-del obj
+# grey bioedge
+gbioedge = BioEdge(nSubap = param['n_subaperture'], 
+              telescope = tel, 
+              modulation = 0.,
+              grey_width = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+# grey bioedge SR
+gbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
+              telescope = tel, 
+              modulation = 0.,
+              grey_width = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+gbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
+gbioedge_sr.modulation = 0. # update reference intensities etc.
+
+# grey bioedge oversampled
+gbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
+              telescope = tel, 
+              modulation = 0.,
+              grey_width = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+# ---------------------- Small Grey Bi-O-Edge ------------------------------- #
+
+# small grey bioedge
+sgbioedge = BioEdge(nSubap = param['n_subaperture'], 
+              telescope = tel, 
+              modulation = 0.,
+              grey_width = param['modulation'],
+              grey_length = param['grey_length'],
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+# small grey bioedge SR
+sgbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
+              telescope = tel, 
+              modulation = 0.,
+              grey_width = param['modulation'],
+              grey_length = param['grey_length'],
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+sgbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
+sgbioedge_sr.modulation = 0. # update reference intensities etc.
+
+# small grey bioedge oversampled
+sgbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
+              telescope = tel, 
+              modulation = 0.,
+              grey_width = param['modulation'],
+              grey_length = param['grey_length'],
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
 
 #%% save all variables
 
-origin = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
+parameters_object = deepcopy(param)
 
-dill.dump_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
+origin_object = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
+
+#%%
+
+save_vars(parameters_object['path_object'] / pathlib.Path('object_dm'+str(parameters_object['filename'])+'.pkl'), 
+          ['parameters_object']
+
+save_vars(parameters_object['path_object'] / pathlib.Path('all_objects'+str(parameters_object['filename'])+'.pkl'), 
+          ['parameters_object', 'origin_object',\
+           'tel','atm', 'dm', 'ngs', 'M2C',\
+           'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
+           'sbioedge', 'sbioedge_sr', 'sbioedge_oversampled',\
+           'gbioedge', 'gbioedge_sr', 'gbioedge_oversampled',\
+           'sgbioedge', 'sgbioedge_sr','sgbioedge_oversampled'])

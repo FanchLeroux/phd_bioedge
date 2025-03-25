@@ -67,26 +67,25 @@ param['light_threshold'        ] = 0.3                # light threshold to selec
 param['post_processing'        ] = 'fullFrame'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
 
 # super resolution
-param['sr_amplitude']        = 0.5                   # [pixel] super resolution shifts amplitude
+param['sr_amplitude']        = 0.25                   # [pixel] super resolution shifts amplitude
 param['pupil_shift_bioedge'] = [[param['sr_amplitude'],\
-                                 0.,\
+                                 -param['sr_amplitude'],\
                                  param['sr_amplitude'],\
-                                 0.],\
+                                 -param['sr_amplitude']],\
                                 [param['sr_amplitude'],\
-                                0.,\
-                                0.,\
-                                param['sr_amplitude']]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method 
-                                                             # (for bioedge)
+                                -param['sr_amplitude'],\
+                                -param['sr_amplitude'],\
+                                param['sr_amplitude']]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for bioedge)
     
     
 param['pupil_shift_pyramid'] = [[param['sr_amplitude'],\
-                                 0.,\
-                                 0.,\
+                                 -param['sr_amplitude'],\
+                                 -param['sr_amplitude'],\
                                  param['sr_amplitude']],\
-                                [param['sr_amplitude'],\
+                                [-param['sr_amplitude'],\
+                                -param['sr_amplitude'],\
                                 param['sr_amplitude'],\
-                                0.,\
-                                0.]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for pyramid)
+                                param['sr_amplitude']]] # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for pyramid)
 
 # -------------------- MODAL BASIS ---------------- #
 
