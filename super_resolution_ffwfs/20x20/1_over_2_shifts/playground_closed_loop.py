@@ -21,6 +21,8 @@ from OOPAO.calibration.compute_KL_modal_basis import compute_M2C
 
 from OOPAO.tools.displayTools import cl_plot
 
+import pickle
+
 #%% Get parameter file
 
 path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
@@ -49,12 +51,10 @@ load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.
 
 output = compute_M2C(tel, atm, dm, HHtName = 'KL_covariance_matrix', nameFolder=str(pathlib.Path(__file__).parent / "output_compute_M2C"))
 
-#%%
-
-import pickle
-
 with open(pathlib.Path(__file__).parent / "output_compute_M2CHHt_PSD_df_KL_covariance_matrix.pkl", 'rb') as f:
     HHt, PSD_atm, df = pickle.load(f)
+    
+cov_kl = M2C.T @ HHt @ M2C
     
 #%% load calibrations
 
@@ -130,7 +130,7 @@ strehl_sgbioedge_oversampled = np.zeros(param['n_iter'])
 #%%
 
 display = True
-    
+
 seed = 22
 
 #%% Close the loop - gbioedge

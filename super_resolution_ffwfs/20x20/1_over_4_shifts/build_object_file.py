@@ -273,7 +273,10 @@ origin_object = str(pathlib.Path(__file__)) # keep a trace of where the saved ob
 #%%
 
 save_vars(parameters_object['path_object'] / pathlib.Path('object_dm'+str(parameters_object['filename'])+'.pkl'), 
-          ['parameters_object']
+          ['parameters_object', 'dm'])
+
+save_vars(parameters_object['path_object'] / pathlib.Path('object_atm'+str(parameters_object['filename'])+'.pkl'), 
+          ['parameters_object', 'atm'])
 
 save_vars(parameters_object['path_object'] / pathlib.Path('all_objects'+str(parameters_object['filename'])+'.pkl'), 
           ['parameters_object', 'origin_object',\

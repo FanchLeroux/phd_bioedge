@@ -37,7 +37,7 @@ elif platform.system() == 'Linux':
 
 #%% Load objects computed in build_object_file.py 
 
-load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'), 
+load_vars(param['path_object'] / pathlib.Path('all_objects'+str(param['filename'])+'.pkl'), 
           ['parameters_object', 'origin_object',\
            'tel','atm', 'dm', 'ngs', 'M2C',\
            #'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
