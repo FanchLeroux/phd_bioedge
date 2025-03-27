@@ -30,7 +30,7 @@ load_vars(path_parameter_file, ['param'])
 
 #%% load objects
 
-load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
+load_vars(param['path_object'] / pathlib.Path('all_objects'+str(param['filename'])+'.pkl'))
 
 #%% load calibrations
 
