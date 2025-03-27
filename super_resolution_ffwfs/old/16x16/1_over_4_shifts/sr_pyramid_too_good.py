@@ -8,11 +8,15 @@ Created on Thu Mar 27 14:18:06 2025
 
 #%%
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import pathlib
+import dill
 
 from parameter_file import get_parameters
+
+from copy import deepcopy
 
 from OOPAO.Telescope import Telescope
 from OOPAO.Atmosphere import Atmosphere
@@ -248,6 +252,10 @@ pyramid_oversampled = Pyramid(nSubap = 2*param['n_subaperture'],
               postProcessing = param['post_processing'],
               psfCentering = param['psf_centering'])
 
+#%% Load objects
+
+dill.load_session(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'))
+
 #%% Calibrations
 
 calib_pyramid = InteractionMatrix(ngs, atm, tel, dm, pyramid, M2C = M2C, 
@@ -313,4 +321,4 @@ for n_modes in param['list_modes_to_keep']:
     plt.xlabel("mode ("+param['modal_basis']+") index")
     plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
     plt.legend()
-    plt.savefig(param['path_plots'] / pathlib.Path(str(n_modes) + '_modes' + param['filename'] + '.png'), bbox_inches = 'tight')
+    #plt.savefig(param['path_plots'] / pathlib.Path(str(n_modes) + '_modes' + param['filename'] + '.png'), bbox_inches = 'tight')
