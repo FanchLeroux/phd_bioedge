@@ -9,6 +9,8 @@ import pdb
 import pathlib
 
 import time
+import copy
+
 from OOPAO.calibration.ao_cockpit_psim import plt_imshow
 from OOPAO.calibration.ao_cockpit_psim import plt_plot
 from OOPAO.calibration.ao_cockpit_psim import load
@@ -22,12 +24,18 @@ from OOPAO.MisRegistration import MisRegistration
 from OOPAO.BioEdge import BioEdge
 from OOPAO.Source import Source
 from OOPAO.Telescope import Telescope
+from OOPAO.calibration.compute_KL_modal_basis import compute_M2C
 from OOPAO.Zernike import Zernike
 from OOPAO.calibration.CalibrationVault import CalibrationVault
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 from OOPAO.tools.displayTools import cl_plot, displayMap
 
+#%%
+
+path = pathlib.Path(__file__).parent
+
 # %% -----------------------     read parameter file   ----------------------------------
+
 from parameterFile_VLT_I_Band_BIO import initializeParameterFile
 
 from astropy.io import fits
@@ -42,7 +50,7 @@ plt.ion()
 
 check_e2e_noise = True
 
-MMSE = True
+MMSE = False
 
 ## R0 assumption for the MMSE REC
 r0c=0.15
@@ -77,6 +85,7 @@ idxpup = np.where(pupil==1)
 
 
 #%% -----------------------     NGS   ----------------------------------
+
 # create the Source object
 ngs=Source(optBand   = param['opticalBand'],\
            magnitude = param['magnitude'])
@@ -122,7 +131,7 @@ bio_20 = BioEdge(nSubap             = param['nSubaperture'],\
               psfCentering          = False,\
               postProcessing        = param['postProcessing'],calibModulation=50)
 
-from OOPAO.calibration.compute_KL_modal_basis import compute_M2C
+#%% Combute modal basis    
 
 M2C_KL_full = compute_M2C(telescope            = tel,\
                                   atmosphere         = atm,\
@@ -148,37 +157,38 @@ M2C_KL = M2C_KL_full[:,1:nmot]
 
 stroke = 1e-9
 
-calib_bio_20 = InteractionMatrix(  ngs            = ngs,\
-                                atm            = atm,\
-                                tel            = tel,\
-                                dm             = dm,\
-                                wfs            = bio_20,\
-                                M2C            = M2C_KL,\
-                                stroke         = stroke,\
-                                nMeasurements  = 1,\
-                                   noise          = 'off', display = True)
+#%% Callibration
 
-fits.writeto('/diskb/cverinau/oopao_data//data_calibration/SUPERR/RECMO_bio_20_slopesMap.fits',calib_bio_20.D,overwrite=True)
+calib_bio_20 = InteractionMatrix(ngs            = ngs,\
+                                 atm            = atm,\
+                                 tel            = tel,\
+                                 dm             = dm,\
+                                 wfs            = bio_20,\
+                                 M2C            = M2C_KL,\
+                                 stroke         = stroke,\
+                                 nMeasurements  = 1,\
+                                 noise          = 'off', display = True)
 
-import copy
+fits.writeto(path / 'RECMO_bio_20_slopesMap.fits', calib_bio_20.D,overwrite=True)
+
+
 
 test_wfs = [bio_20]
 
 
 test_calib = [calib_bio_20]
 
-
-
-
-
 plt.close('all')
+
+
+
 propa = []
 for i_wfs in range(1):
     bio = copy.deepcopy(test_wfs[i_wfs])
     calib_CL    = test_calib[i_wfs]
     calib_CL = CalibrationVault(calib_CL.D[:,:nmot-1])
     #plt.figure(10)
-    propa.append(np.diag(calib_CL.M@calib_CL.M.T))
+    propa.append(np.diag(calib_CL.M@calib_CL.M.T)) # .M = reconstructor ??
     # plt.plot(propa[i_wfs])
 
 # modal projector
@@ -203,6 +213,25 @@ plt.close('all')
 
 #pdb.set_trace()
 
+#%% from zoom
+
+atm.initializeAtmosphere(tel)
+
+atm_opd_s = np.reshape(atm.OPD, [dim*dim])
+proj = KL_s.T @ atm_opd_s/tpup
+
+cor = KL_s @ proj
+
+res = atm_opd_s - cor
+
+res_2D = np.reshape(res, [dim,dim])
+
+np.std(res_2D[idxpup])
+
+fitting_error_analytical = (0.3*tel.D/dm.nAct / atm.r0)**0.5 **5./3 * 0.5 / (2*np.pi)
+
+#%%
+
 ## MMSE RECONSTRUCTOR
 
 # This is the full basis with Piston
@@ -214,7 +243,7 @@ HHt, PSD, df = load('/diskb/cverinau/oopao_data/data_calibration/SUPERR/HHt_PSD_
 Cmo_B = (1./tpup**2.) * B.T @ HHt @ B *(0.5e-6/(2.*np.pi))**2
 
 ## VERIFICATION: RMS ERROR PISTON INCLUDED: Full minus DM component = fitting error
-rmsPSD_wiP = np.sqrt(np.sum(PSD*df**2))*0.5e-6/(2.*np.pi)
+rmsPSD_wiP = np.sqrt(np.sum(PSD*df**2))*0.5e-6/(2.*np.pi) # with piston
 rmsDM_wiP = np.sqrt(np.sum(np.diag(Cmo_B[0:,0:])))
 ## FITTING ERROR FOR ALL MODES CORRECTED
 fitting_error=np.sqrt(rmsPSD_wiP**2-rmsDM_wiP**2)
@@ -340,15 +369,22 @@ plt.ylim(0,300)
 plt.legend()
 plt.show(block=False)
 
-#fits.writeto('RES_GRE20x20_KL_MMSE'+str(nmot)+'.fits',residuals,overwrite='True')
+#%%
+
+fits.writeto(path / pathlib.Path('RES_GRE20x20_KL_MMSE'+str(nmot)+'.fits'), residuals,overwrite='True')
 
 #%%
 
 if MMSE==True:
-    fits.writeto('RES_GRE20x20_MMSE_nmoKL'+str(nmot)+'_r0c_'+str(r0c)+'_alpha_'+str(alpha)+'_noisec_'+str(noise_levelc)+'_nLoop'+str(param["nLoop"])+'_RMS_'+str(np.int64(np.mean(residual[100:param["nLoop"]])))+'nm.fits',residual,overwrite='True')
+    fits.writeto(path / pathlib.Path('RES_GRE20x20_MMSE_nmoKL'+str(nmot)+'_r0c_'
+                                     +str(r0c)+'_alpha_'+str(alpha)+'_noisec_'
+                                     +str(noise_levelc)+'_nLoop'+str(param["nLoop"])
+                                     +'_RMS_'+str(np.int64(np.mean(residual[100:param["nLoop"]])))+'nm.fits'), residual,overwrite='True')
 
 if MMSE==False:
-    fits.writeto('RES_GRE20x20_LS_nmoKL'+str(nmot)+'_nLoop'+str(param["nLoop"])+'_RMS_'+str(np.int64(np.mean(residual[100:param["nLoop"]])))+'nm.fits',residual,overwrite='True')
+    fits.writeto(path / pathlib.Path('RES_GRE20x20_LS_nmoKL'+str(nmot)+'_nLoop'+str(param["nLoop"])
+                                     +'_RMS_'+str(np.int64(np.mean(residual[100:param["nLoop"]])))
+                                     +'nm.fits'), residual,overwrite='True')
 
 # amp = 1.e-9
 

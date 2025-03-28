@@ -137,7 +137,7 @@ plt.savefig(path_plots / "sr_broken_gbioedge_vs_sgbioedge.png", bbox_inches = 't
 #%% Colect only  broken loops
 
 threshold = 96. # [nm] : std phase over which the loop is considered broken
-n_iter_bootstarp = 50
+n_iter_bootstarp = 100
 
 broken_seeds_gbioedge = []
 broken_seeds_sgbioedge = []
