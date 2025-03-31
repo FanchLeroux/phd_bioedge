@@ -252,6 +252,11 @@ pyramid_sr = Pyramid(nSubap = parameters['n_subaperture'],
 pyramid_sr.apply_shift_wfs(parameters['pupil_shift_pyramid'][0], parameters['pupil_shift_pyramid'][1], units='pixels')
 pyramid_sr.modulation = parameters['modulation'] # update reference intensities etc.
 
+test = 0
+if test:
+    pyramid_sr.mask = pyramid_too_good_sr.mask
+    pyramid_sr.modulation = parameters['modulation'] # update reference intensities etc.
+
 # pyramid oversampled
 pyramid_oversampled = Pyramid(nSubap = 2*parameters['n_subaperture'], 
               telescope = tel, 
@@ -397,3 +402,15 @@ for n_modes in parameters['list_modes_to_keep']:
     plt.legend()
     #plt.savefig(parameters['path_plots'] / pathlib.Path(str(n_modes) + '_modes' + parameters['filename'] + '.png'), bbox_inches = 'tight')
 
+#%% Mask analysis
+
+plt.figure()
+plt.imshow(np.abs(pyramid_too_good.referencePyramidFrame - pyramid_too_good_sr.referencePyramidFrame))
+
+plt.figure()
+plt.imshow(np.abs(pyramid_sr.referencePyramidFrame - pyramid.referencePyramidFrame))           
+
+plt.figure()
+plt.plot(np.unwrap(np.diag(np.angle(pyramid_sr.mask))), 'b', label='pyramid_sr')
+plt.plot(np.unwrap(np.diag(np.angle(pyramid_too_good_sr.mask))), '--r', label='pyramid_too_good_sr')
+plt.legend()
