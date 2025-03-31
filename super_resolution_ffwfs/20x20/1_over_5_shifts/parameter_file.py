@@ -67,7 +67,7 @@ param['light_threshold'        ] = 0.3                # light threshold to selec
 param['post_processing'        ] = 'fullFrame'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
 
 # super resolution
-param['sr_amplitude']        = 0.25                   # [pixel] super resolution shifts amplitude
+param['sr_amplitude']        = 0.2                    # [pixel] super resolution shifts amplitude
 param['pupil_shift_bioedge'] = [[param['sr_amplitude'],\
                                  -param['sr_amplitude'],\
                                  param['sr_amplitude'],\
@@ -90,8 +90,8 @@ param['pupil_shift_pyramid'] = [[param['sr_amplitude'],\
 # -------------------- MODAL BASIS ---------------- #
 
 param['modal_basis'] = 'KL'
-param['list_modes_to_keep'] = np.linspace(int(0.5*(np.pi * (param['n_subaperture']/2)**2)), 
-                                          int(np.pi * param['n_subaperture']**2), num=10, dtype=int)
+param['list_modes_to_keep'] = [1200, 1050, 900, 750, 600, 450, 300]#np.linspace(int(0.5*(np.pi * (param['n_subaperture']/2)**2)), 
+                                         # int(np.pi * param['n_subaperture']**2), num=10, dtype=int)
 param['stroke'] = 1e-9 # [m] actuator stoke for calibration matrices computation
 param['single_pass'] = False    
 

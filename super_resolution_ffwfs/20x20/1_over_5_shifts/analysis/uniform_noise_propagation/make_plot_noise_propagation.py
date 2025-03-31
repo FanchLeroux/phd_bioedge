@@ -42,7 +42,8 @@ elif platform.system() == 'Linux':
 #%% load analysis results
 
 path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
-load_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation' + param['filename']))
+load_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation'
+                                            + param['filename'] + '.pkl'))
 
 #%% path plots
 
@@ -202,4 +203,15 @@ for n_modes in param['list_modes_to_keep']:
     plt.xlabel("mode ("+param['modal_basis']+") index")
     plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
     plt.legend()
-    plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')
+    plt.savefig(pathlib.Path(__file__).parent / "plots" /
+                pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')
+    
+#%% Carlos-like plot
+
+plt.figure()
+  
+    
+    
+    
+    
+    

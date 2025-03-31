@@ -156,7 +156,7 @@ path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
 
 parameters_analysis_uniform_noise_propagation = deepcopy(param)
 
-save_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation' + param['filename']), 
+save_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation' + param['filename'] + '.pkl'), 
           ['parameters_analysis_uniform_noise_propagation',\
            'singular_values_pyramid', 'singular_values_pyramid_sr', 'singular_values_pyramid_oversampled',\
            'singular_values_sbioedge', 'singular_values_sbioedge_sr', 'singular_values_sbioedge_oversampled',\

@@ -41,13 +41,13 @@ origin_calib = str(pathlib.Path(__file__)) # keep a trace of where the saved obj
 
 calib_pyramid = InteractionMatrix(ngs, atm, tel, dm, pyramid, M2C = M2C, 
                                   stroke = param['stroke'], single_pass=param['single_pass'], 
-                                  display=True)
+                                  display=True, nMeasurements=2)
 calib_pyramid_sr = InteractionMatrix(ngs, atm, tel, dm, pyramid_sr, M2C = M2C, 
                                       stroke = param['stroke'], single_pass=param['single_pass'], 
-                                      display=True)
+                                      display=True, nMeasurements=2)
 calib_pyramid_oversampled = InteractionMatrix(ngs, atm, tel, dm, pyramid_oversampled, M2C = M2C, 
                                               stroke = param['stroke'], single_pass=param['single_pass'], 
-                                              display=True)
+                                              display=True, nMeasurements=2)
 
 #%% save pyramid calibrations
 
@@ -59,11 +59,14 @@ save_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+str(par
 #%% -------------------- Make sbioedge calibrations --------------------------
 
 calib_sbioedge = InteractionMatrix(ngs, atm, tel, dm, sbioedge, M2C = M2C, 
-                                  stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+                                  stroke = param['stroke'], single_pass=param['single_pass'], 
+                                  display=True, nMeasurements=2)
 calib_sbioedge_sr = InteractionMatrix(ngs, atm, tel, dm, sbioedge_sr, M2C = M2C, 
-                                      stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+                                      stroke = param['stroke'], single_pass=param['single_pass'], 
+                                      display=True, nMeasurements=2)
 calib_sbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, sbioedge_oversampled, M2C = M2C, 
-                                              stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+                                              stroke = param['stroke'], single_pass=param['single_pass'], 
+                                              display=True, nMeasurements=2)
 
 #%% save sbioedge calibrations
 
@@ -75,11 +78,14 @@ save_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+str(pa
 
 
 calib_gbioedge = InteractionMatrix(ngs, atm, tel, dm, gbioedge, M2C = M2C, 
-                                  stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+                                  stroke = param['stroke'], single_pass=param['single_pass'], 
+                                  display=True, nMeasurements=2)
 calib_gbioedge_sr = InteractionMatrix(ngs, atm, tel, dm, gbioedge_sr, M2C = M2C, 
-                                      stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+                                      stroke = param['stroke'], single_pass=param['single_pass'], 
+                                      display=True, nMeasurements=2)
 calib_gbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, gbioedge_oversampled, M2C = M2C, 
-                                              stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+                                              stroke = param['stroke'], single_pass=param['single_pass'], 
+                                              display=True, nMeasurements=2)
 
 #%% save gbioedge calibrations
 
@@ -90,11 +96,14 @@ save_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+str(pa
 #%% -------------------- Make sgbioedge calibrations -----------------------
 
 calib_sgbioedge = InteractionMatrix(ngs, atm, tel, dm, sgbioedge, M2C = M2C, 
-                                  stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+                                  stroke = param['stroke'], single_pass=param['single_pass'], 
+                                  display=True, nMeasurements=2)
 calib_sgbioedge_sr = InteractionMatrix(ngs, atm, tel, dm, sgbioedge_sr, M2C = M2C, 
-                                      stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+                                      stroke = param['stroke'], single_pass=param['single_pass'], 
+                                      display=True, nMeasurements=2)
 calib_sgbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, sgbioedge_oversampled, M2C = M2C, 
-                                              stroke = param['stroke'], single_pass=param['single_pass'], display=True)
+                                              stroke = param['stroke'], single_pass=param['single_pass'], 
+                                              display=True, nMeasurements=2)
     
 #%% save sgbioedge calibrations
 
