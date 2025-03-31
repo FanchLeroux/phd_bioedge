@@ -20,4 +20,16 @@ propagation_distance = 75e-3 # [m] collimating lens focal length
 
 collimated_beam_diameter = mfd * (1 + (propagation_distance/zr)**2)**0.5
 
+N = 18.65
+
+focal_length = N * collimated_beam_diameter
+
+focal_length_exp = 250e-3 # [m]
+
+N_exp = focal_length_exp / collimated_beam_diameter
+
 print(collimated_beam_diameter*1e3)
+
+print(focal_length*1e3)
+
+print(N_exp)
