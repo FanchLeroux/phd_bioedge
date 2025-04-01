@@ -208,8 +208,30 @@ for n_modes in param['list_modes_to_keep']:
     
 #%% Carlos-like plot
 
-plt.figure()
-  
+figure = plt.figure()
+
+plt.plot(noise_propagation_pyramid_oversampled, 'm', 
+         label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+plt.plot(noise_propagation_gbioedge_oversampled, 'k', 
+         label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+
+i = 0
+for n_modes in param['list_modes_to_keep']:
+    plt.plot(noise_propagation_pyramid_sr[i], 
+             label= 'pyramid '+str(param['n_subaperture'])+'x'+
+             str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
+    i+=1
+
+plt.yscale('log')
+plt.ylim(1e-15, 1e-8)
+plt.title("Pyramid VS Grey Bi-O-Edge VS Small Grey Bi-O-Edge\nUniform noise propagation\n"
+          +str(param['modulation'])+' lambda/D')
+plt.xlabel("mode ("+param['modal_basis']+") index")
+plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
+plt.legend()
+figure.set_size_inches(10, 8)
+plt.savefig(pathlib.Path(__file__).parent / "plots" /
+            pathlib.Path('figure_noise_propagation_pyramid_like_carlos'+'.png'), bbox_inches = 'tight')
     
     
     
