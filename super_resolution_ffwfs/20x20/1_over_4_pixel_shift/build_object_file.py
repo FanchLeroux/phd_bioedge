@@ -28,14 +28,15 @@ from fanch.basis.fourier import compute_real_fourier_basis, extract_subset, extr
 from OOPAO.Pyramid import Pyramid
 from OOPAO.BioEdge import BioEdge
 
-#%%
+#%% Define paths
 
-dirc = pathlib.Path(__file__).parent
+path = pathlib.Path(__file__).parent
+path_data = path.parent.parent.parent.parent / "phd_bioedge_data" / pathlib.Path(*path.parts[-3:]) # could be done better
 
 #%% Get parameter file
 
-path_parameter_file = dirc / "parameter_file.pkl"
-load_vars(path_parameter_file, ['param'], ['param'])
+path_parameter_file = path_data / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'])
 
 #%% -----------------------    TELESCOPE   -----------------------------
 
