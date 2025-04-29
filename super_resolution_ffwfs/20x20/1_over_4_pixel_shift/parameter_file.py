@@ -64,7 +64,7 @@ param['L0'            ] = 30                                             # [m] v
 param['fractionnal_r0'] = [0.45, 0.1, 0.1, 0.25, 0.1]                    # Cn2 profile (percentage)
 param['wind_speed'    ] = [5,4,8,10,2]                                   # [m.s-1] wind speed of the different layers
 param['wind_direction'] = [0,72,144,216,288]                             # [degrees] wind direction of the different layers
-param['altitude'      ] = [0, 1000,5000,10000,12000 ]                    # [m] altitude of the different layers
+param['altitude'      ] = [0, 1000, 5000, 10000, 12000]                  # [m] altitude of the different layers
 param['seeds']          = range(2)
 
 # ------------------- TELESCOPE ------------------ #

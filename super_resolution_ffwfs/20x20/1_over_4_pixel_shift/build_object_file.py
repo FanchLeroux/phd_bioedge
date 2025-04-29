@@ -13,6 +13,7 @@ Created on Wed Feb 26 13:45:38 2025
 import pathlib
 
 from fanch.tools.save_load import save_vars, load_vars
+from fanch.tools.oopao import clean_wfs
 
 import numpy as np
 
@@ -44,18 +45,20 @@ load_vars(path_parameter_file, ['param'])
 tel = Telescope(resolution = param['resolution'], # [pixel] resolution of the telescope
                 diameter   = param['diameter'])   # [m] telescope diameter
 
-#%% -----------------------     NGS   ----------------------------------
+save_vars(param['path_object'] / 'tel.pkl', ['tel'])
 
-# GHOST wavelength : 770 nm, full bandwidth = 20 nm
-# 'I2' band : 750 nm, bandwidth? = 33 nm
+#%% -----------------------     NGS   ----------------------------------
 
 # create the Natural Guide Star object
 ngs = Source(optBand     = param['optical_band'],          # Source optical band (see photometry.py)
              magnitude   = param['magnitude'])            # Source Magnitude
 
-ngs*tel
+save_vars(param['path_object'] / 'ngs.pkl', ['ngs'])
 
 #%% -----------------------    ATMOSPHERE   ----------------------------
+
+# coupling the telescope and the source is mandatory to generate Atmosphere object
+ngs*tel
 
 # create the Atmosphere object
 atm = Atmosphere(telescope     = tel,                      # Telescope                              
@@ -66,10 +69,13 @@ atm = Atmosphere(telescope     = tel,                      # Telescope
                  windDirection = param['wind_direction'],  # [degrees] wind direction of the different layers
                  altitude      =  param['altitude'      ]) # [m] altitude of the different layers
 
+save_vars(param['path_object'] / 'atm.pkl', ['atm'])
+
 #%% -------------------------     DM   ----------------------------------
 
 if not(param['is_dm_modal']):
     dm = DeformableMirror(tel, nSubap=param['n_actuator'])
+    save_vars(param['path_object'] / 'dm.pkl', ['dm'])
     
 #%% ------------------------- MODAL BASIS -------------------------------
 
@@ -80,11 +86,10 @@ if param['modal_basis'] == 'KL':
                               atmosphere         = atm,\
                               deformableMirror   = dm,\
                               param              = param,\
-                              nameFolder         = str(dirc),\
-                              nameFile           = 'BASIS_SUPERR_nowok',\
+                              nameFolder         = str(param['path_object']) +"\\",\
                               remove_piston      = False,\
-                              HHtName            = 'HHt_SUPERR_nowok',\
-                              baseName           = 'VLT_nowok' ,\
+                              HHtName            = 'KL_covariance_matrix',\
+                              baseName           = 'KL_basis' ,\
                               mem_available      = 6.1e9,\
                               minimF             = False,\
                               nmo                = 1350,\
@@ -94,7 +99,11 @@ if param['modal_basis'] == 'KL':
                               NDIVL              = 1,\
                               lim_inversion=1e-5)
         
-    M2C_KL = M2C_KL_full[:,1:] # remove piston
+    M2C = M2C_KL_full[:,1:] # remove piston
+    
+    dm.coefs = np.zeros(dm.nValidAct) # reset dm.OPD
+    
+    save_vars(param['path_object'] / 'M2C.pkl', ['M2C'])
 
 elif param['modal_basis'] == 'poke':
     M2C = np.identity(dm.nValidAct)
@@ -143,6 +152,8 @@ elif param['modal_basis'] == 'Fourier2DsmallBis':
 
 if param['is_dm_modal']:
     dm = DeformableMirror(tel, nSubap=param['n_actuator'], modes = modes)
+    save_vars(param['path_object'] / 'dm.pkl', ['dm'])
+    save_vars(param['path_object'] / 'M2C.pkl', ['M2C'])
 
 #%% --------------------------- WFSs -----------------------------------
 
@@ -158,6 +169,11 @@ pyramid = Pyramid(nSubap = param['n_subaperture'],
               postProcessing = param['post_processing'],
               psfCentering = param['psf_centering'])
 
+pyramid = clean_wfs(pyramid)
+save_vars(param['path_object'] / 'pyramid.pkl', ['pyramid'])
+
+#%%
+
 # pyramid SR
 pyramid_sr = Pyramid(nSubap = param['n_subaperture'], 
               telescope = tel, 
@@ -171,6 +187,9 @@ pyramid_sr = Pyramid(nSubap = param['n_subaperture'],
 pyramid_sr.apply_shift_wfs(param['pupil_shift_pyramid'][0], param['pupil_shift_pyramid'][1], units='pixels')
 pyramid_sr.modulation = param['modulation'] # update reference intensities etc.
 
+pyramid_sr = clean_wfs(pyramid_sr)
+save_vars(param['path_object'] / 'pyramid_sr.pkl', ['pyramid_sr'])
+
 # pyramid oversampled
 pyramid_oversampled = Pyramid(nSubap = 2*param['n_subaperture'], 
               telescope = tel, 
@@ -180,6 +199,9 @@ pyramid_oversampled = Pyramid(nSubap = 2*param['n_subaperture'],
               n_pix_edge = param['n_pix_separation'],
               postProcessing = param['post_processing'],
               psfCentering = param['psf_centering'])
+
+pyramid_oversampled = clean_wfs(pyramid_oversampled)
+save_vars(param['path_object'] / 'pyramid_oversampled.pkl', ['pyramid_oversampled'])
 
 # ----------------------- Sharp Bi-O-Edge ---------------------------- #
 
@@ -192,6 +214,9 @@ sbioedge = BioEdge(nSubap = param['n_subaperture'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
+
+sbioedge = clean_wfs(sbioedge)
+save_vars(param['path_object'] / 'sbioedge.pkl', ['sbioedge'])
 
 # sharp bioedge SR
 sbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
@@ -206,6 +231,9 @@ sbioedge_sr = BioEdge(nSubap = param['n_subaperture'],
 sbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
 sbioedge_sr.modulation = param['modulation'] # update reference intensities etc.
 
+sbioedge_sr = clean_wfs(sbioedge_sr)
+save_vars(param['path_object'] / 'sbioedge_sr.pkl', ['sbioedge_sr'])
+
 # sharp bioedge oversampled
 sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
               telescope = tel, 
@@ -215,6 +243,9 @@ sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
+
+sbioedge_oversampled = clean_wfs(sbioedge_oversampled)
+save_vars(param['path_object'] / 'sbioedge_oversampled.pkl', ['sbioedge_oversampled'])
 
 # ----------------------- Grey Bi-O-Edge ---------------------------- #
 
@@ -227,6 +258,9 @@ gbioedge = BioEdge(nSubap = param['n_subaperture'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
+
+gbioedge = clean_wfs(gbioedge)
+save_vars(param['path_object'] / 'gbioedge.pkl', ['gbioedge'])
 
 # grey bioedge SR
 gbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
@@ -241,6 +275,9 @@ gbioedge_sr = BioEdge(nSubap = param['n_subaperture'],
 gbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
 gbioedge_sr.modulation = 0. # update reference intensities etc.
 
+gbioedge_sr = clean_wfs(gbioedge_sr)
+save_vars(param['path_object'] / 'gbioedge_sr.pkl', ['gbioedge_sr'])
+
 # grey bioedge oversampled
 gbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
               telescope = tel, 
@@ -250,6 +287,9 @@ gbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
+
+gbioedge_oversampled = clean_wfs(gbioedge_oversampled)
+save_vars(param['path_object'] / 'gbioedge_oversampled.pkl', ['gbioedge_oversampled'])
 
 # ---------------------- Small Grey Bi-O-Edge ------------------------------- #
 
@@ -263,6 +303,9 @@ sgbioedge = BioEdge(nSubap = param['n_subaperture'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
+
+sgbioedge = clean_wfs(sgbioedge)
+save_vars(param['path_object'] / 'sgbioedge.pkl', ['sgbioedge'])
 
 # small grey bioedge SR
 sgbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
@@ -278,6 +321,9 @@ sgbioedge_sr = BioEdge(nSubap = param['n_subaperture'],
 sgbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_bioedge'][1], units='pixels')
 sgbioedge_sr.modulation = 0. # update reference intensities etc.
 
+sgbioedge_sr = clean_wfs(sgbioedge_sr)
+save_vars(param['path_object'] / 'sgbioedge_sr.pkl', ['sgbioedge_sr'])
+
 # small grey bioedge oversampled
 sgbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
               telescope = tel, 
@@ -289,6 +335,9 @@ sgbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
 
+sgbioedge_oversampled = clean_wfs(sgbioedge_oversampled)
+save_vars(param['path_object'] / 'sgbioedge_oversampled.pkl', ['sgbioedge_oversampled'])
+
 #%% save all variables
 
 parameters_object = deepcopy(param)
@@ -296,12 +345,6 @@ parameters_object = deepcopy(param)
 origin_object = str(pathlib.Path(__file__)) # keep a trace of where the saved objects come from
 
 #%%
-
-save_vars(parameters_object['path_object'] / pathlib.Path('object_dm'+str(parameters_object['filename'])+'.pkl'), 
-          ['parameters_object', 'dm'])
-
-save_vars(parameters_object['path_object'] / pathlib.Path('object_atm'+str(parameters_object['filename'])+'.pkl'), 
-          ['parameters_object', 'atm'])
 
 save_vars(parameters_object['path_object'] / pathlib.Path('all_objects'+str(parameters_object['filename'])+'.pkl'), 
           ['parameters_object', 'origin_object',\

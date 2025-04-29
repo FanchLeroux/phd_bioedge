@@ -2,7 +2,7 @@
 """
 Created on Wed Feb 26 13:45:55 2025
 
-@author: fleroux
+@author: fleroux²
 """
 
 # pylint: disable=undefined-variable
