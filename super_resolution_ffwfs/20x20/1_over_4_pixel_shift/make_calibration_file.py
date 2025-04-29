@@ -17,9 +17,14 @@ from copy import deepcopy
 
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
+#%% Define paths
+
+path = pathlib.Path(__file__).parent
+path_data = path.parent.parent.parent.parent / "phd_bioedge_data" / pathlib.Path(*path.parts[-3:]) # could be done better
+
 #%% Get parameter file
 
-path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
+path_parameter_file = path_data / "parameter_file.pkl"
 load_vars(path_parameter_file, ['param'])
 
 #%% Load objects computed in build_object_file.py 
@@ -104,7 +109,7 @@ save_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+str(p
     
 #%% save all calibrations
 
-save_vars(param['path_calibration'] / pathlib.Path('calibration_all_wfs'+str(param['filename'])+'.pkl'),
+save_vars(param['path_calibration'] / pathlib.Path('all_calibrations'+str(param['filename'])+'.pkl'),
           ['parameters_calib', 'origin_calib',\
            'calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled',\
            'calib_sbioedge', 'calib_sbioedge_sr', 'calib_sbioedge_oversampled',\

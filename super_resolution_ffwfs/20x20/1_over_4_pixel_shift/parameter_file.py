@@ -21,8 +21,8 @@ path_data = path.parent.parent.parent.parent / "phd_bioedge_data" / pathlib.Path
 path_object = path_data / "objects"
 path_object.mkdir(parents=True, exist_ok=True)
 
-path_callibration = path_data / "callibrations"
-path_callibration.mkdir(parents=True, exist_ok=True)
+path_calibration = path_data / "calibrations"
+path_calibration.mkdir(parents=True, exist_ok=True)
 
 path_closed_loop = path_data / "closed_loop"
 path_closed_loop.mkdir(parents=True, exist_ok=True)
@@ -49,7 +49,7 @@ param = {}
 # ----------------- DATA FOLDERS ---------------- #
 
 param['path_object'] = path_object
-param['path_callibration'] = path_callibration
+param['path_calibration'] = path_calibration
 param['path_closed_loop'] = path_closed_loop
 param['path_analysis_closed_loop'] = path_analysis_closed_loop
 param['path_analysis_uniform_noise_propagation'] = path_analysis_uniform_noise_propagation
