@@ -4,6 +4,7 @@ Created on Thu Mar  6 16:19:11 2025
 
 @author: fleroux
 """
+
 #%%
 
 import pathlib
@@ -63,13 +64,10 @@ load_vars(param['path_object'] / pathlib.Path('all_objects'+str(param['filename'
     
 #%% load calibrations
 
-load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge_R4_band_20x20_KL_basis.pkl'))
-
 load_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
-# load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
-# load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
-# load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
-
+load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
 #%%
 
