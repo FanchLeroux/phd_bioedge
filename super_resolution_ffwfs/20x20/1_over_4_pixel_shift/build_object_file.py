@@ -82,11 +82,16 @@ if not(param['is_dm_modal']):
 if param['modal_basis'] == 'KL':
     # M2C = compute_KL_basis(tel, atm, dm) # matrix to apply modes on the DM
     
+    if sys.platform.startswith('win'):
+        nameFolder = str(param['path_object']) +"\\"
+    else:
+        nameFolder = str(param['path_object']) +"/"
+    
     M2C_KL_full = compute_M2C(telescope          = tel,\
                               atmosphere         = atm,\
                               deformableMirror   = dm,\
                               param              = param,\
-                              nameFolder         = str(param['path_object']) +"\\",\
+                              nameFolder         = nameFolder,\
                               remove_piston      = False,\
                               HHtName            = 'KL_covariance_matrix',\
                               baseName           = 'KL_basis' ,\

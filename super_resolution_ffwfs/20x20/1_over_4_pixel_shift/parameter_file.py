@@ -46,15 +46,15 @@ param = {}
 
 # fill the dictionary
 
-# ----------------- DATA FOLDERS ---------------- #
+# ----------------- DATA FOLDERS ---------------- # # str type used for windows / linux compatibility
 
-param['path_object'] = path_object
-param['path_calibration'] = path_calibration
-param['path_closed_loop'] = path_closed_loop
-param['path_analysis_closed_loop'] = path_analysis_closed_loop
-param['path_analysis_uniform_noise_propagation'] = path_analysis_uniform_noise_propagation
-param['path_plots_closed_loop'] = path_plots_closed_loop
-param['path_plots_uniform_noise_propagation'] = path_plots_uniform_noise_propagation
+param['path_object'] = str(path_object)
+param['path_calibration'] = str(path_calibration)
+param['path_closed_loop'] = str(path_closed_loop)
+param['path_analysis_closed_loop'] = str(path_analysis_closed_loop)
+param['path_analysis_uniform_noise_propagation'] = str(path_analysis_uniform_noise_propagation)
+param['path_plots_closed_loop'] = str(path_plots_closed_loop)
+param['path_plots_uniform_noise_propagation'] = str(path_plots_uniform_noise_propagation)
 
 
 # ------------------ ATMOSPHERE ----------------- #
