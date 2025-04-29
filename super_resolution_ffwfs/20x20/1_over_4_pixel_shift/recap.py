@@ -14,6 +14,16 @@ from copy import deepcopy
 
 from fanch.tools.save_load import save_vars, load_vars
 
+#%% Define paths
+
+path = pathlib.Path(__file__).parent
+path_data = path.parent.parent.parent.parent / "phd_bioedge_data" / pathlib.Path(*path.parts[-3:]) # could be done better
+
+#%% Get parameter file
+
+path_parameter_file = path_data / "parameter_file.pkl"
+load_vars(path_parameter_file, ['param'])
+
 #%% path type compatibility issues
 
 if platform.system() == 'Windows':
@@ -22,12 +32,7 @@ if platform.system() == 'Windows':
 elif platform.system() == 'Linux':
     temp = deepcopy(pathlib.WindowsPath)
     pathlib.WindowsPath = pathlib.PosixPath
-
-#%% Get parameter file
-
-path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
-load_vars(path_parameter_file, ['param'])
-
+    
 #%% load objects
 
 load_vars(param['path_object'] / pathlib.Path('all_objects'+str(param['filename'])+'.pkl'))
