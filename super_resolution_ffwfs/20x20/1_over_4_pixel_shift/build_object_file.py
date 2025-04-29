@@ -22,15 +22,19 @@ from OOPAO.Telescope import Telescope
 from OOPAO.Atmosphere import Atmosphere
 from OOPAO.Source import Source
 from OOPAO.DeformableMirror import DeformableMirror
-from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
+from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis, compute_M2C
 from fanch.basis.fourier import compute_real_fourier_basis, extract_subset, extract_vertical_frequencies,\
     extract_diagonal_frequencies
 from OOPAO.Pyramid import Pyramid
 from OOPAO.BioEdge import BioEdge
 
+#%%
+
+dirc = pathlib.Path(__file__).parent
+
 #%% Get parameter file
 
-path_parameter_file = pathlib.Path(__file__).parent / "parameter_file.pkl"
+path_parameter_file = dirc / "parameter_file.pkl"
 load_vars(path_parameter_file, ['param'], ['param'])
 
 #%% -----------------------    TELESCOPE   -----------------------------
@@ -69,7 +73,27 @@ if not(param['is_dm_modal']):
 #%% ------------------------- MODAL BASIS -------------------------------
 
 if param['modal_basis'] == 'KL':
-    M2C = compute_KL_basis(tel, atm, dm) # matrix to apply modes on the DM
+    # M2C = compute_KL_basis(tel, atm, dm) # matrix to apply modes on the DM
+    
+    M2C_KL_full = compute_M2C(telescope          = tel,\
+                              atmosphere         = atm,\
+                              deformableMirror   = dm,\
+                              param              = param,\
+                              nameFolder         = str(dirc),\
+                              nameFile           = 'BASIS_SUPERR_nowok',\
+                              remove_piston      = False,\
+                              HHtName            = 'HHt_SUPERR_nowok',\
+                              baseName           = 'VLT_nowok' ,\
+                              mem_available      = 6.1e9,\
+                              minimF             = False,\
+                              nmo                = 1350,\
+                              ortho_spm          = True,\
+                              SZ                 = np.int64(2*tel.OPD.shape[0]),\
+                              nZer               = 3,\
+                              NDIVL              = 1,\
+                              lim_inversion=1e-5)
+        
+    M2C_KL = M2C_KL_full[:,1:] # remove piston
 
 elif param['modal_basis'] == 'poke':
     M2C = np.identity(dm.nValidAct)

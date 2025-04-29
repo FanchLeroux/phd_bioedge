@@ -36,7 +36,7 @@ elif platform.system() == 'Linux':
 
 #%% Load objects computed in build_object_file.py 
 
-load_vars(param['path_object'] / pathlib.Path('object'+str(param['filename'])+'.pkl'), 
+load_vars(param['path_object'] / pathlib.Path('all_objects'+str(param['filename'])+'.pkl'), 
           ['parameters_object', 'origin_object',\
            'tel','atm', 'dm', 'ngs', 'M2C',\
            #'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
@@ -77,6 +77,26 @@ R_sgbioedge_oversampled = np.linalg.pinv(calib_sgbioedge_oversampled.D[:,:param[
 reconstructor_sgbioedge = M2C[:, :param['n_modes_to_show']]@R_sgbioedge
 reconstructor_sgbioedge_sr = M2C_sr[:, :param['n_modes_to_show_sr']]@R_sgbioedge_sr
 reconstructor_sgbioedge_oversampled = M2C[:, :param['n_modes_to_show_oversampled']]@R_sgbioedge_oversampled
+
+#%% MMSE reconstructors - gbioedge
+
+R_MMSE_gbioedge = np.linalg.pinv(calib_gbioedge.D[:,:param['n_modes_to_show']])
+R_MMSE_gbioedge_sr = np.linalg.pinv(calib_gbioedge_sr.D[:,:param['n_modes_to_show_sr']])
+R_MMSE_gbioedge_oversampled = np.linalg.pinv(calib_gbioedge_oversampled.D[:,:param['n_modes_to_show_oversampled']])
+
+reconstructor_MMSE_gbioedge = M2C[:, :param['n_modes_to_show']]@R_gbioedge
+reconstructor_MMSE_gbioedge_sr = M2C_sr[:, :param['n_modes_to_show_sr']]@R_gbioedge_sr
+reconstructor_MMSE_gbioedge_oversampled = M2C[:, :param['n_modes_to_show_oversampled']]@R_gbioedge_oversampled
+
+#%% MMSE reconstructors - sgbioedge
+
+R_MMSE_sgbioedge = np.linalg.pinv(calib_sgbioedge.D[:,:param['n_modes_to_show']])
+R_MMSE_sgbioedge_sr = np.linalg.pinv(calib_sgbioedge_sr.D[:,:param['n_modes_to_show_sr']])
+R_MMSE_sgbioedge_oversampled = np.linalg.pinv(calib_sgbioedge_oversampled.D[:,:param['n_modes_to_show_oversampled']])
+
+reconstructor_MMSE_sgbioedge = M2C[:, :param['n_modes_to_show']]@R_sgbioedge
+reconstructor_MMSE_sgbioedge_sr = M2C_sr[:, :param['n_modes_to_show_sr']]@R_sgbioedge_sr
+reconstructor_MMSE_sgbioedge_oversampled = M2C[:, :param['n_modes_to_show_oversampled']]@R_sgbioedge_oversampled
 
 #%% Allocate memory
 

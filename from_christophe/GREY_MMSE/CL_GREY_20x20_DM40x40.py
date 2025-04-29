@@ -46,25 +46,24 @@ def ca():
 param = initializeParameterFile()
 
 # %%
+
 plt.ion()
 
 check_e2e_noise = True
 
-MMSE = False
+MMSE = True
 
 ## R0 assumption for the MMSE REC
+
 r0c=0.15
 
 ## Noise level (trust) assumption for the MMSE REC
-noise_levelc  = 100.e-9
+noise_levelc  = 100e-9
 
 ## Terms uncorrelated with atmosphere (not used here)
-UC_TERM_AMP = 300.e-9*0.
+UC_TERM_AMP = 300e-9*0.
 
 alpha=1.0 # Weight for the turbulence statistics
-
-
-
 
 nmot = 1300 # Number of modes in the inverion
 nL = 1200 ## Iterations
@@ -77,12 +76,10 @@ tel = Telescope(resolution          = param['resolution'],\
                 samplingTime        = param['samplingTime'],\
                 centralObstruction  = param['centralObstruction'])
 
-
 dim = tel.OPD.shape[0]
 pupil = tel.pupil
 tpup = np.sum(pupil)
 idxpup = np.where(pupil==1)
-
 
 #%% -----------------------     NGS   ----------------------------------
 
@@ -103,9 +100,7 @@ atm=Atmosphere(telescope     = tel,\
                altitude      = param['altitude'])
 # initialize atmosphere
 atm.initializeAtmosphere(tel)
-
 atm.update()
-
 
 # mis-registrations object
 misReg = MisRegistration(param)
@@ -133,11 +128,11 @@ bio_20 = BioEdge(nSubap             = param['nSubaperture'],\
 
 #%% Combute modal basis    
 
-M2C_KL_full = compute_M2C(telescope            = tel,\
+M2C_KL_full = compute_M2C(telescope                  = tel,\
                                   atmosphere         = atm,\
                                   deformableMirror   = dm,\
                                   param              = param,\
-                                  nameFolder         = '/diskb/cverinau/oopao_data/data_calibration/SUPERR/',\
+                                  nameFolder         = str(path),\
                                   nameFile           = 'BASIS_SUPERR_nowok',\
                                   remove_piston      = False,\
                                   HHtName            = 'HHt_SUPERR_nowok',\
@@ -154,6 +149,8 @@ M2C_KL_full = compute_M2C(telescope            = tel,\
 #nmot = M2C_KL_full.shape[1]
 
 M2C_KL = M2C_KL_full[:,1:nmot]
+
+#%%
 
 stroke = 1e-9
 
@@ -363,15 +360,17 @@ for i_wfs in range(1):
     modes_out = np.asarray(modes_out)
     out_perf.append([modes_in,modes_out, SR])
 
+#%%
+
 plt.figure()
 plt.plot(residuals[0:,0],label='20x20 ')
-plt.ylim(0,300)
+#plt.ylim(0,300)
 plt.legend()
 plt.show(block=False)
 
 #%%
 
-fits.writeto(path / pathlib.Path('RES_GRE20x20_KL_MMSE'+str(nmot)+'.fits'), residuals,overwrite='True')
+# fits.writeto(path / pathlib.Path('RES_GRE20x20_KL_MMSE'+str(nmot)+'.fits'), residuals,overwrite='True')
 
 #%%
 
@@ -379,12 +378,12 @@ if MMSE==True:
     fits.writeto(path / pathlib.Path('RES_GRE20x20_MMSE_nmoKL'+str(nmot)+'_r0c_'
                                      +str(r0c)+'_alpha_'+str(alpha)+'_noisec_'
                                      +str(noise_levelc)+'_nLoop'+str(param["nLoop"])
-                                     +'_RMS_'+str(np.int64(np.mean(residual[100:param["nLoop"]])))+'nm.fits'), residual,overwrite='True')
+                                     +'_RMS_'+str(np.int64(np.mean(residual[100:param["nLoop"]])))+'nm.fits'), residuals,overwrite='True')
 
 if MMSE==False:
     fits.writeto(path / pathlib.Path('RES_GRE20x20_LS_nmoKL'+str(nmot)+'_nLoop'+str(param["nLoop"])
                                      +'_RMS_'+str(np.int64(np.mean(residual[100:param["nLoop"]])))
-                                     +'nm.fits'), residual,overwrite='True')
+                                     +'nm.fits'), residuals,overwrite='True')
 
 # amp = 1.e-9
 

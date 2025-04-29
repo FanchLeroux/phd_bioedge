@@ -42,8 +42,7 @@ elif platform.system() == 'Linux':
 #%% load analysis results
 
 path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
-load_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation'
-                                            + param['filename'] + '.pkl'))
+load_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation' + param['filename']))
 
 #%% path plots
 
@@ -203,37 +202,4 @@ for n_modes in param['list_modes_to_keep']:
     plt.xlabel("mode ("+param['modal_basis']+") index")
     plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
     plt.legend()
-    plt.savefig(pathlib.Path(__file__).parent / "plots" /
-                pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')
-    
-#%% Carlos-like plot
-
-figure = plt.figure()
-
-plt.plot(noise_propagation_pyramid_oversampled, 'm', 
-         label='pyramid '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-plt.plot(noise_propagation_gbioedge_oversampled, 'k', 
-         label='gbioedge '+str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
-
-i = 0
-for n_modes in param['list_modes_to_keep']:
-    plt.plot(noise_propagation_pyramid_sr[i], 
-             label= 'pyramid '+str(param['n_subaperture'])+'x'+
-             str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    i+=1
-
-plt.yscale('log')
-plt.ylim(1e-15, 1e-8)
-plt.title("Pyramid VS Grey Bi-O-Edge VS Small Grey Bi-O-Edge\nUniform noise propagation\n"
-          +str(param['modulation'])+' lambda/D')
-plt.xlabel("mode ("+param['modal_basis']+") index")
-plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
-plt.legend()
-figure.set_size_inches(10, 8)
-plt.savefig(pathlib.Path(__file__).parent / "plots" /
-            pathlib.Path('figure_noise_propagation_pyramid_like_carlos'+'.png'), bbox_inches = 'tight')
-    
-    
-    
-    
-    
+    plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')

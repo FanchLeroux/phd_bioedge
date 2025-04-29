@@ -41,7 +41,7 @@ param['n_pixel_per_subaperture'] = 8                                         # [
 param['resolution'             ] = param['n_subaperture']*\
                                    param['n_pixel_per_subaperture']          # resolution of the telescope driven by the WFS
 param['size_subaperture'       ] = param['diameter']/param['n_subaperture']  # [m] size of a sub-aperture projected in the M1 space
-param['sampling_time'          ] = 1/1000                                    # [s] loop sampling time
+param['sampling_time'          ] = 1/500                                     # [s] loop sampling time
 param['centralObstruction'     ] = 0                                         # central obstruction in percentage of the diameter
 
 # ---------------------- NGS ---------------------- #
@@ -106,7 +106,7 @@ param['n_modes_to_show_oversampled'] = 980
 
 param['loop_gain'] = 0.5
 
-param['n_iter'] = 1000
+param['n_iter'] = 100
 
 # --------------------- FILENAME -------------------- #
 

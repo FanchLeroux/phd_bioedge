@@ -62,12 +62,12 @@ def initializeParameterFile():
     param['n_pix_separation'      ] = 4                                             # separation ratio between the PWFS pupils
     param['psfCentering'          ] = False                                         # centering of the FFT and of the PWFS mask on the 4 central pixels
     param['lightThreshold'        ] = 0.1                                           # light threshold to select the valid pixels
-    param['postProcessing'        ] = 'slopesMaps'                                   # post-processing of the PWFS signals 
+    param['postProcessing'        ] = 'fullFrame'                               # post-processing of the PWFS signals 
     
     
     ###%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LOOP PROPERTIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    param['nLoop'                 ] = 5000                                           # number of iteration                             
+    param['nLoop'                 ] = 5000                                         # number of iteration                             
     param['photonNoise'           ] = True                                         # Photon Noise enable  
     param['readoutNoise'          ] = 0                                            # Readout Noise value
     param['gainCL'                ] = 0.5                                          # integrator gain
