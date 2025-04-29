@@ -29,7 +29,7 @@ load_vars(path_parameter_file, ['param'])
 
 #%% Load objects computed in build_object_file.py 
 
-load_vars(param['path_object'] / pathlib.Path('all_objects'+str(param['filename'])+'.pkl'), 
+load_vars(pathlib.Path(param['path_object']) / pathlib.Path('all_objects'+str(param['filename'])+'.pkl'), 
           ['parameters_object', 'origin_object',\
            'tel','atm', 'dm', 'ngs', 'M2C',\
            'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
@@ -56,7 +56,7 @@ calib_pyramid_oversampled = InteractionMatrix(ngs, atm, tel, dm, pyramid_oversam
 
 #%% save pyramid calibrations
 
-save_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+str(param['filename'])+'.pkl'),
+save_vars(pathlib.Path(param['path_calibration']) / pathlib.Path('calibration_pyramid'+str(param['filename'])+'.pkl'),
           ['parameters_calib', 'origin_calib',\
            'calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled'])
 
@@ -72,7 +72,7 @@ calib_sbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, sbioedge_overs
 
 #%% save sbioedge calibrations
 
-save_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+str(param['filename'])+'.pkl'),
+save_vars(pathlib.Path(param['path_calibration']) / pathlib.Path('calibration_sbioedge'+str(param['filename'])+'.pkl'),
           ['parameters_calib', 'origin_calib',\
            'calib_sbioedge', 'calib_sbioedge_sr', 'calib_sbioedge_oversampled'])
 
@@ -88,7 +88,7 @@ calib_gbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, gbioedge_overs
 
 #%% save gbioedge calibrations
 
-save_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+str(param['filename'])+'.pkl'),
+save_vars(pathlib.Path(param['path_calibration']) / pathlib.Path('calibration_gbioedge'+str(param['filename'])+'.pkl'),
           ['parameters_calib', 'origin_calib',\
            'calib_gbioedge', 'calib_gbioedge_sr', 'calib_gbioedge_oversampled'])
     
@@ -103,13 +103,13 @@ calib_sgbioedge_oversampled = InteractionMatrix(ngs, atm, tel, dm, sgbioedge_ove
     
 #%% save sgbioedge calibrations
 
-save_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+str(param['filename'])+'.pkl'),
+save_vars(pathlib.Path(param['path_calibration']) / pathlib.Path('calibration_sgbioedge'+str(param['filename'])+'.pkl'),
           ['parameters_calib', 'origin_calib',\
            'calib_sgbioedge', 'calib_sgbioedge_sr', 'calib_sgbioedge_oversampled'])
     
 #%% save all calibrations
 
-save_vars(param['path_calibration'] / pathlib.Path('all_calibrations'+str(param['filename'])+'.pkl'),
+save_vars(pathlib.Path(param['path_calibration']) / pathlib.Path('all_calibrations'+str(param['filename'])+'.pkl'),
           ['parameters_calib', 'origin_calib',\
            'calib_pyramid', 'calib_pyramid_sr', 'calib_pyramid_oversampled',\
            'calib_sbioedge', 'calib_sbioedge_sr', 'calib_sbioedge_oversampled',\
