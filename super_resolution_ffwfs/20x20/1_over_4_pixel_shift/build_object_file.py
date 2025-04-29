@@ -11,6 +11,7 @@ Created on Wed Feb 26 13:45:38 2025
 #%%
 
 import pathlib
+import sys
 
 from fanch.tools.save_load import save_vars, load_vars
 from fanch.tools.oopao import clean_wfs
@@ -45,7 +46,7 @@ load_vars(path_parameter_file, ['param'])
 tel = Telescope(resolution = param['resolution'], # [pixel] resolution of the telescope
                 diameter   = param['diameter'])   # [m] telescope diameter
 
-save_vars(param['path_object'] / 'tel.pkl', ['tel'])
+save_vars(pathlib.Path(param['path_object']) / 'tel.pkl', ['tel'])
 
 #%% -----------------------     NGS   ----------------------------------
 
@@ -53,7 +54,7 @@ save_vars(param['path_object'] / 'tel.pkl', ['tel'])
 ngs = Source(optBand     = param['optical_band'],          # Source optical band (see photometry.py)
              magnitude   = param['magnitude'])            # Source Magnitude
 
-save_vars(param['path_object'] / 'ngs.pkl', ['ngs'])
+save_vars(pathlib.Path(param['path_object']) / 'ngs.pkl', ['ngs'])
 
 #%% -----------------------    ATMOSPHERE   ----------------------------
 
@@ -69,13 +70,13 @@ atm = Atmosphere(telescope     = tel,                      # Telescope
                  windDirection = param['wind_direction'],  # [degrees] wind direction of the different layers
                  altitude      =  param['altitude'      ]) # [m] altitude of the different layers
 
-save_vars(param['path_object'] / 'atm.pkl', ['atm'])
+save_vars(pathlib.Path(param['path_object']) / 'atm.pkl', ['atm'])
 
 #%% -------------------------     DM   ----------------------------------
 
 if not(param['is_dm_modal']):
     dm = DeformableMirror(tel, nSubap=param['n_actuator'])
-    save_vars(param['path_object'] / 'dm.pkl', ['dm'])
+    save_vars(pathlib.Path(param['path_object']) / 'dm.pkl', ['dm'])
     
 #%% ------------------------- MODAL BASIS -------------------------------
 
@@ -108,7 +109,7 @@ if param['modal_basis'] == 'KL':
     
     dm.coefs = np.zeros(dm.nValidAct) # reset dm.OPD
     
-    save_vars(param['path_object'] / 'M2C.pkl', ['M2C'])
+    save_vars(pathlib.Path(param['path_object']) / 'M2C.pkl', ['M2C'])
 
 elif param['modal_basis'] == 'poke':
     M2C = np.identity(dm.nValidAct)
@@ -157,8 +158,8 @@ elif param['modal_basis'] == 'Fourier2DsmallBis':
 
 if param['is_dm_modal']:
     dm = DeformableMirror(tel, nSubap=param['n_actuator'], modes = modes)
-    save_vars(param['path_object'] / 'dm.pkl', ['dm'])
-    save_vars(param['path_object'] / 'M2C.pkl', ['M2C'])
+    save_vars(pathlib.Path(param['path_object']) / 'dm.pkl', ['dm'])
+    save_vars(pathlib.Path(param['path_object']) / 'M2C.pkl', ['M2C'])
 
 #%% --------------------------- WFSs -----------------------------------
 
@@ -175,7 +176,7 @@ pyramid = Pyramid(nSubap = param['n_subaperture'],
               psfCentering = param['psf_centering'])
 
 pyramid = clean_wfs(pyramid)
-save_vars(param['path_object'] / 'pyramid.pkl', ['pyramid'])
+save_vars(pathlib.Path(param['path_object']) / 'pyramid.pkl', ['pyramid'])
 
 #%%
 
@@ -193,7 +194,7 @@ pyramid_sr.apply_shift_wfs(param['pupil_shift_pyramid'][0], param['pupil_shift_p
 pyramid_sr.modulation = param['modulation'] # update reference intensities etc.
 
 pyramid_sr = clean_wfs(pyramid_sr)
-save_vars(param['path_object'] / 'pyramid_sr.pkl', ['pyramid_sr'])
+save_vars(pathlib.Path(param['path_object']) / 'pyramid_sr.pkl', ['pyramid_sr'])
 
 # pyramid oversampled
 pyramid_oversampled = Pyramid(nSubap = 2*param['n_subaperture'], 
@@ -206,7 +207,7 @@ pyramid_oversampled = Pyramid(nSubap = 2*param['n_subaperture'],
               psfCentering = param['psf_centering'])
 
 pyramid_oversampled = clean_wfs(pyramid_oversampled)
-save_vars(param['path_object'] / 'pyramid_oversampled.pkl', ['pyramid_oversampled'])
+save_vars(pathlib.Path(param['path_object']) / 'pyramid_oversampled.pkl', ['pyramid_oversampled'])
 
 # ----------------------- Sharp Bi-O-Edge ---------------------------- #
 
@@ -221,7 +222,7 @@ sbioedge = BioEdge(nSubap = param['n_subaperture'],
               psfCentering = param['psf_centering'])
 
 sbioedge = clean_wfs(sbioedge)
-save_vars(param['path_object'] / 'sbioedge.pkl', ['sbioedge'])
+save_vars(pathlib.Path(param['path_object']) / 'sbioedge.pkl', ['sbioedge'])
 
 # sharp bioedge SR
 sbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
@@ -237,7 +238,7 @@ sbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_
 sbioedge_sr.modulation = param['modulation'] # update reference intensities etc.
 
 sbioedge_sr = clean_wfs(sbioedge_sr)
-save_vars(param['path_object'] / 'sbioedge_sr.pkl', ['sbioedge_sr'])
+save_vars(pathlib.Path(param['path_object']) / 'sbioedge_sr.pkl', ['sbioedge_sr'])
 
 # sharp bioedge oversampled
 sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
@@ -250,7 +251,7 @@ sbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               psfCentering = param['psf_centering'])
 
 sbioedge_oversampled = clean_wfs(sbioedge_oversampled)
-save_vars(param['path_object'] / 'sbioedge_oversampled.pkl', ['sbioedge_oversampled'])
+save_vars(pathlib.Path(param['path_object']) / 'sbioedge_oversampled.pkl', ['sbioedge_oversampled'])
 
 # ----------------------- Grey Bi-O-Edge ---------------------------- #
 
@@ -265,7 +266,7 @@ gbioedge = BioEdge(nSubap = param['n_subaperture'],
               psfCentering = param['psf_centering'])
 
 gbioedge = clean_wfs(gbioedge)
-save_vars(param['path_object'] / 'gbioedge.pkl', ['gbioedge'])
+save_vars(pathlib.Path(param['path_object']) / 'gbioedge.pkl', ['gbioedge'])
 
 # grey bioedge SR
 gbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
@@ -281,11 +282,11 @@ gbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift_
 gbioedge_sr.modulation = 0. # update reference intensities etc.
 
 gbioedge_sr = clean_wfs(gbioedge_sr)
-save_vars(param['path_object'] / 'gbioedge_sr.pkl', ['gbioedge_sr'])
+save_vars(pathlib.Path(param['path_object']) / 'gbioedge_sr.pkl', ['gbioedge_sr'])
 
 # grey bioedge oversampled
-gbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
-              telescope = tel, 
+gbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
+              telescope = tel,
               modulation = 0.,
               grey_width = param['modulation'], 
               lightRatio = param['light_threshold'],
@@ -294,7 +295,7 @@ gbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               psfCentering = param['psf_centering'])
 
 gbioedge_oversampled = clean_wfs(gbioedge_oversampled)
-save_vars(param['path_object'] / 'gbioedge_oversampled.pkl', ['gbioedge_oversampled'])
+save_vars(pathlib.Path(param['path_object']) / 'gbioedge_oversampled.pkl', ['gbioedge_oversampled'])
 
 # ---------------------- Small Grey Bi-O-Edge ------------------------------- #
 
@@ -310,7 +311,7 @@ sgbioedge = BioEdge(nSubap = param['n_subaperture'],
               psfCentering = param['psf_centering'])
 
 sgbioedge = clean_wfs(sgbioedge)
-save_vars(param['path_object'] / 'sgbioedge.pkl', ['sgbioedge'])
+save_vars(pathlib.Path(param['path_object']) / 'sgbioedge.pkl', ['sgbioedge'])
 
 # small grey bioedge SR
 sgbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
@@ -327,7 +328,7 @@ sgbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], param['pupil_shift
 sgbioedge_sr.modulation = 0. # update reference intensities etc.
 
 sgbioedge_sr = clean_wfs(sgbioedge_sr)
-save_vars(param['path_object'] / 'sgbioedge_sr.pkl', ['sgbioedge_sr'])
+save_vars(pathlib.Path(param['path_object']) / 'sgbioedge_sr.pkl', ['sgbioedge_sr'])
 
 # small grey bioedge oversampled
 sgbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'], 
@@ -341,7 +342,7 @@ sgbioedge_oversampled = BioEdge(nSubap = 2*param['n_subaperture'],
               psfCentering = param['psf_centering'])
 
 sgbioedge_oversampled = clean_wfs(sgbioedge_oversampled)
-save_vars(param['path_object'] / 'sgbioedge_oversampled.pkl', ['sgbioedge_oversampled'])
+save_vars(pathlib.Path(param['path_object']) / 'sgbioedge_oversampled.pkl', ['sgbioedge_oversampled'])
 
 #%% save all variables
 
@@ -351,7 +352,7 @@ origin_object = str(pathlib.Path(__file__)) # keep a trace of where the saved ob
 
 #%%
 
-save_vars(parameters_object['path_object'] / pathlib.Path('all_objects'+str(parameters_object['filename'])+'.pkl'), 
+save_vars(pathlib.Path(parameters_object['path_object']) / pathlib.Path('all_objects'+str(parameters_object['filename'])+'.pkl'), 
           ['parameters_object', 'origin_object',\
            'tel','atm', 'dm', 'ngs', 'M2C',\
            'pyramid', 'pyramid_sr', 'pyramid_oversampled',\
