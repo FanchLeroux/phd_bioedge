@@ -66,12 +66,10 @@ load_vars(param['path_object'] / pathlib.Path('all_objects'+str(param['filename'
 
 load_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
 load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
-load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'), ['calib_gbioedge_sr'])
 load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
 #%%
-
-
 
 param['n_modes_to_show'] = 250
 
@@ -79,10 +77,6 @@ param['n_modes_to_show_sr'] = 600#850
 param['n_modes_to_control_sr'] = 600#700 # should be inferior to param['n_modes_to_show_sr']
 
 param['n_modes_to_show_oversampled'] = 980
-
-
-
-
 
 #%% Modal Basis
 
@@ -833,7 +827,6 @@ for k in range(param['n_iter']):
             
     strehl_sgbioedge_oversampled[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
     residual_sgbioedge_oversampled[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
-    
     
 #%% plots
 
