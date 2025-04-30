@@ -25,25 +25,20 @@ from fanch.tools.save_load import load_vars
 
 from OOPAO.tools.displayTools import cl_plot
 
+#%% Define paths
+
+path = pathlib.Path(__file__).parent
+path_data = path.parent.parent.parent.parent.parent.parent / "phd_bioedge_data"\
+    / pathlib.Path(*path.parts[-5:-2]) # could be done better
+
 #%% Get parameter file
 
-path_parameter_file = pathlib.Path(__file__).parent.parent.parent / "parameter_file.pkl"
+path_parameter_file = path_data / "parameter_file.pkl"
 load_vars(path_parameter_file, ['param'])
 
-#%% path type compatibility issues
+#%% Load objects computed inanalysis_closed_loop.py
 
-if platform.system() == 'Windows':
-    temp = deepcopy(pathlib.PosixPath)
-    pathlib.PosixPath = pathlib.WindowsPath
-elif platform.system() == 'Linux':
-    temp = deepcopy(pathlib.WindowsPath)
-    pathlib.WindowsPath = pathlib.PosixPath
-
-#%% Load objects computed inanalysis_closed_loop.py 
-
-path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
-
-load_vars(path_analysis_data / pathlib.Path('analysis_closed_loop' + param['filename']+'.pkl'), 
+load_vars(param['path_analysis_closed_loop'] / pathlib.Path('analysis_closed_loop' + param['filename']+'.pkl'), 
           ['parameters_analysis',\
            'total_gbioedge', 'residual_gbioedge', 'strehl_gbioedge',\
            'residual_gbioedge_sr', 'strehl_gbioedge_sr',\
@@ -56,7 +51,7 @@ param = parameters_analysis
     
 #%% path plots
 
-path_plots = pathlib.Path(__file__).parent / 'plots'
+path_plots = pathlib.Path(param['path_plots_closed_loop'])
     
 #%% plots
 
@@ -160,27 +155,29 @@ broken_loops_sgbioedge = np.asarray(broken_loops_sgbioedge)
 
 #%% Plot only  broken loops
 
-figure=plt.figure()
+if broken_loops_gbioedge != [] or broken_loops_sgbioedge != []:
 
-
-plt.title('Broken Closed Loop residuals\n'
-          'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
-          'Telescope diameter: '+str(param['diameter']) + ' m\n'
-          'Half grey width : '+str(param['modulation'])+' lambda/D\n'+ str(len(param['seeds']))+' seeds')
-
-plt.plot(residual_gbioedge[k,:], 'b', label='gbioedge '+str(param['n_subaperture'])+'x'+
-          str(param['n_subaperture'])+', '+str(param['n_modes_to_show'] )+' modes')
-plt.plot(residual_gbioedge_oversampled[k, :], 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+
-          str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
-
-for n in range(broken_loops_sgbioedge.shape[0]):
-    plt.plot(broken_loops_sgbioedge[n,:], color = 'm',  label=str(n+1) + ') sgbioedge, seed '+str(broken_seeds_sgbioedge[n]))
-for m in range(broken_loops_gbioedge.shape[0]):
-    plt.plot(broken_loops_gbioedge[m,:], color = 'r', linestyle=(0,(5,1)), label= str(m+1) + ') gbioedge, seed '+ str(broken_seeds_gbioedge[m]))
+    figure=plt.figure()
     
-plt.legend(loc='upper left')
-figure.set_size_inches(15, 8)
-plt.xlabel('Iteration')
-plt.ylabel('phase std (nm)')
-
-plt.savefig(path_plots / "sr_only_broken_gbioedge_vs_sgbioedge.png", bbox_inches = 'tight')
+    
+    plt.title('Broken Closed Loop residuals\n'
+              'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
+              'Telescope diameter: '+str(param['diameter']) + ' m\n'
+              'Half grey width : '+str(param['modulation'])+' lambda/D\n'+ str(len(param['seeds']))+' seeds')
+    
+    plt.plot(residual_gbioedge[k,:], 'b', label='gbioedge '+str(param['n_subaperture'])+'x'+
+              str(param['n_subaperture'])+', '+str(param['n_modes_to_show'] )+' modes')
+    plt.plot(residual_gbioedge_oversampled[k, :], 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+
+              str(2*param['n_subaperture'])+', '+str(param['n_modes_to_show_oversampled'] )+' modes')
+    
+    for n in range(broken_loops_sgbioedge.shape[0]):
+        plt.plot(broken_loops_sgbioedge[n,:], color = 'm',  label=str(n+1) + ') sgbioedge, seed '+str(broken_seeds_sgbioedge[n]))
+    for m in range(broken_loops_gbioedge.shape[0]):
+        plt.plot(broken_loops_gbioedge[m,:], color = 'r', linestyle=(0,(5,1)), label= str(m+1) + ') gbioedge, seed '+ str(broken_seeds_gbioedge[m]))
+        
+    plt.legend(loc='upper left')
+    figure.set_size_inches(15, 8)
+    plt.xlabel('Iteration')
+    plt.ylabel('phase std (nm)')
+    
+    plt.savefig(path_plots / "sr_only_broken_gbioedge_vs_sgbioedge.png", bbox_inches = 'tight')

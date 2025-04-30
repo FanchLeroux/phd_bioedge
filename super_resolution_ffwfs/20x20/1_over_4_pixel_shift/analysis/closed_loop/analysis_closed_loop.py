@@ -20,19 +20,16 @@ from fanch.tools.save_load import save_vars, load_vars
 
 from OOPAO.tools.displayTools import cl_plot
 
+#%% Define paths
+
+path = pathlib.Path(__file__).parent
+path_data = path.parent.parent.parent.parent.parent.parent / "phd_bioedge_data"\
+    / pathlib.Path(*path.parts[-5:-2]) # could be done better
+
 #%% Get parameter file
 
-path_parameter_file = pathlib.Path(__file__).parent.parent.parent / "parameter_file.pkl"
+path_parameter_file = path_data / "parameter_file.pkl"
 load_vars(path_parameter_file, ['param'])
-
-#%% path type compatibility issues
-
-if platform.system() == 'Windows':
-    temp = deepcopy(pathlib.PosixPath)
-    pathlib.PosixPath = pathlib.WindowsPath
-elif platform.system() == 'Linux':
-    temp = deepcopy(pathlib.WindowsPath)
-    pathlib.WindowsPath = pathlib.PosixPath
 
 #%% Load objects computed in build_object_file.py 
 
@@ -529,11 +526,9 @@ for m in range(len(param['seeds'])):
 
 #%% Save analysis results
 
-path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
-
 parameters_analysis = deepcopy(param)
 
-save_vars(path_analysis_data / pathlib.Path('analysis_closed_loop' + param['filename']), 
+save_vars(param['path_analysis_closed_loop'] / pathlib.Path('analysis_closed_loop' + param['filename'] + '.pkl'), 
           ['parameters_analysis',\
            'total_gbioedge', 'residual_gbioedge', 'strehl_gbioedge',\
            'residual_gbioedge_sr', 'strehl_gbioedge_sr',\

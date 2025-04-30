@@ -184,9 +184,9 @@ for n_modes in param['list_modes_to_keep']:
     
     plt.plot(noise_propagation_pyramid_sr[i], 'g' , 
              label= 'pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_gbioedge_sr[i], '--b' , 
+    plt.plot(noise_propagation_gbioedge_sr[i], 'b' , 
              label= 'gbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
-    plt.plot(noise_propagation_sgbioedge_sr[i], 'r' , 
+    plt.plot(noise_propagation_sgbioedge_sr[i], '--r' , 
              label= 'sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' - SR - '+str(n_modes)+" modes")
     
     

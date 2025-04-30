@@ -127,7 +127,7 @@ param['pupil_shift_pyramid'] = [[param['sr_amplitude'],\
 param['modal_basis'] = 'KL'
 param['list_modes_to_keep'] = np.linspace(int(0.5*(np.pi * (param['n_subaperture']/2)**2)), 
                                           int(np.pi * param['n_subaperture']**2), num=10, dtype=int)
-param['stroke'] = 1e-9 # [m] actuator stoke for calibration matrices computation
+param['stroke'] = 1e-9 # [m] actuator stroke for calibration matrices computation
 param['single_pass'] = False    
 
 # -------------------- LOOP ----------------------- #
@@ -141,7 +141,7 @@ param['n_modes_to_show_oversampled'] = 980
 
 param['loop_gain'] = 0.5
 
-param['n_iter'] = 1000
+param['n_iter'] = 100
 
 # --------------------- FILENAME -------------------- #
 
