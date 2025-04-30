@@ -25,28 +25,24 @@ from fanch.tools.save_load import load_vars
 
 from OOPAO.tools.displayTools import cl_plot
 
+#%% Define paths
+
+path = pathlib.Path(__file__).parent
+path_data = path.parent.parent.parent.parent.parent.parent / "phd_bioedge_data" / pathlib.Path(*path.parts[-5:-2]) # could be done better
+
 #%% Get parameter file
 
-path_parameter_file = pathlib.Path(__file__).parent.parent.parent / "parameter_file.pkl"
+path_parameter_file = path_data / "parameter_file.pkl"
 load_vars(path_parameter_file, ['param'])
-
-#%% path type compatibility issues
-
-if platform.system() == 'Windows':
-    temp = deepcopy(pathlib.PosixPath)
-    pathlib.PosixPath = pathlib.WindowsPath
-elif platform.system() == 'Linux':
-    temp = deepcopy(pathlib.WindowsPath)
-    pathlib.WindowsPath = pathlib.PosixPath
 
 #%% load analysis results
 
-path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
-load_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation' + param['filename']))
+path_analysis_data = path_data / 'analysis' / 'uniform_noise_propagation'
+load_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation' + param['filename'] + '.pkl'))
 
 #%% path plots
 
-path_plots = pathlib.Path(__file__).parent / 'plots'
+path_plots = path_data / 'plots' / 'uniform_noise_propagation'
 
 #%%###################### Plots #################
 
@@ -96,7 +92,7 @@ plt.semilogy(singular_values_gbioedge/singular_values_gbioedge.max(), 'b', label
 plt.semilogy(singular_values_gbioedge_sr/singular_values_gbioedge_sr.max(), 'r', label='SR')
 plt.semilogy(singular_values_gbioedge_oversampled/singular_values_gbioedge_oversampled.max(), 'c', label='oversampled')
 plt.title('singular_values_gbioedge, '+str(param['n_subaperture'])+' subapertures, ' + param['modal_basis'] + 
-          ' modes used, 0.5 pixels shift')
+          ' modes used, '+str(param['sr_amplitude'])+' pixels shift')
 plt.legend()
 plt.xlabel('# eigen mode')
 plt.ylabel('normalized eigen value')
@@ -125,7 +121,7 @@ for n_modes in param['list_modes_to_keep']:
     plt.xlabel("mode ("+param['modal_basis']+") index")
     plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
     plt.legend()
-    plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_sgb'+str(i)+'.png'), bbox_inches = 'tight')
+    plt.savefig(path_plots / pathlib.Path('figure_sgb'+str(i)+'.png'), bbox_inches = 'tight')
 
 #%% --------------- gbioedge -------------------- #
 
@@ -148,7 +144,7 @@ for n_modes in param['list_modes_to_keep']:
     plt.xlabel("mode ("+param['modal_basis']+") index")
     plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
     plt.legend()
-    plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_gb_'+str(i)+'.png'), bbox_inches = 'tight')
+    plt.savefig(path_plots / pathlib.Path('figure_gb_'+str(i)+'.png'), bbox_inches = 'tight')
     
     
 #%% --------------- gbioedge and sbioedge -------------------- #
@@ -172,7 +168,7 @@ for n_modes in param['list_modes_to_keep']:
     plt.xlabel("mode ("+param['modal_basis']+") index")
     plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
     plt.legend()
-    plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')
+    plt.savefig(path_plots / pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')
     
 #%% --------------- pyramid, gbioedge and sbioedge -------------------- #
 
@@ -202,4 +198,4 @@ for n_modes in param['list_modes_to_keep']:
     plt.xlabel("mode ("+param['modal_basis']+") index")
     plt.ylabel("np.diag(R @ R.T)/wfs.nSignal")
     plt.legend()
-    plt.savefig(pathlib.Path(__file__).parent / "plots" / pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')
+    plt.savefig(path_plots / pathlib.Path('figure_sgb_gb_'+str(i)+'.png'), bbox_inches = 'tight')

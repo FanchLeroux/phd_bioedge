@@ -23,27 +23,19 @@ from fanch.tools.save_load import save_vars, load_vars
 
 from OOPAO.tools.displayTools import cl_plot
 
-#%% path type compatibility issues
+#%% Define paths
 
-if platform.system() == 'Windows':
-    temp = deepcopy(pathlib.PosixPath)
-    pathlib.PosixPath = pathlib.WindowsPath
-elif platform.system() == 'Linux':
-    temp = deepcopy(pathlib.WindowsPath)
-    pathlib.WindowsPath = pathlib.PosixPath
+path = pathlib.Path(__file__).parent
+path_data = path.parent.parent.parent.parent.parent.parent / "phd_bioedge_data" / pathlib.Path(*path.parts[-5:-2]) # could be done better
 
 #%% Get parameter file
 
-path_parameter_file = pathlib.Path(__file__).parent.parent.parent / "parameter_file.pkl"
+path_parameter_file = path_data / "parameter_file.pkl"
 load_vars(path_parameter_file, ['param'])
-
-#%% load objects
-
-load_vars(param['path_object'] / pathlib.Path('all_objects'+str(param['filename'])+'.pkl'))
 
 #%% load calibrations
 
-load_vars(param['path_calibration'] / pathlib.Path('calibration_all_wfs'+param['filename']+'.pkl'))
+load_vars(param['path_calibration'] / pathlib.Path('all_calibrations'+param['filename']+'.pkl'))
 
 # load_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
 # load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))
@@ -152,11 +144,11 @@ for n_modes in param['list_modes_to_keep']:
     
 #%% Save analysis results
 
-path_analysis_data = pathlib.Path(__file__).parent / 'data_analysis'
+path_analysis_data = path_data / 'analysis' / 'uniform_noise_propagation'
 
 parameters_analysis_uniform_noise_propagation = deepcopy(param)
 
-save_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation' + param['filename']), 
+save_vars(path_analysis_data / pathlib.Path('analysis_uniform_noise_propagation' + param['filename'] + '.pkl'), 
           ['parameters_analysis_uniform_noise_propagation',\
            'singular_values_pyramid', 'singular_values_pyramid_sr', 'singular_values_pyramid_oversampled',\
            'singular_values_sbioedge', 'singular_values_sbioedge_sr', 'singular_values_sbioedge_oversampled',\
