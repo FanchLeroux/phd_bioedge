@@ -170,7 +170,6 @@ for m in range(len(param['seeds'])):
         
         atm.update()
         total_gbioedge[m, k] = np.std(tel.OPD[np.where(tel.pupil==1)])*1e9
-        phase_turb = tel.src.phase
         
         tel*dm*gbioedge
         
@@ -237,7 +236,6 @@ for m in range(len(param['seeds'])):
     for k in range(param['n_iter']):
         
         atm.update()
-        phase_turb = tel.src.phase
         
         tel*dm*gbioedge_sr
         
@@ -304,7 +302,6 @@ for m in range(len(param['seeds'])):
         
         atm.update()
         total_gbioedge_oversampled[m, k] = np.std(tel.OPD[np.where(tel.pupil==1)])
-        phase_turb = tel.src.phase
         
         tel*dm*gbioedge_oversampled
         
@@ -369,7 +366,6 @@ for m in range(len(param['seeds'])):
         
         atm.update()
         total_sgbioedge[m, k] = np.std(tel.OPD[np.where(tel.pupil==1)])
-        phase_turb = tel.src.phase
         
         tel*dm*sgbioedge
         
@@ -433,7 +429,6 @@ for m in range(len(param['seeds'])):
         
         atm.update()
         total_sgbioedge_sr[m, k] = np.std(tel.OPD[np.where(tel.pupil==1)])
-        phase_turb = tel.src.phase
         
         tel*dm*sgbioedge_sr
         
@@ -496,7 +491,6 @@ for m in range(len(param['seeds'])):
         
         atm.update()
         total_sgbioedge_oversampled[m, k] = np.std(tel.OPD[np.where(tel.pupil==1)])
-        phase_turb = tel.src.phase
         
         tel*dm*sgbioedge_oversampled
         
