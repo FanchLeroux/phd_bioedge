@@ -34,15 +34,6 @@ path_data = path.parent.parent.parent.parent / "phd_bioedge_data" / pathlib.Path
 path_parameter_file = path_data / "parameter_file.pkl"
 load_vars(path_parameter_file, ['param'])
 
-#%% path type compatibility issues
-
-if platform.system() == 'Windows':
-    temp = deepcopy(pathlib.PosixPath)
-    pathlib.PosixPath = pathlib.WindowsPath
-elif platform.system() == 'Linux':
-    temp = deepcopy(pathlib.WindowsPath)
-    pathlib.WindowsPath = pathlib.PosixPath
-
 #%% Load objects computed in build_object_file.py 
 
 load_vars(param['path_object'] / pathlib.Path('all_objects'+str(param['filename'])+'.pkl'), 
@@ -66,7 +57,7 @@ load_vars(param['path_object'] / pathlib.Path('all_objects'+str(param['filename'
 
 load_vars(param['path_calibration'] / pathlib.Path('calibration_pyramid'+param['filename']+'.pkl'))
 load_vars(param['path_calibration'] / pathlib.Path('calibration_sbioedge'+param['filename']+'.pkl'))
-load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'), ['calib_gbioedge_sr'])
+load_vars(param['path_calibration'] / pathlib.Path('calibration_gbioedge'+param['filename']+'.pkl'))#, ['calib_gbioedge_sr'])
 load_vars(param['path_calibration'] / pathlib.Path('calibration_sgbioedge'+param['filename']+'.pkl'))
 
 #%%
