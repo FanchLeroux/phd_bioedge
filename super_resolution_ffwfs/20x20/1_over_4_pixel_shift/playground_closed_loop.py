@@ -130,7 +130,7 @@ residual_pyramid_oversampled = np.zeros(param['n_iter'])
 strehl_pyramid_oversampled = np.zeros(param['n_iter'])
 
 total_gbioedge = np.zeros(param['n_iter'])
-residual_gbioedge = np.zeros(param['n_iter'])
+residual_gbioedge_1_frame_delay= np.zeros(param['n_iter'])
 strehl_gbioedge = np.zeros(param['n_iter'])
 
 total_gbioedge_sr = np.zeros(param['n_iter'])
@@ -361,7 +361,7 @@ for k in range(param['n_iter']):
     strehl_pyramid_oversampled[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
     residual_pyramid_oversampled[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9    
 
-#%% Close the loop - gbioedge
+#%% Close the loop - gbioedge - 1 frame delay
 
 # Setup
 
@@ -421,15 +421,86 @@ for k in range(param['n_iter']):
         
         SE_PSF.append(np.log10(tel.PSF)[n:-n,n:-n])
         LE_PSF = np.mean(SE_PSF, axis=0)
-        cl_plot(list_fig   = [atm.OPD,tel.mean_removed_OPD, gbioedge.cam.frame,[np.arange(k+1),residual_gbioedge[:k+1]],dm.coefs,SE_PSF[-1], LE_PSF],
+        cl_plot(list_fig   = [atm.OPD,tel.mean_removed_OPD, gbioedge.cam.frame,[np.arange(k+1),residual_gbioedge_1_frame_delay[:k+1]],dm.coefs,SE_PSF[-1], LE_PSF],
                 list_lim =[None,None,None,None,None,[SE_PSF[-1].max()-4,SE_PSF[-1].max()],[LE_PSF.max()-4,LE_PSF.max()]],plt_obj = plot_obj)
         plt.pause(0.1)
         if plot_obj.keep_going is False:
                 break
             
     strehl_gbioedge[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
-    residual_gbioedge[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
+    residual_gbioedge_1_frame_delay[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
         
+    
+#%% Close the loop - gbioedge - 2 frame delay
+
+residual_gbioedge_2_frame_delay = np.zeros(residual_gbioedge_1_frame_delay.shape)
+
+# Setup
+
+tel.computePSF()
+
+atm.initializeAtmosphere(tel)
+atm.generateNewPhaseScreen(seed = seed)
+tel+atm
+
+dm.coefs = 0
+gbioedge_measure = 0*gbioedge.signal
+
+ngs*tel*dm*gbioedge
+
+n = 200
+
+SE_PSF = []
+LE_PSF = np.log10(tel.PSF)[n:-n,n:-n]
+
+plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD, gbioedge.cam.frame,[[0,0],[0,0]],
+                                        [dm.coordinates[:,0], np.flip(dm.coordinates[:,1]), dm.coefs],
+                                        np.log10(tel.PSF),np.log10(tel.PSF)],\
+                        type_fig          = ['imshow','imshow','imshow','plot','scatter','imshow','imshow'],\
+                        list_title        = ['Turbulence OPD','Residual OPD','bio Detector',None,None,None,None],\
+                        list_lim          = [None,None,None,None,None,[2,6],[2,6]],\
+                        list_label        = [None,None,None,['Time','WFE [nm]'],['DM Commands',''],['Short Exposure PSF',''],
+                                              ['Long Exposure_PSF','']],\
+                        n_subplot         = [4,2],\
+                        list_display_axis = [None,None,None,True,None,None,None],\
+                        list_ratio        = [[0.95,0.95,0.1],[1,1,1,1]], s=20)
+    
+
+
+
+# close the loop
+
+display=False
+for k in range(param['n_iter']):
+    
+    atm.update()
+    total_gbioedge[k] = np.std(tel.OPD[np.where(tel.pupil==1)])*1e9
+    phase_turb = tel.src.phase
+    
+    tel*dm*gbioedge
+    
+    # gbioedge_measure = gbioedge.signal # tune delay (1 frames here)
+    
+    dm.coefs = dm.coefs - param['loop_gain'] * np.matmul(reconstructor_gbioedge, gbioedge_measure)
+    
+    gbioedge_measure = gbioedge.signal # tune delay (2 frames here)
+    
+    strehl_gbioedge[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+    
+    
+    if k>15 and display:
+        tel.computePSF(4)
+        
+        SE_PSF.append(np.log10(tel.PSF)[n:-n,n:-n])
+        LE_PSF = np.mean(SE_PSF, axis=0)
+        cl_plot(list_fig   = [atm.OPD,tel.mean_removed_OPD, gbioedge.cam.frame,[np.arange(k+1),residual_gbioedge_2_frame_delay[:k+1]],dm.coefs,SE_PSF[-1], LE_PSF],
+                list_lim =[None,None,None,None,None,[SE_PSF[-1].max()-4,SE_PSF[-1].max()],[LE_PSF.max()-4,LE_PSF.max()]],plt_obj = plot_obj)
+        plt.pause(0.1)
+        if plot_obj.keep_going is False:
+                break
+            
+    strehl_gbioedge[k]=np.exp(-np.var(tel.src.phase[np.where(tel.pupil==1)]))
+    residual_gbioedge_2_frame_delay[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9
         
     #%% Close the loop - gbioedge_sr
     
@@ -834,8 +905,13 @@ plt.savefig(pathlib.Path(__file__).parent / "KL_cov.png", bbox_inches='tight')
 from fanch.tools.oopao import close_the_loop_delay
 
 total, residual, strehl, dm_coefs, turbulence_phase_screens,\
-    residual_phase_screens, wfs_frames, short_exposure_psf =\
+    residual_phase_screens, wfs_frames, short_exposure_psf, buffer_wfs_measure =\
     close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, param['loop_gain'], param['n_iter'], 
-                       delay=1, seed=seed, save_telemetry=True, save_psf=True)
+                       delay=3, seed=seed, save_telemetry=True, save_psf=True)
     
 plt.plot(residual)
+
+#%%
+from OOPAO.tools.displayTools import display_wfs_signals
+
+display_wfs_signals(gbioedge, buffer_wfs_measure)
