@@ -157,7 +157,7 @@ strehl_sgbioedge_oversampled = np.zeros(param['n_iter'])
 
 display = True
 
-seed = 0
+seed = 10
 
 #%% Close the loop - pyramid
 
@@ -398,6 +398,7 @@ plot_obj = cl_plot(list_fig          = [atm.OPD,tel.mean_removed_OPD, gbioedge.c
 
 # close the loop
 
+display=False
 for k in range(param['n_iter']):
     
     atm.update()
@@ -827,3 +828,14 @@ plt.title('KL modes covariance matrix\n'
           'r0 = '+str(param['r0'])+' m\n'
           'windspeed ground layer = '+str(param['wind_speed'][0])+' m/s')
 plt.savefig(pathlib.Path(__file__).parent / "KL_cov.png", bbox_inches='tight')
+
+#%% Try using close_the_loop_delay
+
+from fanch.tools.oopao import close_the_loop_delay
+
+total, residual, strehl, dm_coefs, turbulence_phase_screens,\
+    residual_phase_screens, wfs_frames, short_exposure_psf =\
+    close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, param['loop_gain'], param['n_iter'], 
+                       delay=1, seed=seed, save_telemetry=True, save_psf=True)
+    
+plt.plot(residual)
