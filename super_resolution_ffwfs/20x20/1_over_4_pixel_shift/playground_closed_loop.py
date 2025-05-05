@@ -157,7 +157,7 @@ strehl_sgbioedge_oversampled = np.zeros(param['n_iter'])
 
 display = True
 
-seed = 10
+seed = 12
 
 #%% Close the loop - pyramid
 
@@ -904,14 +904,24 @@ plt.savefig(pathlib.Path(__file__).parent / "KL_cov.png", bbox_inches='tight')
 
 from fanch.tools.oopao import close_the_loop_delay
 
-total, residual, strehl, dm_coefs, turbulence_phase_screens,\
+total, residual_1, strehl, dm_coefs, turbulence_phase_screens,\
+    residual_phase_screens, wfs_frames, short_exposure_psf, buffer_wfs_measure =\
+    close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, param['loop_gain'], param['n_iter'], 
+                       delay=1, seed=seed, save_telemetry=True, save_psf=True)
+    
+total, residual_2, strehl, dm_coefs, turbulence_phase_screens,\
+    residual_phase_screens, wfs_frames, short_exposure_psf, buffer_wfs_measure =\
+    close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, param['loop_gain'], param['n_iter'], 
+                       delay=2, seed=seed, save_telemetry=True, save_psf=True)
+    
+total, residual_3, strehl, dm_coefs, turbulence_phase_screens,\
     residual_phase_screens, wfs_frames, short_exposure_psf, buffer_wfs_measure =\
     close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, param['loop_gain'], param['n_iter'], 
                        delay=3, seed=seed, save_telemetry=True, save_psf=True)
-    
-plt.plot(residual)
 
 #%%
-from OOPAO.tools.displayTools import display_wfs_signals
 
-display_wfs_signals(gbioedge, buffer_wfs_measure)
+print((residual_gbioedge_1_frame_delay==residual_1).all())
+print((residual_gbioedge_2_frame_delay==residual_2).all())
+
+plt.plot(residual_3)
