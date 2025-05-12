@@ -17,6 +17,8 @@ from copy import deepcopy
 
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
+#%%
+
 #%% Define paths
 
 path = pathlib.Path(__file__).parent
