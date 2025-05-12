@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Oct 21 10:51:32 2020
+Created on Mon May 12 13:49:07 2025
 
-@author: cheritie
+@author: fleroux
 """
 import pdb
 
@@ -95,12 +95,7 @@ dm=DeformableMirror(telescope    = tel,\
                     nSubap       = 2*param['nSubaperture'],\
                     mechCoupling = param['mechanicalCoupling'])
 
-
-
-
-#param['postProcessing'] = 'fullFrame_incidence_flux'
-param['postProcessing'] = 'fullFrame' 
-#param['postProcessing'] = 'slopesMaps_incidence_flux'
+param['postProcessing'] = 'slopesMaps_incidence_flux'
 
 bio_20 = BioEdge(nSubap             = param['nSubaperture'],\
               telescope             = tel,\
@@ -270,7 +265,7 @@ for i in range(param['n_iter']):
     #pdb.set_trace()
     dm.coefs=dm.coefs-gainCL*np.matmul(reconstructor,bioSignal)
     # store the slopes after computing the commands => 2 frames delay
-    bioSignal=bio.signal*TO_M0*30
+    bioSignal=bio.signal*TO_M0
     b= time.time()
     print('Elapsed time: ' + str(b-a) +' s')
     # update displays if required
@@ -296,7 +291,7 @@ out_perf.append([modes_in,modes_out, SR])
 
 plt.figure()
 plt.plot(residual,label='20x20 ')
-plt.plot(total, 'g')
+plt.plot(total, 'g', label='open loop turbulence')
 #plt.ylim(0,300)
 plt.legend()
 
@@ -374,7 +369,7 @@ plt.plot(np.diag(reconstructed_modes_MMSE)[50:250])
 
 # %% Pseudo inverse
 
-n_modes_to_keep = 200
+n_modes_to_keep = 100
 
 reconstructor_LSE = np.linalg.pinv(calib_bio_20.D[:,:n_modes_to_keep])
 

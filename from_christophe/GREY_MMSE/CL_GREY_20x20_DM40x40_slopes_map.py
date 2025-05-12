@@ -95,7 +95,7 @@ dm=DeformableMirror(telescope    = tel,\
                     nSubap       = 2*param['nSubaperture'],\
                     mechCoupling = param['mechanicalCoupling'])
 
-param['postProcessing'] = 'slopesMaps_incidence_flux'
+param['postProcessing'] = 'slopesMaps'
 
 bio_20 = BioEdge(nSubap             = param['nSubaperture'],\
               telescope             = tel,\
@@ -330,6 +330,8 @@ stroke_test = 10e-9 # [m]
 tel.resetOPD()
 dm.coefs = 10e-9*M2C_KL
 
+bio_20.cam.photonNoise = False
+
 ngs*tel*dm*bio_20
 
 #%% 
@@ -367,7 +369,7 @@ plt.plot(np.diag(reconstructed_modes_MMSE)[50:250])
 
 # %% Pseudo inverse
 
-n_modes_to_keep = 100
+n_modes_to_keep = 300
 
 reconstructor_LSE = np.linalg.pinv(calib_bio_20.D[:,:n_modes_to_keep])
 
