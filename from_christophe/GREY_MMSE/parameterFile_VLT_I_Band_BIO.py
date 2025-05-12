@@ -67,7 +67,7 @@ def initializeParameterFile():
     
     ###%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LOOP PROPERTIES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    param['nLoop'                 ] = 5000                                         # number of iteration                             
+    param['n_iter'                ] = 5000                                         # number of iteration                             
     param['photonNoise'           ] = True                                         # Photon Noise enable  
     param['readoutNoise'          ] = 0                                            # Readout Noise value
     param['gainCL'                ] = 0.5                                          # integrator gain

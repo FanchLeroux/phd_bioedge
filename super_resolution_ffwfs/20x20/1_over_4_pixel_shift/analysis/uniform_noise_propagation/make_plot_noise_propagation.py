@@ -97,6 +97,23 @@ plt.legend()
 plt.xlabel('# eigen mode')
 plt.ylabel('normalized eigen value')
 
+#%% SVG - all
+
+plt.figure()
+plt.semilogy(singular_values_pyramid/singular_values_pyramid.max(), 'b', 
+             label='pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' no SR')
+plt.semilogy(singular_values_pyramid_sr/singular_values_pyramid_sr.max(), 'r', 
+             label='pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' SR')
+plt.semilogy(singular_values_sgbioedge/singular_values_sgbioedge.max(), 'c', 
+             label='sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' no SR')
+plt.semilogy(singular_values_sgbioedge_sr/singular_values_sgbioedge_sr.max(), 'm', 
+             label='sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' SR')
+plt.semilogy(singular_values_sgbioedge_oversampled/singular_values_sgbioedge_oversampled.max(), 'k', 
+             label=str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+plt.legend()
+plt.xlabel('# eigen mode')
+plt.ylabel('normalized eigen value')
+plt.title('Singular Values of the Interraction Matrix Eigen modes')
 
 #%% Noise Propagation - With or Without SR - gbioedge
 

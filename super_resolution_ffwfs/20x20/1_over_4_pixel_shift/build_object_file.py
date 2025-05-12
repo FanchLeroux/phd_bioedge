@@ -94,7 +94,7 @@ if param['modal_basis'] == 'KL':
                               param              = param,\
                               nameFolder         = nameFolder,\
                               remove_piston      = False,\
-                              HHtName            = 'KL_covariance_matrix',\
+                              HHtName            = 'KL_covariance_matrix',\ # name of the saved cov matrix
                               baseName           = 'KL_basis' ,\
                               mem_available      = 6.1e9,\
                               minimF             = False,\

@@ -906,17 +906,20 @@ from fanch.tools.oopao import close_the_loop_delay
 
 total, residual_1, strehl, dm_coefs, turbulence_phase_screens,\
     residual_phase_screens, wfs_frames, short_exposure_psf, buffer_wfs_measure =\
-    close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, param['loop_gain'], param['n_iter'], 
+    close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, 
+                         param['loop_gain'], param['n_iter'], 
                        delay=1, seed=seed, save_telemetry=True, save_psf=True)
     
 total, residual_2, strehl, dm_coefs, turbulence_phase_screens,\
     residual_phase_screens, wfs_frames, short_exposure_psf, buffer_wfs_measure =\
-    close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, param['loop_gain'], param['n_iter'], 
+    close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, 
+                         param['loop_gain'], param['n_iter'], 
                        delay=2, seed=seed, save_telemetry=True, save_psf=True)
     
 total, residual_3, strehl, dm_coefs, turbulence_phase_screens,\
     residual_phase_screens, wfs_frames, short_exposure_psf, buffer_wfs_measure =\
-    close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, param['loop_gain'], param['n_iter'], 
+    close_the_loop_delay(tel, ngs, atm, dm, gbioedge, reconstructor_gbioedge, 
+                         param['loop_gain'], param['n_iter'], 
                        delay=3, seed=seed, save_telemetry=True, save_psf=True)
 
 #%%

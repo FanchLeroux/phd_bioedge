@@ -100,6 +100,7 @@ param['n_pix_separation'      ] = 10                  # [pixel] separation ratio
 param['psf_centering'          ] = False              # centering of the FFT and of the PWFS mask on the 4 central pixels
 param['light_threshold'        ] = 0.3                # light threshold to select the valid pixels
 param['post_processing'        ] = 'fullFrame'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
+param['detector_photon_noise']   = True
 
 # super resolution
 param['sr_amplitude']        = 0.25                   # [pixel] super resolution shifts amplitude
@@ -141,7 +142,9 @@ param['n_modes_to_show_oversampled'] = 980
 
 param['loop_gain'] = 0.5
 
-param['n_iter'] = 50
+param['n_iter'] = 200
+
+param['delay'] = 1
 
 # --------------------- FILENAME -------------------- #
 

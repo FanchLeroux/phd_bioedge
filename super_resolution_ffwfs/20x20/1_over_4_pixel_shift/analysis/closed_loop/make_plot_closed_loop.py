@@ -47,8 +47,6 @@ load_vars(param['path_analysis_closed_loop'] / pathlib.Path('analysis_closed_loo
            'residual_sgbioedge_sr', 'strehl_sgbioedge_sr',\
            'residual_sgbioedge_oversampled', 'strehl_sgbioedge_oversampled'])
     
-param = parameters_analysis
-    
 #%% path plots
 
 path_plots = pathlib.Path(param['path_plots_closed_loop'])
@@ -58,19 +56,20 @@ path_plots = pathlib.Path(param['path_plots_closed_loop'])
 images = []
 
 ylim = total_gbioedge.max() + 10
+ylim = 400
 
 for k in range(len(param['seeds'])):
 
     seed = param['seeds'][k]
     
     plt.figure()
-    plt.plot(total_gbioedge[k, :], 'g', label='Open loop')
+    #plt.plot(total_gbioedge[k, :], 'g', label='Open loop')
     plt.plot(residual_gbioedge[k, :], 'b', label='gbioedge '+str(param['n_subaperture'])+'x'+
               str(param['n_subaperture'])+', no SR '+str(param['n_modes_to_show'] )+' modes')
     plt.plot(residual_gbioedge_sr[k, :], 'r', label='gbioedge_sr '+str(param['n_subaperture'])+'x'+
               str(param['n_subaperture'])+', ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
               +str(param['n_modes_to_control_sr'])+' modes controlled')
-    plt.plot(residual_sgbioedge_sr[k, :], 'm', label='sgbioedge_sr '+str(param['n_subaperture'])+'x'+
+    plt.plot(residual_sgbioedge_sr[k, :], '--m', label='sgbioedge_sr '+str(param['n_subaperture'])+'x'+
               str(param['n_subaperture'])+', ' +str(param['n_modes_to_show_sr'] )+' modes shown\n'
               +str(param['n_modes_to_control_sr'])+' modes controlled')
     plt.plot(residual_gbioedge_oversampled[k, :], 'k', label='gbioedge '+str(2*param['n_subaperture'])+'x'+
@@ -79,6 +78,7 @@ for k in range(len(param['seeds'])):
               'loop frequency : '+str(np.round(1/param['sampling_time']/1e3, 1))+'kHz\n'
               'Telescope diameter: '+str(param['diameter']) + ' m\n'
               'Half grey width : '+str(param['modulation'])+' lambda/D\n'
+              'delay :'+str(param['delay']) + ' frame\n'
               'seed : '+str(seed))
     plt.ylim((0,ylim))
     plt.xlabel('Iteration')
