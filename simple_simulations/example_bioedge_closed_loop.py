@@ -110,7 +110,7 @@ param = {}
 # fill the dictionary
 # ------------------ ATMOSPHERE ----------------- #
    
-param['r0'            ] = 0.08                                           # [m] value of r0 in the visibile
+param['r0'            ] = 0.10                                           # [m] value of r0 in the visibile
 param['L0'            ] = 30                                             # [m] value of L0 in the visibile
 param['fractionnal_r0'] = [0.45, 0.1, 0.1, 0.25, 0.1]                    # Cn2 profile (percentage)
 param['wind_speed'    ] = [5,4,8,10,2]                                   # [m.s-1] wind speed of the different layers
@@ -132,7 +132,7 @@ param['centralObstruction'     ] = 0                                         # c
 
 # ---------------------- NGS ---------------------- #
 
-param['magnitude'            ] = 10                                          # magnitude of the guide star
+param['magnitude'            ] = 8                                          # magnitude of the guide star
 
 # GHOST wavelength : 770 nm, full bandwidth = 20 nm
 # 'I2' band : 750 nm, bandwidth? = 33 nm                                    # phot.R4 = [0.670e-6, 0.300e-6, 7.66e12]
@@ -149,9 +149,9 @@ param['grey_length']            = param['modulation'] # [lambda/D] grey length i
 param['n_pix_separation'      ] = 10                  # [pixel] separation ratio between the PWFS pupils
 param['psf_centering'          ] = False              # centering of the FFT and of the PWFS mask on the 4 central pixels
 param['light_threshold'        ] = 0.3                # light threshold to select the valid pixels
-param['post_processing'        ] = 'fullFrame'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
+param['post_processing'        ] = 'slopesMaps'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
 param['detector_photon_noise']   = True
-param['detector_read_out_noise']  = 3                  # e- RMS
+param['detector_read_out_noise']  = 0                  # e- RMS
 
 # super resolution
 param['sr_amplitude']        = 0.25                   # [pixel] super resolution shifts amplitude
@@ -176,15 +176,13 @@ param['single_pass'] = False # push-pull or push only for the calibration
 
 # -------------------- LOOP ----------------------- #
 
-param['n_modes_to_show'] = 700
-
-param['n_modes_to_show_oversampled'] = 980
+param['n_modes_to_show'] = 300
 
 param['loop_gain'] = 0.5
 
 param['n_iter'] = 200
 
-param['delay'] = 3
+param['delay'] = 2
 
 # --------------------- FILENAME -------------------- #
 
@@ -195,19 +193,19 @@ param['filename'] = '_' +  param['optical_band'] +'_band_'+\
                     
 #%% Build objects
 
-#%% -----------------------    TELESCOPE   -----------------------------
+#% -----------------------    TELESCOPE   -----------------------------
 
 # create the Telescope object
 tel = Telescope(resolution = param['resolution'], # [pixel] resolution of the telescope
                 diameter   = param['diameter'])   # [m] telescope diameter
 
-#%% -----------------------     NGS   ----------------------------------
+#% -----------------------     NGS   ----------------------------------
 
 # create the Natural Guide Star object
 ngs = Source(optBand     = param['optical_band'],          # Source optical band (see photometry.py)
              magnitude   = param['magnitude'])            # Source Magnitude
 
-#%% -----------------------    ATMOSPHERE   ----------------------------
+#% -----------------------    ATMOSPHERE   ----------------------------
 
 # coupling the telescope and the source is mandatory to generate Atmosphere object
 ngs*tel
@@ -266,7 +264,7 @@ if param['post_processing'] == 'slopesMaps':
                   postProcessing = param['post_processing'], 
                   psfCentering = param['psf_centering'])
 
-if param['post_processing'] == 'fullFrame':
+elif param['post_processing'] == 'fullFrame':
     # super resolved grey bioedge
     gbioedge = BioEdge(nSubap = param['n_subaperture'], 
                   telescope = tel, 
@@ -287,9 +285,13 @@ calib = InteractionMatrix(ngs, atm, tel, dm, gbioedge, M2C = M2C,
                 stroke = param['stroke'], single_pass=param['single_pass'], 
                 noise = 'off', display=True)
 
-#%% Reconstructor computation
+#%% LSE Reconstructor computation
 
 reconstructor_LSE = M2C[:,:param['n_modes_to_show']] @ np.linalg.pinv(calib.D[:,:param['n_modes_to_show']])
+
+#%% MMSE Reconstructor computation
+
+#reconstructor_MMSE = ? 
 
 #%% Close the loop
 
