@@ -110,7 +110,7 @@ param = {}
 # fill the dictionary
 # ------------------ ATMOSPHERE ----------------- #
    
-param['r0'            ] = 0.8                                            # [m] value of r0 in the visibile
+param['r0'            ] = 0.08                                           # [m] value of r0 in the visibile
 param['L0'            ] = 30                                             # [m] value of L0 in the visibile
 param['fractionnal_r0'] = [0.45, 0.1, 0.1, 0.25, 0.1]                    # Cn2 profile (percentage)
 param['wind_speed'    ] = [5,4,8,10,2]                                   # [m.s-1] wind speed of the different layers
@@ -297,7 +297,7 @@ seed = 0 # seed for atmosphere computation
 
 total, residual, strehl, dm_coefs, turbulence_phase_screens,\
     residual_phase_screens, wfs_frames, short_exposure_psf =\
-    close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_LSE, 
+    close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_LSE, # change reconstructor_LSE for a non linear data driven reconstructor here
                          param['loop_gain'], param['n_iter'], 
                        delay=param['delay'], photon_noise=param['detector_photon_noise'], 
                        read_out_noise=param['detector_read_out_noise'],  seed=seed, 
@@ -306,14 +306,14 @@ total, residual, strehl, dm_coefs, turbulence_phase_screens,\
     
 #%% post processing
 
-long_exposure_psf = np.sum(short_exposure_psf[:,:,30:], axis=2)
+long_exposure_psf = np.sum(short_exposure_psf[:,:,100:], axis=2)
 
-#%%
+#%% plots
 
 plt.figure()
 plt.plot(residual)
 plt.xlabel('loop iteration')
-plt.ylabel('residual phase standard deviation [nm]')
+plt.ylabel('residual phase RMS [nm]')
 plt.title('Closed Loop residuals')
 
 plt.figure()
@@ -325,3 +325,10 @@ plt.title('Closed Loop Strehl Ratio')
 plt.figure()
 plt.imshow(np.log(long_exposure_psf))
 plt.title('Long Exposure PSF (log scale)')
+
+# Bi-O-Edge complex amplitude mask
+fig, axs = plt.subplots(ncols=2, nrows=2)
+axs[0,0].imshow(np.abs(gbioedge.mask[0]))
+axs[0,1].imshow(np.abs(gbioedge.mask[2]))
+axs[1,0].imshow(np.angle(gbioedge.mask[0])) # The phase on the "dark" (amplitude = 0) side
+axs[1,1].imshow(np.angle(gbioedge.mask[2])) # of the Foucault Knife Edge does not matter
