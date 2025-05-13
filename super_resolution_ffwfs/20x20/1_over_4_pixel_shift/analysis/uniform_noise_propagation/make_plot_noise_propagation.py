@@ -97,7 +97,7 @@ plt.legend()
 plt.xlabel('# eigen mode')
 plt.ylabel('normalized eigen value')
 
-#%% SVG - all
+#%% Normalized SVG - all
 
 plt.figure()
 plt.semilogy(singular_values_pyramid/singular_values_pyramid.max(), 'b', 
@@ -113,6 +113,77 @@ plt.semilogy(singular_values_sgbioedge_oversampled/singular_values_sgbioedge_ove
 plt.legend()
 plt.xlabel('# eigen mode')
 plt.ylabel('normalized eigen value')
+plt.title('Singular Values of the Interraction Matrix Eigen modes')
+
+#%%###################### Plots #################
+
+# SVD - Raw Eigenvalues  
+
+    # --------------- pyramid --------------------
+
+plt.figure()
+plt.semilogy(singular_values_pyramid, 'b', label='no SR')
+plt.semilogy(singular_values_pyramid_sr, 'r', label='SR')
+plt.semilogy(singular_values_pyramid_oversampled, 'c', label='oversampled')
+plt.title('singular_values_pyramid, '+str(param['n_subaperture'])+' subapertures, ' + param['modal_basis'] 
+          + ' modes used, 0.5 pixels shift')
+plt.legend()
+plt.xlabel('# eigen mode')
+plt.ylabel('raw eigen value')
+
+    # --------------- sbioedge -------------------- #
+
+plt.figure()
+plt.semilogy(singular_values_sbioedge, 'b', label='no SR')
+plt.semilogy(singular_values_sbioedge_sr, 'r', label='SR')
+plt.semilogy(singular_values_sbioedge_oversampled, 'c', label='oversampled')
+plt.title('singular_values_sbioedge, '+str(param['n_subaperture'])+' subapertures, ' + param['modal_basis'] + 
+          ' modes used, 0.5 pixels shift')
+plt.legend()
+plt.xlabel('# eigen mode')
+plt.ylabel('raw eigen value')
+
+    # --------------- sgbioedge -------------------- #
+
+plt.figure()
+plt.semilogy(singular_values_sgbioedge, 'b', label='no SR')
+plt.semilogy(singular_values_sgbioedge_sr, 'r', label='SR')
+plt.semilogy(singular_values_sgbioedge_oversampled, 'c', label='oversampled')
+plt.title('singular_values_sgbioedge, '+str(param['n_subaperture'])+' subapertures, ' + param['modal_basis'] 
+          + ' modes used, 0.5 pixels shift')
+plt.legend()
+plt.xlabel('# eigen mode')
+plt.ylabel('raw eigen value')
+
+
+# --------------- gbioedge -------------------- #
+
+plt.figure()
+plt.semilogy(singular_values_gbioedge, 'b', label='no SR')
+plt.semilogy(singular_values_gbioedge_sr, 'r', label='SR')
+plt.semilogy(singular_values_gbioedge_oversampled, 'c', label='oversampled')
+plt.title('singular_values_gbioedge, '+str(param['n_subaperture'])+' subapertures, ' + param['modal_basis'] + 
+          ' modes used, '+str(param['sr_amplitude'])+' pixels shift')
+plt.legend()
+plt.xlabel('# eigen mode')
+plt.ylabel('raw eigen value')
+
+#%% Raw SVG - all
+
+plt.figure()
+plt.semilogy(singular_values_pyramid, 'b', 
+             label='pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' no SR')
+plt.semilogy(singular_values_pyramid_sr, 'r', 
+             label='pyramid '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' SR')
+plt.semilogy(singular_values_sgbioedge, 'c', 
+             label='sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' no SR')
+plt.semilogy(singular_values_sgbioedge_sr, 'm', 
+             label='sgbioedge '+str(param['n_subaperture'])+'x'+str(param['n_subaperture'])+' SR')
+plt.semilogy(singular_values_sgbioedge_oversampled, 'k', 
+             label=str(2*param['n_subaperture'])+'x'+str(2*param['n_subaperture']))
+plt.legend()
+plt.xlabel('# eigen mode')
+plt.ylabel('raw eigen value')
 plt.title('Singular Values of the Interraction Matrix Eigen modes')
 
 #%% Noise Propagation - With or Without SR - gbioedge
