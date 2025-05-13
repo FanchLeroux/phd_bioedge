@@ -132,7 +132,7 @@ param['centralObstruction'     ] = 0                                         # c
 
 # ---------------------- NGS ---------------------- #
 
-param['magnitude'            ] = 8                                          # magnitude of the guide star
+param['magnitude'            ] = 4                                          # magnitude of the guide star
 
 # GHOST wavelength : 770 nm, full bandwidth = 20 nm
 # 'I2' band : 750 nm, bandwidth? = 33 nm                                    # phot.R4 = [0.670e-6, 0.300e-6, 7.66e12]
@@ -149,9 +149,9 @@ param['grey_length']            = param['modulation'] # [lambda/D] grey length i
 param['n_pix_separation'      ] = 10                  # [pixel] separation ratio between the PWFS pupils
 param['psf_centering'          ] = False              # centering of the FFT and of the PWFS mask on the 4 central pixels
 param['light_threshold'        ] = 0.3                # light threshold to select the valid pixels
-param['post_processing'        ] = 'slopesMaps'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
+param['post_processing'        ] = 'fullFrame'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
 param['detector_photon_noise']   = True
-param['detector_read_out_noise']  = 0                  # e- RMS
+param['detector_read_out_noise']  = 3                 # e- RMS
 
 # super resolution
 param['sr_amplitude']        = 0.25                   # [pixel] super resolution shifts amplitude
@@ -176,11 +176,11 @@ param['single_pass'] = False # push-pull or push only for the calibration
 
 # -------------------- LOOP ----------------------- #
 
-param['n_modes_to_show'] = 300
+param['n_modes_to_show'] = 800
 
 param['loop_gain'] = 0.5
 
-param['n_iter'] = 200
+param['n_iter'] = 2000
 
 param['delay'] = 2
 
@@ -300,7 +300,7 @@ seed = 0 # seed for atmosphere computation
 total, residual, strehl, dm_coefs, turbulence_phase_screens,\
     residual_phase_screens, wfs_frames, short_exposure_psf =\
     close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_LSE, # change reconstructor_LSE for a non linear data driven reconstructor here
-                         param['loop_gain'], param['n_iter'], 
+                       param['loop_gain'], param['n_iter'], 
                        delay=param['delay'], photon_noise=param['detector_photon_noise'], 
                        read_out_noise=param['detector_read_out_noise'],  seed=seed, 
                        save_telemetry=True, save_psf=True,
@@ -317,6 +317,7 @@ plt.plot(residual)
 plt.xlabel('loop iteration')
 plt.ylabel('residual phase RMS [nm]')
 plt.title('Closed Loop residuals')
+plt.ylim(0,200)
 
 plt.figure()
 plt.plot(strehl)
@@ -334,3 +335,4 @@ axs[0,0].imshow(np.abs(gbioedge.mask[0]))
 axs[0,1].imshow(np.abs(gbioedge.mask[2]))
 axs[1,0].imshow(np.angle(gbioedge.mask[0])) # The phase on the "dark" (amplitude = 0) side
 axs[1,1].imshow(np.angle(gbioedge.mask[2])) # of the Foucault Knife Edge does not matter
+
