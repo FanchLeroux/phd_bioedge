@@ -71,7 +71,7 @@ def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain,
         ngs*tel*dm*wfs
         
         buffer_wfs_measure = np.roll(buffer_wfs_measure, -1, axis=1)
-        buffer_wfs_measure[:,-1] = wfs.signal * ngs.wavelength/(2. * np.pi)
+        buffer_wfs_measure[:,-1] = wfs.signal
         
         if save_telemetry:
             
@@ -181,7 +181,7 @@ param['mmse_alpha'] = 1. # Weight for the turbulence statistics for MMSE reconst
 
 # -------------------- LOOP ----------------------- #
 
-param['n_modes_to_show'] = 1300
+param['n_modes_to_show'] = 300
 
 param['loop_gain'] = 0.5
 
@@ -309,7 +309,7 @@ C_n = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge.nSig
 ### INTERACTION MATRIX "IN METERS"
 calib_D_meter = calib.D * ngs.wavelength/(2. * np.pi)
 
-reconstructor_mmse = np.asarray(M2C @ (calib_D_meter.T @ C_n.I @ calib_D_meter + param['mmse_alpha']*C_phi.I).I @ calib_D_meter.T @ C_n.I)
+reconstructor_mmse = ngs.wavelength/(2. * np.pi) * np.asarray(M2C @ (calib_D_meter.T @ C_n.I @ calib_D_meter + param['mmse_alpha']*C_phi.I).I @ calib_D_meter.T @ C_n.I)
 
 #%% Close the loop - LSE
 
