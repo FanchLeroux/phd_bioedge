@@ -71,7 +71,7 @@ def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain,
         ngs*tel*dm*wfs
         
         buffer_wfs_measure = np.roll(buffer_wfs_measure, -1, axis=1)
-        buffer_wfs_measure[:,-1] = wfs.signal
+        buffer_wfs_measure[:,-1] = wfs.signal * ngs.wavelength/(2. * np.pi)
         
         if save_telemetry:
             
@@ -82,7 +82,7 @@ def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain,
         residual[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9 # [nm]
         strehl[k] = np.exp(-np.var(tel.src.phase[np.where(tel.pupil>0)]))
            
-        dm.coefs = dm.coefs - loop_gain * np.matmul(reconstructor, buffer_wfs_measure[:,0])  
+        dm.coefs = dm.coefs - loop_gain * np.matmul(reconstructor, buffer_wfs_measure[:,0])
            
         if save_psf:
             
@@ -110,7 +110,7 @@ param = {}
 # fill the dictionary
 # ------------------ ATMOSPHERE ----------------- #
    
-param['r0'            ] = 0.10                                           # [m] value of r0 in the visibile
+param['r0'            ] = 0.15                                           # [m] value of r0 in the visibile
 param['L0'            ] = 30                                             # [m] value of L0 in the visibile
 param['fractionnal_r0'] = [0.45, 0.1, 0.1, 0.25, 0.1]                    # Cn2 profile (percentage)
 param['wind_speed'    ] = [5,4,8,10,2]                                   # [m.s-1] wind speed of the different layers
@@ -127,12 +127,12 @@ param['n_pixel_per_subaperture'] = 8                                         # [
 param['resolution'             ] = param['n_subaperture']*\
                                    param['n_pixel_per_subaperture']          # resolution of the telescope driven by the WFS
 param['size_subaperture'       ] = param['diameter']/param['n_subaperture']  # [m] size of a sub-aperture projected in the M1 space
-param['sampling_time'          ] = 1/500                                     # [s] loop sampling time
+param['sampling_time'          ] = 1/1000                                     # [s] loop sampling time
 param['centralObstruction'     ] = 0                                         # central obstruction in percentage of the diameter
 
 # ---------------------- NGS ---------------------- #
 
-param['magnitude'            ] = 4                                          # magnitude of the guide star
+param['magnitude'            ] = 8                                          # magnitude of the guide star
 
 # GHOST wavelength : 770 nm, full bandwidth = 20 nm
 # 'I2' band : 750 nm, bandwidth? = 33 nm                                    # phot.R4 = [0.670e-6, 0.300e-6, 7.66e12]
@@ -149,9 +149,9 @@ param['grey_length']            = param['modulation'] # [lambda/D] grey length i
 param['n_pix_separation'      ] = 10                  # [pixel] separation ratio between the PWFS pupils
 param['psf_centering'          ] = False              # centering of the FFT and of the PWFS mask on the 4 central pixels
 param['light_threshold'        ] = 0.3                # light threshold to select the valid pixels
-param['post_processing'        ] = 'fullFrame'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
+param['post_processing'        ] = 'slopesMaps'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
 param['detector_photon_noise']   = True
-param['detector_read_out_noise']  = 3                 # e- RMS
+param['detector_read_out_noise']  = 0.                 # e- RMS
 
 # super resolution
 param['sr_amplitude']        = 0.25                   # [pixel] super resolution shifts amplitude
@@ -174,13 +174,18 @@ param['list_modes_to_keep'] = np.linspace(int(0.5*(np.pi * (param['n_subaperture
 param['stroke'] = 1e-9 # [m] actuator stroke for calibration matrices computation
 param['single_pass'] = False # push-pull or push only for the calibration
 
+# ----------------------- RECONSTRUCTION ------------------------ #
+
+param['mmse_noise_level_guess'] = 100e-9 # noise level assumption for MMSE reconstruction
+param['mmse_alpha'] = 1. # Weight for the turbulence statistics for MMSE reconstruction
+
 # -------------------- LOOP ----------------------- #
 
-param['n_modes_to_show'] = 800
+param['n_modes_to_show'] = 1300
 
 param['loop_gain'] = 0.5
 
-param['n_iter'] = 2000
+param['n_iter'] = 200
 
 param['delay'] = 2
 
@@ -227,7 +232,7 @@ dm = DeformableMirror(tel, nSubap=param['n_actuator'])
 
 if param['modal_basis'] == 'KL':
     
-    M2C_KL_full = compute_M2C(telescope          = tel,\
+    M2C_KL_full, HHt, PSD_atm, df = compute_M2C(telescope= tel,\
                               atmosphere         = atm,\
                               deformableMirror   = dm,\
                               param              = param,\
@@ -242,9 +247,10 @@ if param['modal_basis'] == 'KL':
                               SZ                 = np.int64(2*tel.OPD.shape[0]),\
                               nZer               = 3,\
                               NDIVL              = 1,\
-                              lim_inversion=1e-5)
+                              lim_inversion=1e-5,
+                              returnHHt_PSD_df=True)
         
-    M2C = M2C_KL_full[:,1:] # remove piston
+    M2C = M2C_KL_full[:,1:param['n_modes_to_show']] # remove piston
     
     dm.coefs = np.zeros(dm.nValidAct) # reset dm.OPD
     
@@ -281,25 +287,50 @@ elif param['post_processing'] == 'fullFrame':
     
 #%% Calibration
 
-calib = InteractionMatrix(ngs, atm, tel, dm, gbioedge, M2C = M2C, 
-                stroke = param['stroke'], single_pass=param['single_pass'], 
+calib = InteractionMatrix(ngs, tel, dm, gbioedge, M2C=M2C,
+                stroke=param['stroke'], single_pass=param['single_pass'],
                 noise = 'off', display=True)
 
 #%% LSE Reconstructor computation
 
-reconstructor_LSE = M2C[:,:param['n_modes_to_show']] @ np.linalg.pinv(calib.D[:,:param['n_modes_to_show']])
+reconstructor_lse = M2C @ np.linalg.pinv(calib.D)
 
 #%% MMSE Reconstructor computation
 
-#reconstructor_MMSE = ? 
+# COVARIANCE OF MODES IN ATMOSPHERE
+C_phi_full_KL_basis = (1./tel.pupil.sum()**2.) * M2C_KL_full.T @ HHt @ M2C_KL_full *(tel.src.wavelength/(2.*np.pi))**2
 
-#%% Close the loop
+# COVARIANCE OF CONTROLLED MODES (PISTON EXCLUDED)
+C_phi = np.asmatrix(C_phi_full_KL_basis[1:param['n_modes_to_show'],1:param['n_modes_to_show']])*param['r0']**(-5./3.)
+
+# COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
+C_n = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge.nSignal))
+
+### INTERACTION MATRIX "IN METERS"
+calib_D_meter = calib.D * ngs.wavelength/(2. * np.pi)
+
+reconstructor_mmse = np.asarray(M2C @ (calib_D_meter.T @ C_n.I @ calib_D_meter + param['mmse_alpha']*C_phi.I).I @ calib_D_meter.T @ C_n.I)
+
+#%% Close the loop - LSE
 
 seed = 0 # seed for atmosphere computation
 
 total, residual, strehl, dm_coefs, turbulence_phase_screens,\
     residual_phase_screens, wfs_frames, short_exposure_psf =\
-    close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_LSE, # change reconstructor_LSE for a non linear data driven reconstructor here
+    close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_lse,
+                       param['loop_gain'], param['n_iter'], 
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'], 
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)
+    
+#%% Close the loop - MMSE
+
+seed = 0 # seed for atmosphere computation
+
+total, residual, strehl, dm_coefs, turbulence_phase_screens,\
+    residual_phase_screens, wfs_frames, short_exposure_psf =\
+    close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_mmse,
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'], photon_noise=param['detector_photon_noise'], 
                        read_out_noise=param['detector_read_out_noise'],  seed=seed, 

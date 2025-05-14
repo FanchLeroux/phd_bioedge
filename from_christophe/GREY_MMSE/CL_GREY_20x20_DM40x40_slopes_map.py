@@ -184,7 +184,7 @@ rmsDM_wiP = np.sqrt(np.sum(np.diag(Cmo_B[0:,0:])))
 fitting_error=np.sqrt(rmsPSD_wiP**2-rmsDM_wiP**2)
 
 
-## COVARIANCE PISTON ECLUDEDOF CONTROLLED MODES (PISTON EXCLUDED)
+## COVARIANCE PISTON ECLUDED OF CONTROLLED MODES (PISTON EXCLUDED)
 C_phi = np.asmatrix(Cmo_B[1:n_modes_shown_mmse,1:n_modes_shown_mmse])*r0_guess**(-5./3.)
 #for k in range(0,5):
 #    C_phi[k,k] = C_phi[k,k] + UC_TERM_AMP**2
