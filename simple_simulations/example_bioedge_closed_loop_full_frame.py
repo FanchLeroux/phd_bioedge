@@ -240,7 +240,7 @@ param['grey_length']            = param['modulation'] # [lambda/D] grey length i
 param['n_pix_separation'      ] = 10                  # [pixel] separation ratio between the PWFS pupils
 param['psf_centering'          ] = False              # centering of the FFT and of the PWFS mask on the 4 central pixels
 param['light_threshold'        ] = 0.3                # light threshold to select the valid pixels
-param['post_processing'        ] = 'slopesMaps'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
+param['post_processing'        ] = 'fullFrame'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
 param['detector_photon_noise']   = True
 param['detector_read_out_noise']  = 3.                 # e- RMS
 
@@ -346,6 +346,8 @@ if param['modal_basis'] == 'KL':
         
     M2C = M2C_KL_full[:,1:] # remove piston
     
+    C2M = np.asarray(np.asmatrix(M2C).I)
+    
     dm.coefs = np.zeros(dm.nValidAct) # reset dm.OPD
     
 elif param['modal_basis'] == 'poke':
@@ -446,7 +448,7 @@ total_lse_sr, residual_lse_sr, strehl_lse_sr, dm_coefs_lse_sr, turbulence_phase_
 
 total_mmse, residual_mmse, strehl_mmse, dm_coefs_mmse, turbulence_phase_screens_mmse,\
     residual_phase_screens_mmse, wfs_frames_mmse, short_exposure_psf_mmse =\
-    close_the_loop_mmse(tel, ngs, atm, dm, gbioedge, calib.D, reconstructor_mmse,
+    close_the_loop(tel, ngs, atm, dm, gbioedge, calib.D, reconstructor_mmse,
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'], photon_noise=param['detector_photon_noise'],
                        read_out_noise=param['detector_read_out_noise'],  seed=seed, 
