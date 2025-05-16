@@ -346,8 +346,6 @@ if param['modal_basis'] == 'KL':
         
     M2C = M2C_KL_full[:,1:] # remove piston
     
-    C2M = np.asarray(np.asmatrix(M2C).I)
-    
     dm.coefs = np.zeros(dm.nValidAct) # reset dm.OPD
     
 elif param['modal_basis'] == 'poke':
