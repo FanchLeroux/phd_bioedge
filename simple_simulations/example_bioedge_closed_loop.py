@@ -514,6 +514,11 @@ total_mmse_pol, residual_mmse_pol, strehl_mmse_pol, dm_coefs_mmse_pol, turbulenc
 long_exposure_psf_lse = np.sum(short_exposure_psf_lse[:,:,100:], axis=2)
 long_exposure_psf_lse_sr = np.sum(short_exposure_psf_lse_sr[:,:,100:], axis=2)
 long_exposure_psf_mmse = np.sum(short_exposure_psf_mmse[:,:,100:], axis=2)
+
+#%% post processing - psuedo open loop
+
+long_exposure_psf_lse_pol = np.sum(short_exposure_psf_lse_pol[:,:,100:], axis=2)
+long_exposure_psf_lse_sr_pol = np.sum(short_exposure_psf_lse_sr_pol[:,:,100:], axis=2)
 long_exposure_psf_mmse_pol = np.sum(short_exposure_psf_mmse_pol[:,:,100:], axis=2)
 
 #%% plots
@@ -549,9 +554,35 @@ axs[2].imshow(np.log(long_exposure_psf_mmse))
 axs[2].set_title('Long Exposure PSF (log scale)\nMMSE reconstruction')
 plt.savefig(dirc / pathlib.Path('long_exposure_psf_lse_sr_mmse'+'.png'), bbox_inches = 'tight')
 
-# # Bi-O-Edge complex amplitude mask
-# fig, axs = plt.subplots(ncols=2, nrows=2)
-# axs[0,0].imshow(np.abs(gbioedge.mask[0]))
-# axs[0,1].imshow(np.abs(gbioedge.mask[2]))
-# axs[1,0].imshow(np.angle(gbioedge.mask[0])) # The phase on the "dark" (amplitude = 0) side
-# axs[1,1].imshow(np.angle(gbioedge.mask[2])) # of the Foucault Knife Edge does not matter
+#%% plots - pseudo open loop
+
+plt.figure()
+plt.plot(residual_lse_pol, label='residual_lse')
+plt.plot(residual_lse_sr_pol, label='residual_lse_sr')
+plt.plot(residual_mmse_pol, label='residual_mmse')
+plt.xlabel('loop iteration')
+plt.ylabel('residual phase RMS [nm]')
+plt.title('Closed Loop residuals - Pseudo open-loop reconstruction')
+plt.legend()
+plt.ylim(0,200)
+plt.savefig(dirc / pathlib.Path('residuals_lse_sr_mmse_pol'+'.png'), bbox_inches = 'tight')
+
+
+plt.figure()
+plt.plot(strehl_lse_pol, label='strehl_lse')
+plt.plot(strehl_lse_sr_pol, label='strehl_lse_sr')
+plt.plot(strehl_mmse_pol, label='strehl_mmse')
+plt.xlabel('loop iteration')
+plt.ylabel('Strehl Ratio')
+plt.title('Closed Loop Strehl Ratio - Pseudo open-loop reconstruction')
+plt.legend()
+plt.savefig(dirc / pathlib.Path('strehl_lse_sr_mmse'+'.png'), bbox_inches = 'tight')
+
+fig, axs = plt.subplots(nrows=1, ncols=3)
+axs[0].imshow(np.log(long_exposure_psf_lse_pol))
+axs[0].set_title('Long Exposure PSF (log scale)\nLSE reconstruction')
+axs[1].imshow(np.log(long_exposure_psf_lse_sr_pol))
+axs[1].set_title('Long Exposure PSF (log scale)\nLSE SR reconstruction')
+axs[2].imshow(np.log(long_exposure_psf_mmse_pol))
+axs[2].set_title('Long Exposure PSF (log scale)\nMMSE reconstruction')
+plt.savefig(dirc / pathlib.Path('long_exposure_psf_lse_sr_mmse_pol'+'.png'), bbox_inches = 'tight')
