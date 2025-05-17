@@ -277,7 +277,7 @@ def close_the_loop_pol2(tel, ngs, atm, dm, wfs, M2C,
         residual[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9 # [nm]
         strehl[k] = np.exp(-np.var(tel.src.phase[np.where(tel.pupil>0)]))
         
-        pseudo_open_loop_measures = buffer_wfs_measure[:,0] + interaction_matrix @ C2M @ dm.coefs
+        pseudo_open_loop_measures = buffer_wfs_measure[:,0] - interaction_matrix @ C2M @ dm.coefs
          
         # from https://arxiv.org/pdf/1903.12124
         
@@ -544,7 +544,7 @@ print(np.abs(coefs_bis - dm_coefs_lse_pol2[:,1]))
 
 new_dm_coefs_pol2 = (1-param['loop_gain']) * dm_coefs_lse_pol2[:,1]\
     - param['loop_gain'] *\
-        M2C @ reconstructor_lse_pol2 @ (wfs_signals_lse_pol2[:,1] + calib.D @ C2M @ dm_coefs_lse_pol2[:,1])
+        M2C @ reconstructor_lse_pol2 @ (wfs_signals_lse_pol2[:,1] - calib.D @ C2M @ dm_coefs_lse_pol2[:,1])
 
 new_dm_coefs_pol2 == dm_coefs_lse_pol2[:,2]
 
@@ -557,7 +557,7 @@ print(new_dm_coefs == dm_coefs_lse[:,2])
 
 #%%
 
-print(dm_coefs_lse_pol2[:,1] == dm_coefs_lse[:,1])
+print(new_dm_coefs_pol2 - dm_coefs_lse[:,2])
 
 #%% MMSE Reconstructor computation
 
