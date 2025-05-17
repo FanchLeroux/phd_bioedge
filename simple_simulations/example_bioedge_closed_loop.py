@@ -514,7 +514,7 @@ reconstructor_lse_sr_pol2[:param['n_modes_to_show_lse_sr']] = np.linalg.pinv(cal
 
 #%% Close the loop - LSE - pseudo open loop2
 
-seed = 0
+seed = 10
 
 total_lse_pol2, residual_lse_pol2, strehl_lse_pol2, dm_coefs_lse_pol2, turbulence_phase_screens_lse_pol2,\
     residual_phase_screens_lse_pol2, wfs_frames_lse_pol2, wfs_signals_lse_pol2, short_exposure_psf_lse_pol2 =\
@@ -526,38 +526,7 @@ total_lse_pol2, residual_lse_pol2, strehl_lse_pol2, dm_coefs_lse_pol2, turbulenc
                        save_telemetry=True, save_psf=True,
                        display = False)
 
-#%%
 
-plt.figure()
-plt.imshow(reconstructor_lse @ calib.D)
-
-#%%
-
-C2M = np.linalg.pinv(M2C)
-
-coefs_bis = M2C @ reconstructor_lse_pol2 @ calib.D @ C2M @ dm_coefs_lse_pol2[:,1] # almost the same as dm.coefs ...
-
-print(np.abs(coefs_bis - dm_coefs_lse_pol2[:,1]).sum())
-print(np.abs(coefs_bis - dm_coefs_lse_pol2[:,1]))
-
-#%% pol2 vs lse check
-
-new_dm_coefs_pol2 = (1-param['loop_gain']) * dm_coefs_lse_pol2[:,1]\
-    - param['loop_gain'] *\
-        M2C @ reconstructor_lse_pol2 @ (wfs_signals_lse_pol2[:,1] - calib.D @ C2M @ dm_coefs_lse_pol2[:,1])
-
-new_dm_coefs_pol2 == dm_coefs_lse_pol2[:,2]
-
-#%%
-
-new_dm_coefs = dm_coefs_lse[:,1]\
-    - param['loop_gain'] * reconstructor_lse @ wfs_signals_lse[:,1]
-
-print(new_dm_coefs == dm_coefs_lse[:,2])
-
-#%%
-
-print(new_dm_coefs_pol2 - dm_coefs_lse[:,2])
 
 #%% MMSE Reconstructor computation
 
@@ -584,6 +553,8 @@ reconstructor_mmse = ngs.wavelength/(2. * np.pi) *\
 
 seed = 0 # seed for atmosphere computation
 
+
+
 #%% Close the loop - LSE
 
 total_lse, residual_lse, strehl_lse, dm_coefs_lse, turbulence_phase_screens_lse,\
@@ -598,7 +569,7 @@ total_lse, residual_lse, strehl_lse, dm_coefs_lse, turbulence_phase_screens_lse,
 #%% Close the loop - LSE SR
 
 total_lse_sr, residual_lse_sr, strehl_lse_sr, dm_coefs_lse_sr, turbulence_phase_screens_lse_sr,\
-    residual_phase_screens_lse_sr, wfs_frames_lse_sr, short_exposure_psf_lse_sr =\
+    residual_phase_screens_lse_sr, wfs_frames_lse_sr, wfs_signals_lse_sr, short_exposure_psf_lse_sr =\
     close_the_loop(tel, ngs, atm, dm, gbioedge_sr, reconstructor_lse_sr,
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'], photon_noise=param['detector_photon_noise'], 
@@ -639,13 +610,15 @@ total_lse_sr_pol, residual_lse_sr_pol, strehl_lse_sr_pol, dm_coefs_lse_sr_pol, t
 C2M = np.asarray(np.asmatrix(M2C[:,:param['n_modes_to_show_mmse']]).I)
 
 total_mmse, residual_mmse, strehl_mmse, dm_coefs_mmse, turbulence_phase_screens_mmse,\
-    residual_phase_screens_mmse, wfs_frames_mmse, short_exposure_psf_mmse =\
+    residual_phase_screens_mmse, wfs_frames_mmse, wfs_signals_mmse, short_exposure_psf_mmse =\
     close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_mmse, # cali.D or calib_D_meter ?
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'], photon_noise=param['detector_photon_noise'],
                        read_out_noise=param['detector_read_out_noise'],  seed=seed, 
                        save_telemetry=True, save_psf=True,
                        display = False)
+
+
 
 #%% Close the loop - MMSE - pseudo open loop
 
@@ -661,6 +634,40 @@ total_mmse_pol, residual_mmse_pol, strehl_mmse_pol, dm_coefs_mmse_pol, turbulenc
                        save_telemetry=True, save_psf=True,
                        display = False)
 
+#%% MMSE Reconstructor computation - pol2
+
+# COVARIANCE OF MODES IN ATMOSPHERE
+C_phi_full_KL_basis = (1./tel.pupil.sum()**2.) * M2C_KL_full.T @ HHt @ M2C_KL_full *(tel.src.wavelength/(2.*np.pi))**2
+
+# COVARIANCE OF CONTROLLED MODES (PISTON EXCLUDED)
+C_phi = np.asmatrix(C_phi_full_KL_basis[1:param['n_modes_to_show_mmse']+1,1:param['n_modes_to_show_mmse']+1])*param['r0']**(-5./3.)
+
+# COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
+C_n = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge.nSignal))
+
+### INTERACTION MATRIX "IN METERS"
+calib_D_meter = calib.D * ngs.wavelength/(2. * np.pi)
+
+reconstructor_mmse_pol2 = np.zeros(calib.D.T.shape)
+
+reconstructor_mmse_pol2[:param['n_modes_to_show_mmse'], :] = ngs.wavelength/(2. * np.pi) *\
+    np.asarray((calib_D_meter[:,:param['n_modes_to_show_mmse']].T\
+    @ C_n.I @ calib_D_meter[:,:param['n_modes_to_show_mmse']]\
+    + param['mmse_alpha']*C_phi.I).I\
+    @ calib_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n.I)
+
+#%% Close the loop - MMSE - pseudo open loop2
+
+total_mmse_pol2, residual_mmse_pol2, strehl_mmse_pol2, dm_coefs_mmse_pol2, turbulence_phase_screens_mmse_pol2,\
+    residual_phase_screens_mmse_pol2, wfs_frames_mmse_pol2, wfs_signals_mmse_pol2, short_exposure_psf_mmse_pol2 =\
+    close_the_loop_pol2(tel, ngs, atm, dm, gbioedge, M2C,
+                       calib.D, reconstructor_mmse_pol2,
+                       param['loop_gain'], param['n_iter'], 
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'], 
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)
+
 #%% post processing
 
 long_exposure_psf_lse = np.sum(short_exposure_psf_lse[:,:,100:], axis=2)
@@ -672,6 +679,15 @@ long_exposure_psf_mmse = np.sum(short_exposure_psf_mmse[:,:,100:], axis=2)
 long_exposure_psf_lse_pol = np.sum(short_exposure_psf_lse_pol[:,:,100:], axis=2)
 long_exposure_psf_lse_sr_pol = np.sum(short_exposure_psf_lse_sr_pol[:,:,100:], axis=2)
 long_exposure_psf_mmse_pol = np.sum(short_exposure_psf_mmse_pol[:,:,100:], axis=2)
+
+#%%
+
+plt.figure()
+plt.plot(residual_lse, label='residual_lse')
+plt.plot(residual_mmse, label='residual_mmse')
+plt.plot(residual_lse_pol2, linestyle='dashed',label='residual_lse_pol2')
+plt.plot(residual_mmse_pol2, label='residual_mmse_pol2')
+plt.legend()
 
 #%% plots
 
@@ -757,7 +773,42 @@ plt.imshow(C2M_lse_pol @ M2C[:,:param['n_modes_to_show_lse']])
 plt.figure()
 plt.imshow(M2C[:,:param['n_modes_to_show_lse']]@C2M_lse_pol)
 
-#%% tests
+#%% debug
+
+#%%
+
+plt.figure()
+plt.imshow(reconstructor_lse_pol2 @ calib.D)
+
+#%%
+
+C2M = np.linalg.pinv(M2C)
+
+coefs_bis = M2C @ reconstructor_lse_pol2 @ calib.D @ C2M @ dm_coefs_lse_pol2[:,1] # almost the same as dm.coefs ...
+
+print(np.abs(coefs_bis - dm_coefs_lse_pol2[:,1]).sum())
+print(np.abs(coefs_bis - dm_coefs_lse_pol2[:,1]))
+
+#%% pol2 vs lse check
+
+new_dm_coefs_pol2 = (1-param['loop_gain']) * dm_coefs_lse_pol2[:,1]\
+    - param['loop_gain'] *\
+        M2C @ reconstructor_lse_pol2 @ (wfs_signals_lse_pol2[:,1] - calib.D @ C2M @ dm_coefs_lse_pol2[:,1])
+
+new_dm_coefs_pol2 == dm_coefs_lse_pol2[:,2]
+
+#%%
+
+new_dm_coefs = dm_coefs_lse[:,1]\
+    - param['loop_gain'] * reconstructor_lse @ wfs_signals_lse[:,1]
+
+print(new_dm_coefs == dm_coefs_lse[:,2])
+
+#%%
+
+print(new_dm_coefs_pol2 - dm_coefs_lse[:,2])
+
+#%%
 
 interaction_matrix = calib.D[:, :param['n_modes_to_show_lse']]
 
