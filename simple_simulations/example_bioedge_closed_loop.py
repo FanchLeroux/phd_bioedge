@@ -454,6 +454,22 @@ reconstructor_mmse_pol[:param['n_modes_to_show_mmse'], :] = ngs.wavelength/(2. *
     @ C_n.I @ calib_D_meter[:,:param['n_modes_to_show_mmse']]\
     + param['mmse_alpha']*C_phi.I).I\
     @ calib_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n.I)
+        
+#%%
+
+# COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
+C_n_sr = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge_sr.nSignal))
+
+### INTERACTION MATRIX "IN METERS"
+calib_sr_D_meter = calib_sr.D * ngs.wavelength/(2. * np.pi)
+
+reconstructor_mmse_sr_pol = np.zeros(calib_sr.D.T.shape)
+
+reconstructor_mmse_sr_pol[:param['n_modes_to_show_mmse'], :] = ngs.wavelength/(2. * np.pi) *\
+    np.asarray((calib_sr_D_meter[:,:param['n_modes_to_show_mmse']].T\
+    @ C_n_sr.I @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse']]\
+    + param['mmse_alpha']*C_phi.I).I\
+    @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n_sr.I)
 
 #%% SEED
 
@@ -525,6 +541,18 @@ total_mmse_pol, residual_mmse_pol, strehl_mmse_pol, dm_coefs_mmse_pol, turbulenc
     residual_phase_screens_mmse_pol, wfs_frames_mmse_pol, wfs_signals_mmse_pol, short_exposure_psf_mmse_pol =\
     close_the_loop_pol(tel, ngs, atm, dm, gbioedge, M2C,
                        calib.D, reconstructor_mmse_pol,
+                       param['loop_gain'], param['n_iter'], 
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'], 
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)
+    
+#%% Close the loop - MMSE - pseudo open loop2 - SR
+
+total_mmse_sr_pol, residual_mmse_sr_pol, strehl_mmse_sr_pol, dm_coefs_mmse_sr_pol, turbulence_phase_screens_mmse_sr_pol,\
+    residual_phase_screens_mmse_sr_pol, wfs_frames_mmse_sr_pol, wfs_signals_mmse_sr_pol, short_exposure_psf_mmse_sr_pol =\
+    close_the_loop_pol(tel, ngs, atm, dm, gbioedge_sr, M2C,
+                       calib_sr.D, reconstructor_mmse_sr_pol,
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'], photon_noise=param['detector_photon_noise'], 
                        read_out_noise=param['detector_read_out_noise'],  seed=seed, 
