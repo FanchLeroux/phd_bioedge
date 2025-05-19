@@ -249,9 +249,9 @@ param['grey_length']            = param['modulation'] # [lambda/D] grey length i
 param['n_pix_separation'      ] = 10                  # [pixel] separation ratio between the PWFS pupils
 param['psf_centering'          ] = False              # centering of the FFT and of the PWFS mask on the 4 central pixels
 param['light_threshold'        ] = 0.3                # light threshold to select the valid pixels
-param['post_processing'        ] = 'slopesMaps'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
+param['post_processing'        ] = 'slopesMaps'       # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
 param['detector_photon_noise']   = True
-param['detector_read_out_noise']  = 0.                 # e- RMS
+param['detector_read_out_noise']  = 0.                # e- RMS
 
 # super resolution
 param['sr_amplitude']        = 0.25                   # [pixel] super resolution shifts amplitude
@@ -497,6 +497,19 @@ total_lse_sr, residual_lse_sr, strehl_lse_sr, dm_coefs_lse_sr, turbulence_phase_
                        save_telemetry=True, save_psf=True,
                        display = False)
     
+#%% Close the loop - MMSE
+
+C2M = np.asarray(np.asmatrix(M2C[:,:param['n_modes_to_show_mmse']]).I)
+
+total_mmse, residual_mmse, strehl_mmse, dm_coefs_mmse, turbulence_phase_screens_mmse,\
+    residual_phase_screens_mmse, wfs_frames_mmse, wfs_signals_mmse, short_exposure_psf_mmse =\
+    close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_mmse, # cali.D or calib_D_meter ?
+                       param['loop_gain'], param['n_iter'], 
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'],
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)
+
 #%% Close the loop - LSE - pseudo open loop
 
 total_lse_pol, residual_lse_pol, strehl_lse_pol, dm_coefs_lse_pol, turbulence_phase_screens_lse_pol,\
@@ -520,22 +533,8 @@ total_lse_sr_pol, residual_lse_sr_pol, strehl_lse_sr_pol, dm_coefs_lse_sr_pol, t
                        read_out_noise=param['detector_read_out_noise'],  seed=seed, 
                        save_telemetry=True, save_psf=True,
                        display = False)
-    
-#%% Close the loop - MMSE
 
-C2M = np.asarray(np.asmatrix(M2C[:,:param['n_modes_to_show_mmse']]).I)
-
-total_mmse, residual_mmse, strehl_mmse, dm_coefs_mmse, turbulence_phase_screens_mmse,\
-    residual_phase_screens_mmse, wfs_frames_mmse, wfs_signals_mmse, short_exposure_psf_mmse =\
-    close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_mmse, # cali.D or calib_D_meter ?
-                       param['loop_gain'], param['n_iter'], 
-                       delay=param['delay'], photon_noise=param['detector_photon_noise'],
-                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
-                       save_telemetry=True, save_psf=True,
-                       display = False)
-
-
-#%% Close the loop - MMSE - pseudo open loop2
+#%% Close the loop - MMSE - pseudo open loop
 
 total_mmse_pol, residual_mmse_pol, strehl_mmse_pol, dm_coefs_mmse_pol, turbulence_phase_screens_mmse_pol,\
     residual_phase_screens_mmse_pol, wfs_frames_mmse_pol, wfs_signals_mmse_pol, short_exposure_psf_mmse_pol =\
@@ -547,7 +546,7 @@ total_mmse_pol, residual_mmse_pol, strehl_mmse_pol, dm_coefs_mmse_pol, turbulenc
                        save_telemetry=True, save_psf=True,
                        display = False)
     
-#%% Close the loop - MMSE - pseudo open loop2 - SR
+#%% Close the loop - MMSE - pseudo open loop - SR
 
 total_mmse_sr_pol, residual_mmse_sr_pol, strehl_mmse_sr_pol, dm_coefs_mmse_sr_pol, turbulence_phase_screens_mmse_sr_pol,\
     residual_phase_screens_mmse_sr_pol, wfs_frames_mmse_sr_pol, wfs_signals_mmse_sr_pol, short_exposure_psf_mmse_sr_pol =\
@@ -643,7 +642,7 @@ plt.figure()
 plt.plot(residual_lse, label='residual_lse')
 plt.plot(residual_mmse, label='residual_mmse')
 plt.plot(residual_lse_pol, linestyle='dashed',label='residual_lse_pol')
-plt.plot(residual_mmse_pol, label='residual_mmse_pol')
+plt.plot(residual_mmse_pol, linestyle='dashed', label='residual_mmse_pol')
 plt.ylim(0, 200)
 plt.legend()
 
@@ -653,7 +652,7 @@ plt.figure()
 plt.plot(strehl_lse, label='strehl_lse')
 plt.plot(strehl_mmse, label='strehl_mmse')
 plt.plot(strehl_lse_pol, linestyle='dashed',label='strehl_lse_pol')
-plt.plot(strehl_mmse_pol, label='strehl_mmse_pol')
+plt.plot(strehl_mmse_pol, linestyle='dashed',label='strehl_mmse_pol')
 plt.legend()
 
 #%% debug
