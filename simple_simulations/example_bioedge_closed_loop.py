@@ -433,7 +433,22 @@ reconstructor_mmse = ngs.wavelength/(2. * np.pi) *\
     + param['mmse_alpha']*C_phi.I).I\
     @ calib_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n.I)
 
-#%% MMSE Reconstructor computation - pol2
+#%% MMSE - SR - Reconstructor computation
+
+# COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
+C_n_sr = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge_sr.nSignal))
+
+### INTERACTION MATRIX "IN METERS"
+calib_sr_D_meter = calib_sr.D * ngs.wavelength/(2. * np.pi)
+
+reconstructor_mmse_sr = ngs.wavelength/(2. * np.pi) *\
+    np.asarray(M2C[:,:param['n_modes_to_show_mmse']]\
+    @ (calib_sr_D_meter[:,:param['n_modes_to_show_mmse']].T\
+    @ C_n_sr.I @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse']]\
+    + param['mmse_alpha']*C_phi.I).I\
+    @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n_sr.I)
+
+#%% MMSE Reconstructor computation - pol
 
 # COVARIANCE OF MODES IN ATMOSPHERE
 C_phi_full_KL_basis = (1./tel.pupil.sum()**2.) * M2C_KL_full.T @ HHt @ M2C_KL_full *(tel.src.wavelength/(2.*np.pi))**2
@@ -455,7 +470,7 @@ reconstructor_mmse_pol[:param['n_modes_to_show_mmse'], :] = ngs.wavelength/(2. *
     + param['mmse_alpha']*C_phi.I).I\
     @ calib_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n.I)
         
-#%%
+#%% MMSE - SR - pol Reconstructor computation
 
 # COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
 C_n_sr = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge_sr.nSignal))
@@ -486,7 +501,7 @@ total_lse, residual_lse, strehl_lse, dm_coefs_lse, turbulence_phase_screens_lse,
                        save_telemetry=True, save_psf=True,
                        display = False)
     
-#%% Close the loop - LSE SR
+#%% Close the loop - LSE - SR
 
 total_lse_sr, residual_lse_sr, strehl_lse_sr, dm_coefs_lse_sr, turbulence_phase_screens_lse_sr,\
     residual_phase_screens_lse_sr, wfs_frames_lse_sr, wfs_signals_lse_sr, short_exposure_psf_lse_sr =\
@@ -510,6 +525,17 @@ total_mmse, residual_mmse, strehl_mmse, dm_coefs_mmse, turbulence_phase_screens_
                        save_telemetry=True, save_psf=True,
                        display = False)
 
+#%% Close the loop - MMSE - SR 
+
+total_mmse_sr, residual_mmse_sr, strehl_mmse_sr, dm_coefs_mmse_sr, turbulence_phase_screens_mmse_sr,\
+    residual_phase_screens_mmse_sr, wfs_frames_mmse_sr, wfs_signals_mmse_sr, short_exposure_psf_mmse_sr =\
+    close_the_loop(tel, ngs, atm, dm, gbioedge_sr, reconstructor_mmse_sr,
+                       param['loop_gain'], param['n_iter'],
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'], 
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)
+
 #%% Close the loop - LSE - pseudo open loop
 
 total_lse_pol, residual_lse_pol, strehl_lse_pol, dm_coefs_lse_pol, turbulence_phase_screens_lse_pol,\
@@ -522,7 +548,7 @@ total_lse_pol, residual_lse_pol, strehl_lse_pol, dm_coefs_lse_pol, turbulence_ph
                        save_telemetry=True, save_psf=True,
                        display = False)
     
-#%% Close the loop - LSE SR - pseudo open loop
+#%% Close the loop - LSE - SR - pseudo open loop
 
 total_lse_sr_pol, residual_lse_sr_pol, strehl_lse_sr_pol, dm_coefs_lse_sr_pol, turbulence_phase_screens_lse_sr_pol,\
     residual_phase_screens_lse_sr_pol, wfs_frames_lse_sr_pol, wfs_signals_lse_sr_pol, short_exposure_psf_lse_sr_pol =\
@@ -546,7 +572,7 @@ total_mmse_pol, residual_mmse_pol, strehl_mmse_pol, dm_coefs_mmse_pol, turbulenc
                        save_telemetry=True, save_psf=True,
                        display = False)
     
-#%% Close the loop - MMSE - pseudo open loop - SR
+#%% Close the loop - MMSE - SR - pseudo open loop 
 
 total_mmse_sr_pol, residual_mmse_sr_pol, strehl_mmse_sr_pol, dm_coefs_mmse_sr_pol, turbulence_phase_screens_mmse_sr_pol,\
     residual_phase_screens_mmse_sr_pol, wfs_frames_mmse_sr_pol, wfs_signals_mmse_sr_pol, short_exposure_psf_mmse_sr_pol =\
@@ -640,10 +666,14 @@ plt.savefig(dirc / pathlib.Path('long_exposure_psf_lse_sr_mmse_pol'+'.png'), bbo
 
 plt.figure()
 plt.plot(residual_lse, label='residual_lse')
+plt.plot(residual_lse_sr, label='residual_lse_sr')
 plt.plot(residual_mmse, label='residual_mmse')
+plt.plot(residual_mmse_sr, label='residual_mmse_sr')
 plt.plot(residual_lse_pol, linestyle='dashed',label='residual_lse_pol')
 plt.plot(residual_mmse_pol, linestyle='dashed', label='residual_mmse_pol')
-plt.ylim(0, 200)
+plt.plot(residual_lse_sr_pol, linestyle='dashed',label='residual_lse_sr_pol')
+plt.plot(residual_mmse_sr_pol, linestyle='dashed', label='residual_mmse_sr_pol')
+#plt.ylim(0, 200)
 plt.legend()
 
 #%% All reconstructions Strehl comparisons
