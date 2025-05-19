@@ -275,7 +275,7 @@ param['compute_M2C_Folder'] = str(pathlib.Path(__file__).parent)
 
 # ----------------------- RECONSTRUCTION ------------------------ #
 
-param['mmse_noise_level_guess'] = 100e-9 # noise level assumption for MMSE reconstruction
+param['mmse_noise_level_guess'] = 10e-9 # noise level assumption for MMSE reconstruction
 param['mmse_alpha'] = 1. # Weight for the turbulence statistics for MMSE reconstruction
 
 # -------------------- LOOP ----------------------- #
@@ -619,6 +619,7 @@ long_exposure_psf_mmse = np.sum(short_exposure_psf_mmse[:,:,100:], axis=2)
 long_exposure_psf_lse_pol = np.sum(short_exposure_psf_lse_pol[:,:,100:], axis=2)
 long_exposure_psf_lse_sr_pol = np.sum(short_exposure_psf_lse_sr_pol[:,:,100:], axis=2)
 long_exposure_psf_mmse_pol = np.sum(short_exposure_psf_mmse_pol[:,:,100:], axis=2)
+long_exposure_psf_mmse_sr_pol = np.sum(short_exposure_psf_mmse_sr_pol[:,:,100:], axis=2)
 
 #%% plots
 
