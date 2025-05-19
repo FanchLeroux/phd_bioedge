@@ -585,7 +585,7 @@ total_lse_sr_pol, residual_lse_sr_pol, strehl_lse_sr_pol, dm_coefs_lse_sr_pol, t
                        save_telemetry=True, save_psf=True,
                        display = False)
 
-#%% Close the loop - MMSE - pseudo open loop
+#%% Close the loop - MMSE - SlopesMaps - pseudo open loop
 
 total_mmse_pol, residual_mmse_pol, strehl_mmse_pol, dm_coefs_mmse_pol, turbulence_phase_screens_mmse_pol,\
     residual_phase_screens_mmse_pol, wfs_frames_mmse_pol, wfs_signals_mmse_pol, short_exposure_psf_mmse_pol =\
@@ -597,6 +597,18 @@ total_mmse_pol, residual_mmse_pol, strehl_mmse_pol, dm_coefs_mmse_pol, turbulenc
                        save_telemetry=True, save_psf=True,
                        display = False)
     
+#%% Close the loop - MMSE - fullFrame - pseudo open loop
+
+total_mmse_full_frame_pol, residual_mmse_full_frame_pol, strehl_mmse_full_frame_pol, dm_coefs_mmse_full_frame_pol, turbulence_phase_screens_mmse_full_frame_pol,\
+    residual_phase_screens_mmse_full_frame_pol, wfs_frames_mmse_full_frame_pol, wfs_signals_mmse_full_frame_pol, short_exposure_psf_mmse_full_frame_pol =\
+    close_the_loop_pol(tel, ngs, atm, dm, gbioedge_full_frame, M2C,
+                       calib_full_frame.D, reconstructor_mmse_full_frame_pol,
+                       param['loop_gain'], param['n_iter'], 
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'], 
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)    
+
 #%% Close the loop - MMSE - SR - pseudo open loop 
 
 total_mmse_sr_pol, residual_mmse_sr_pol, strehl_mmse_sr_pol, dm_coefs_mmse_sr_pol, turbulence_phase_screens_mmse_sr_pol,\
@@ -697,9 +709,10 @@ plt.plot(residual_mmse, label='residual_mmse')
 plt.plot(residual_mmse_sr, label='residual_mmse_sr')
 plt.plot(residual_lse_pol, linestyle='dashed',label='residual_lse_pol')
 plt.plot(residual_mmse_pol, linestyle='dashed', label='residual_mmse_pol')
+plt.plot(residual_mmse_full_frame_pol, label='residual_mmse_full_frame_pol')
 plt.plot(residual_lse_sr_pol, linestyle='dashed',label='residual_lse_sr_pol')
 plt.plot(residual_mmse_sr_pol, linestyle='dashed', label='residual_mmse_sr_pol')
-#plt.ylim(0, 200)
+plt.ylim(0, 200)
 plt.legend()
 
 #%% All reconstructions Strehl comparisons
@@ -711,6 +724,7 @@ plt.plot(strehl_mmse, label='strehl_mmse')
 plt.plot(strehl_mmse_sr, label='strehl_mmse_sr')
 plt.plot(strehl_lse_pol, linestyle='dashed',label='strehl_lse_pol')
 plt.plot(strehl_mmse_pol, linestyle='dashed', label='strehl_mmse_pol')
+plt.plot(strehl_mmse_full_frame_pol, label='strehl_mmse_full_frame_pol')
 plt.plot(strehl_lse_sr_pol, linestyle='dashed',label='strehl_lse_sr_pol')
 plt.plot(strehl_mmse_sr_pol, linestyle='dashed', label='strehl_mmse_sr_pol')
 plt.legend()
