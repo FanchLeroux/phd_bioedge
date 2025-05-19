@@ -690,36 +690,24 @@ plt.legend()
 
 #%% debug
 
-# #%%
+tel.resetOPD()
+dm.coefs = 0
+gbioedge_sr.signal = np.zeros(gbioedge_sr.signal.shape)
+gbioedge_sr.cam.photonNoise = False
 
-# plt.figure()
-# plt.imshow(reconstructor_lse_pol @ calib.D)
+stroke = 10e-9
 
-# #%%
+dm.coefs = stroke*M2C
+ngs*tel*dm*gbioedge_sr
 
-# C2M = np.linalg.pinv(M2C)
+#%%
 
-# coefs_bis = M2C @ reconstructor_lse_pol @ calib.D @ C2M @ dm_coefs_lse_pol[:,1] # almost the same as dm.coefs ...
+reconstructed_modes = reconstructor_mmse_sr_pol @ gbioedge_sr.signal
 
-# print(np.abs(coefs_bis - dm_coefs_lse_pol[:,1]).sum())
-# print(np.abs(coefs_bis - dm_coefs_lse_pol[:,1]))
+#%%
 
-# #%% pol2 vs lse check
+plt.imshow(np.log(np.abs(reconstructed_modes)))
 
-# new_dm_coefs_pol = (1-param['loop_gain']) * dm_coefs_lse_pol[:,1]\
-#     - param['loop_gain'] *\
-#         M2C @ reconstructor_lse_pol @ (wfs_signals_lse_pol[:,1] - calib.D @ C2M @ dm_coefs_lse_pol[:,1])
+#%%
 
-# new_dm_coefs_pol == dm_coefs_lse_pol[:,2]
-
-# #%%
-
-# new_dm_coefs = dm_coefs_lse[:,1]\
-#     - param['loop_gain'] * reconstructor_lse @ wfs_signals_lse[:,1]
-
-# print(new_dm_coefs == dm_coefs_lse[:,2])
-
-# #%%
-
-# print(new_dm_coefs_pol - dm_coefs_lse[:,2])
-
+plt.plot(reconstructed_modes[:,10])
