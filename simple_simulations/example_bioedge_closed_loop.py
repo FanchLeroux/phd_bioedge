@@ -269,8 +269,6 @@ param['pupil_shift_bioedge'] = [[param['sr_amplitude'],\
 # -------------------- CALIBRATION - MODAL BASIS ---------------- #
 
 param['modal_basis'] = 'KL'
-param['list_modes_to_keep'] = np.linspace(int(0.5*(np.pi * (param['n_subaperture']/2)**2)), 
-                            int(np.pi * param['n_subaperture']**2), num=10, dtype=int)
 param['stroke'] = 1e-9 # [m] actuator stroke for calibration matrices computation
 param['single_pass'] = False # push-pull or push only for the calibration
 
