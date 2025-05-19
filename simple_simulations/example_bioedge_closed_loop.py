@@ -271,6 +271,7 @@ param['pupil_shift_bioedge'] = [[param['sr_amplitude'],\
 param['modal_basis'] = 'KL'
 param['stroke'] = 1e-9 # [m] actuator stroke for calibration matrices computation
 param['single_pass'] = False # push-pull or push only for the calibration
+param['compute_M2C_Folder'] = str(pathlib.Path(__file__).parent)
 
 # ----------------------- RECONSTRUCTION ------------------------ #
 
@@ -336,7 +337,7 @@ if param['modal_basis'] == 'KL':
                             atmosphere         = atm,\
                             deformableMirror   = dm,\
                             param              = param,\
-                            nameFolder         = '',\
+                            nameFolder         = param['compute_M2C_Folder'],\
                             remove_piston      = False,\
                             HHtName            = 'KL_covariance_matrix',\
                             baseName           = 'KL_basis' ,\
