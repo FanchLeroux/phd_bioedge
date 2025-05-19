@@ -342,7 +342,7 @@ if param['modal_basis'] == 'KL':
                             baseName           = 'KL_basis' ,\
                             mem_available      = 6.1e9,\
                             minimF             = False,\
-                            nmo                = 1350,\
+                            nmo                = None,\
                             ortho_spm          = True,\
                             SZ                 = np.int64(2*tel.OPD.shape[0]),\
                             nZer               = 3,\
