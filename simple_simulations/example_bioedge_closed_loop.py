@@ -371,6 +371,16 @@ gbioedge = BioEdge(nSubap = param['n_subaperture'],
               postProcessing = param['post_processing'], 
               psfCentering = param['psf_centering'])
 
+# grey bioedge - fullFrame
+gbioedge_full_frame = BioEdge(nSubap = param['n_subaperture'], 
+              telescope = tel,
+              modulation = 0.,
+              grey_width = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = 'fullFrame', 
+              psfCentering = param['psf_centering'])
+
 
 # super resolved grey bioedge
 gbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
@@ -392,6 +402,10 @@ calib = InteractionMatrix(ngs, tel, dm, gbioedge, M2C=M2C,
                 stroke=param['stroke'], single_pass=param['single_pass'],
                 noise = 'off', display=True)
 
+calib_full_frame = InteractionMatrix(ngs, tel, dm, gbioedge_full_frame, M2C=M2C,
+                stroke=param['stroke'], single_pass=param['single_pass'],
+                noise = 'off', display=True)
+
 calib_sr = InteractionMatrix(ngs, tel, dm, gbioedge_sr, M2C=M2C,
                 stroke=param['stroke'], single_pass=param['single_pass'],
                 noise = 'off', display=True)
@@ -402,22 +416,15 @@ reconstructor_lse = M2C[:,:param['n_modes_to_show_lse']] @ np.linalg.pinv(calib.
 
 reconstructor_lse_sr = M2C[:,:param['n_modes_to_show_lse_sr']] @ np.linalg.pinv(calib_sr.D[:,:param['n_modes_to_show_lse_sr']])
 
-
-#%% LSE Reconstructor computation - pseudo open loop
-
-reconstructor_lse_pol = np.zeros((calib.D.shape[1], calib.D.shape[0]))
-reconstructor_lse_pol[:param['n_modes_to_show_lse']] = np.linalg.pinv(calib.D[:,:param['n_modes_to_show_lse']])
-
-reconstructor_lse_sr_pol = np.zeros((calib_sr.D.shape[1], calib_sr.D.shape[0]))
-reconstructor_lse_sr_pol[:param['n_modes_to_show_lse_sr']] = np.linalg.pinv(calib_sr.D[:,:param['n_modes_to_show_lse_sr']])
-
-#%% MMSE Reconstructor computation
+#%% MMSE
 
 # COVARIANCE OF MODES IN ATMOSPHERE
 C_phi_full_KL_basis = (1./tel.pupil.sum()**2.) * M2C_KL_full.T @ HHt @ M2C_KL_full *(tel.src.wavelength/(2.*np.pi))**2
 
 # COVARIANCE OF CONTROLLED MODES (PISTON EXCLUDED)
 C_phi = np.asmatrix(C_phi_full_KL_basis[1:param['n_modes_to_show_mmse']+1,1:param['n_modes_to_show_mmse']+1])*param['r0']**(-5./3.)
+
+#%% MMSE Reconstructor computation - slopesMaps
 
 # COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
 C_n = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge.nSignal))
@@ -447,13 +454,15 @@ reconstructor_mmse_sr = ngs.wavelength/(2. * np.pi) *\
     + param['mmse_alpha']*C_phi.I).I\
     @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n_sr.I)
 
+#%% LSE Reconstructor computation - pseudo open loop
+
+reconstructor_lse_pol = np.zeros((calib.D.shape[1], calib.D.shape[0]))
+reconstructor_lse_pol[:param['n_modes_to_show_lse']] = np.linalg.pinv(calib.D[:,:param['n_modes_to_show_lse']])
+
+reconstructor_lse_sr_pol = np.zeros((calib_sr.D.shape[1], calib_sr.D.shape[0]))
+reconstructor_lse_sr_pol[:param['n_modes_to_show_lse_sr']] = np.linalg.pinv(calib_sr.D[:,:param['n_modes_to_show_lse_sr']])
+
 #%% MMSE Reconstructor computation - pol
-
-# COVARIANCE OF MODES IN ATMOSPHERE
-C_phi_full_KL_basis = (1./tel.pupil.sum()**2.) * M2C_KL_full.T @ HHt @ M2C_KL_full *(tel.src.wavelength/(2.*np.pi))**2
-
-# COVARIANCE OF CONTROLLED MODES (PISTON EXCLUDED)
-C_phi = np.asmatrix(C_phi_full_KL_basis[1:param['n_modes_to_show_mmse']+1,1:param['n_modes_to_show_mmse']+1])*param['r0']**(-5./3.)
 
 # COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
 C_n = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge.nSignal))
@@ -468,6 +477,22 @@ reconstructor_mmse_pol[:param['n_modes_to_show_mmse'], :] = ngs.wavelength/(2. *
     @ C_n.I @ calib_D_meter[:,:param['n_modes_to_show_mmse']]\
     + param['mmse_alpha']*C_phi.I).I\
     @ calib_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n.I)
+        
+#%% MMSE Reconstructor computation - pol - fullFrame
+
+# COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
+C_n = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge_full_frame.nSignal))
+
+### INTERACTION MATRIX "IN METERS"
+calib_D_full_frame_meter = calib_full_frame.D * ngs.wavelength/(2. * np.pi)
+
+reconstructor_mmse_full_frame_pol = np.zeros(calib_full_frame.D.T.shape)
+
+reconstructor_mmse_full_frame_pol[:param['n_modes_to_show_mmse'], :] = ngs.wavelength/(2. * np.pi) *\
+    np.asarray((calib_D_full_frame_meter[:,:param['n_modes_to_show_mmse']].T\
+    @ C_n.I @ calib_D_full_frame_meter[:,:param['n_modes_to_show_mmse']]\
+    + param['mmse_alpha']*C_phi.I).I\
+    @ calib_D_full_frame_meter[:,:param['n_modes_to_show_mmse']].T @ C_n.I)
         
 #%% MMSE - SR - pol Reconstructor computation
 
@@ -709,7 +734,7 @@ reconstructed_modes_mmse_pol = reconstructor_mmse_pol @ gbioedge.signal
 #%%
 
 plt.figure()
-plt.imshow(np.log(np.abs(reconstructed_modes_mmse_pol)))
+plt.imshow(reconstructed_modes_mmse_pol)
 
 #%%
 
@@ -720,6 +745,37 @@ plt.plot(reconstructed_modes_mmse_pol[:,10])
 
 plt.figure()
 plt.plot(np.diag(reconstructed_modes_mmse_pol)/stroke)
+
+#%% MMSE - fullFrame
+
+tel.resetOPD()
+dm.coefs = 0
+gbioedge_full_frame.signal = np.zeros(gbioedge_full_frame.signal.shape)
+gbioedge_full_frame.cam.photonNoise = False
+
+stroke = 1e-9
+
+dm.coefs = stroke*M2C
+ngs*tel*dm*gbioedge_full_frame
+
+#%%
+
+reconstructed_modes_mmse_full_frame_pol = reconstructor_mmse_full_frame_pol @ gbioedge_full_frame.signal
+
+#%%
+
+plt.figure()
+plt.imshow(reconstructed_modes_mmse_full_frame_pol)
+
+#%%
+
+plt.figure()
+plt.plot(reconstructed_modes_mmse_full_frame_pol[:,10])
+
+#%%
+
+plt.figure()
+plt.plot(np.diag(reconstructed_modes_mmse_full_frame_pol)/stroke)
 
 #%% MMSE - SR 
 
@@ -737,10 +793,10 @@ ngs*tel*dm*gbioedge_sr
 
 reconstructed_modes_mmse_sr_pol = reconstructor_mmse_sr_pol @ gbioedge_sr.signal
 
-#%%
+#%% Plots
 
 plt.figure()
-plt.imshow(np.log(np.abs(reconstructed_modes_mmse_sr_pol)))
+plt.imshow(reconstructed_modes_mmse_sr_pol)
 
 #%%
 
@@ -751,3 +807,19 @@ plt.plot(reconstructed_modes_mmse_sr_pol[:,10])
 
 plt.figure()
 plt.plot(np.diag(reconstructed_modes_mmse_sr_pol)/stroke)
+
+#%% all
+
+fig, axs = plt.subplots(nrows=2, ncols=3)
+axs[0,0].imshow(reconstructed_modes_mmse_pol)
+axs[0,0].set_title("reconstructed_modes_mmse_pol")
+axs[0,1].imshow(reconstructed_modes_mmse_full_frame_pol)
+axs[0,1].set_title("reconstructed_modes_mmse_full_frame_pol")
+axs[0,2].imshow(reconstructed_modes_mmse_sr_pol)
+axs[0,2].set_title("reconstructed_modes_mmse_sr_pol")
+axs[1,0].plot(np.diag(reconstructed_modes_mmse_pol)/stroke)
+axs[1,0].set_title('np.diag(reconstructed_modes_mmse_pol)/stroke')
+axs[1,1].plot(np.diag(reconstructed_modes_mmse_full_frame_pol)/stroke)
+axs[1,1].set_title('np.diag(reconstructed_modes_mmse_full_frame_pol)/stroke')
+axs[1,2].plot(np.diag(reconstructed_modes_mmse_sr_pol)/stroke)
+axs[1,2].set_title('np.diag(reconstructed_modes_mmse_sr_pol)/stroke')
