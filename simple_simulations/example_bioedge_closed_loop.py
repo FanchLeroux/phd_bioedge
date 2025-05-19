@@ -690,24 +690,64 @@ plt.legend()
 
 #%% debug
 
+#%% MMSE - Slopesmaps
+
+tel.resetOPD()
+dm.coefs = 0
+gbioedge.signal = np.zeros(gbioedge.signal.shape)
+gbioedge.cam.photonNoise = False
+
+stroke = 1e-9
+
+dm.coefs = stroke*M2C
+ngs*tel*dm*gbioedge
+
+#%%
+
+reconstructed_modes_mmse_pol = reconstructor_mmse_pol @ gbioedge.signal
+
+#%%
+
+plt.figure()
+plt.imshow(np.log(np.abs(reconstructed_modes_mmse_pol)))
+
+#%%
+
+plt.figure()
+plt.plot(reconstructed_modes_mmse_pol[:,10])
+
+#%%
+
+plt.figure()
+plt.plot(np.diag(reconstructed_modes_mmse_pol)/stroke)
+
+#%% MMSE - SR 
+
 tel.resetOPD()
 dm.coefs = 0
 gbioedge_sr.signal = np.zeros(gbioedge_sr.signal.shape)
 gbioedge_sr.cam.photonNoise = False
 
-stroke = 10e-9
+stroke = 1e-9
 
 dm.coefs = stroke*M2C
 ngs*tel*dm*gbioedge_sr
 
 #%%
 
-reconstructed_modes = reconstructor_mmse_sr_pol @ gbioedge_sr.signal
+reconstructed_modes_mmse_sr_pol = reconstructor_mmse_sr_pol @ gbioedge_sr.signal
 
 #%%
 
-plt.imshow(np.log(np.abs(reconstructed_modes)))
+plt.figure()
+plt.imshow(np.log(np.abs(reconstructed_modes_mmse_sr_pol)))
 
 #%%
 
-plt.plot(reconstructed_modes[:,10])
+plt.figure()
+plt.plot(reconstructed_modes_mmse_sr_pol[:,10])
+
+#%%
+
+plt.figure()
+plt.plot(np.diag(reconstructed_modes_mmse_sr_pol)/stroke)
