@@ -276,6 +276,7 @@ param['compute_M2C_Folder'] = str(pathlib.Path(__file__).parent)
 # ----------------------- RECONSTRUCTION ------------------------ #
 
 param['mmse_noise_level_guess'] = 10e-9 # noise level assumption for MMSE reconstruction
+param['mmse_noise_level_guess_full_frame'] = 1e-10 # noise level assumption for MMSE full frame reconstruction
 param['mmse_alpha'] = 1. # Weight for the turbulence statistics for MMSE reconstruction
 
 # -------------------- LOOP ----------------------- #
@@ -442,7 +443,7 @@ reconstructor_mmse = ngs.wavelength/(2. * np.pi) *\
 #%% MMSE - SR - Reconstructor computation
 
 # COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
-C_n_sr = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge_sr.nSignal))
+C_n_sr = np.asmatrix(param['mmse_noise_level_guess_full_frame']**2 * np.identity(gbioedge_sr.nSignal))
 
 ### INTERACTION MATRIX "IN METERS"
 calib_sr_D_meter = calib_sr.D * ngs.wavelength/(2. * np.pi)
@@ -481,7 +482,7 @@ reconstructor_mmse_pol[:param['n_modes_to_show_mmse'], :] = ngs.wavelength/(2. *
 #%% MMSE Reconstructor computation - pol - fullFrame
 
 # COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
-C_n = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge_full_frame.nSignal))
+C_n = np.asmatrix(param['mmse_noise_level_guess_full_frame']**2 * np.identity(gbioedge_full_frame.nSignal))
 
 ### INTERACTION MATRIX "IN METERS"
 calib_D_full_frame_meter = calib_full_frame.D * ngs.wavelength/(2. * np.pi)
@@ -497,7 +498,7 @@ reconstructor_mmse_full_frame_pol[:param['n_modes_to_show_mmse'], :] = ngs.wavel
 #%% MMSE - SR - pol Reconstructor computation
 
 # COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
-C_n_sr = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge_sr.nSignal))
+C_n_sr = np.asmatrix(param['mmse_noise_level_guess_full_frame']**2 * np.identity(gbioedge_sr.nSignal))
 
 ### INTERACTION MATRIX "IN METERS"
 calib_sr_D_meter = calib_sr.D * ngs.wavelength/(2. * np.pi)
