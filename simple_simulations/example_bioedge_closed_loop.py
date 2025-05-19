@@ -680,9 +680,13 @@ plt.legend()
 
 plt.figure()
 plt.plot(strehl_lse, label='strehl_lse')
+plt.plot(strehl_lse_sr, label='strehl_lse_sr')
 plt.plot(strehl_mmse, label='strehl_mmse')
+plt.plot(strehl_mmse_sr, label='strehl_mmse_sr')
 plt.plot(strehl_lse_pol, linestyle='dashed',label='strehl_lse_pol')
-plt.plot(strehl_mmse_pol, linestyle='dashed',label='strehl_mmse_pol')
+plt.plot(strehl_mmse_pol, linestyle='dashed', label='strehl_mmse_pol')
+plt.plot(strehl_lse_sr_pol, linestyle='dashed',label='strehl_lse_sr_pol')
+plt.plot(strehl_mmse_sr_pol, linestyle='dashed', label='strehl_mmse_sr_pol')
 plt.legend()
 
 #%% debug
