@@ -49,6 +49,7 @@ def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain,
         turbulence_phase_screens = np.zeros([tel.OPD.shape[0],tel.OPD.shape[1]]+[n_iter])
         residual_phase_screens = np.zeros([tel.OPD.shape[0],tel.OPD.shape[1]]+[n_iter])
         wfs_frames = np.zeros([wfs.cam.frame.shape[0],wfs.cam.frame.shape[1]]+[n_iter])
+        wfs_signals = np.zeros([wfs.signal.shape[0]]+[n_iter])
         
     if save_psf:
         short_exposure_psf = np.zeros([tel.PSF.shape[0],tel.PSF.shape[1]] + [n_iter])
@@ -84,11 +85,12 @@ def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain,
             residual_phase_screens[:,:,k] = tel.OPD
             dm_coefs[:,k] = dm.coefs
             wfs_frames[:,:,k] = wfs.cam.frame
+            wfs_signals[:,k] = buffer_wfs_measure[:,0]
            
         residual[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9 # [nm]
         strehl[k] = np.exp(-np.var(tel.src.phase[np.where(tel.pupil>0)]))
            
-        dm.coefs = dm.coefs - loop_gain * np.matmul(reconstructor, buffer_wfs_measure[:,0])
+        dm.coefs = dm.coefs - loop_gain * reconstructor @ buffer_wfs_measure[:,0]
            
         if save_psf:
             
@@ -99,7 +101,7 @@ def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain,
     
     if save_telemetry and save_psf:
         return total, residual, strehl, dm_coefs, turbulence_phase_screens,\
-                      residual_phase_screens, wfs_frames, short_exposure_psf
+                      residual_phase_screens, wfs_frames, wfs_signals, short_exposure_psf
     elif save_telemetry:
         return total, residual, strehl, dm_coefs, turbulence_phase_screens,\
             residual_phase_screens, wfs_frames
@@ -109,11 +111,14 @@ def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain,
         return total, residual, strehl
     
 # pseudo-open loop mmse reconstruction
-def close_the_loop_mmse(tel, ngs, atm, dm, wfs, interaction_matrix, reconstructor, loop_gain, 
+def close_the_loop_pol(tel, ngs, atm, dm, wfs, M2C, 
+                   interaction_matrix, reconstructor, loop_gain, 
                    n_iter=100, delay=1, photon_noise = False, 
                    read_out_noise = 0., seed=0, 
                    save_telemetry=False, save_psf=False,
                    display=False):
+    
+    C2M = np.linalg.pinv(M2C)
     
     wfs.cam.photonNoise = photon_noise
     wfs.cam.readoutNoise = read_out_noise
@@ -134,6 +139,7 @@ def close_the_loop_mmse(tel, ngs, atm, dm, wfs, interaction_matrix, reconstructo
         turbulence_phase_screens = np.zeros([tel.OPD.shape[0],tel.OPD.shape[1]]+[n_iter])
         residual_phase_screens = np.zeros([tel.OPD.shape[0],tel.OPD.shape[1]]+[n_iter])
         wfs_frames = np.zeros([wfs.cam.frame.shape[0],wfs.cam.frame.shape[1]]+[n_iter])
+        wfs_signals = np.zeros([wfs.signal.shape[0]]+[n_iter])
         
     if save_psf:
         short_exposure_psf = np.zeros([tel.PSF.shape[0],tel.PSF.shape[1]] + [n_iter])
@@ -169,12 +175,15 @@ def close_the_loop_mmse(tel, ngs, atm, dm, wfs, interaction_matrix, reconstructo
             residual_phase_screens[:,:,k] = tel.OPD
             dm_coefs[:,k] = dm.coefs
             wfs_frames[:,:,k] = wfs.cam.frame
+            wfs_signals[:,k] = buffer_wfs_measure[:,0]
            
         residual[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9 # [nm]
         strehl[k] = np.exp(-np.var(tel.src.phase[np.where(tel.pupil>0)]))
-           
-        dm.coefs = dm.coefs - loop_gain * np.matmul(reconstructor, buffer_wfs_measure[:,0])
-           
+        
+        pseudo_open_loop_measures = buffer_wfs_measure[:,0] - interaction_matrix @ C2M @ dm.coefs
+        
+        dm.coefs = (1-loop_gain) * dm.coefs - loop_gain * M2C @ reconstructor @ pseudo_open_loop_measures 
+        
         if save_psf:
             
             tel.computePSF()
@@ -184,7 +193,7 @@ def close_the_loop_mmse(tel, ngs, atm, dm, wfs, interaction_matrix, reconstructo
     
     if save_telemetry and save_psf:
         return total, residual, strehl, dm_coefs, turbulence_phase_screens,\
-                      residual_phase_screens, wfs_frames, short_exposure_psf
+                      residual_phase_screens, wfs_frames, wfs_signals, short_exposure_psf
     elif save_telemetry:
         return total, residual, strehl, dm_coefs, turbulence_phase_screens,\
             residual_phase_screens, wfs_frames
@@ -193,7 +202,7 @@ def close_the_loop_mmse(tel, ngs, atm, dm, wfs, interaction_matrix, reconstructo
     else:
         return total, residual, strehl
 
-#%% Generate parameter file
+#%% Define parameters
     
 # initialize the dictionary
 param = {}
@@ -207,7 +216,7 @@ param['fractionnal_r0'] = [0.45, 0.1, 0.1, 0.25, 0.1]                    # Cn2 p
 param['wind_speed'    ] = [5,4,8,10,2]                                   # [m.s-1] wind speed of the different layers
 param['wind_direction'] = [0,72,144,216,288]                             # [degrees] wind direction of the different layers
 param['altitude'      ] = [0, 1000, 5000, 10000, 12000]                  # [m] altitude of the different layers
-param['seeds']          = range(2)
+param['seeds']          = range(1)
 
 # ------------------- TELESCOPE ------------------ #
 
@@ -240,9 +249,9 @@ param['grey_length']            = param['modulation'] # [lambda/D] grey length i
 param['n_pix_separation'      ] = 10                  # [pixel] separation ratio between the PWFS pupils
 param['psf_centering'          ] = False              # centering of the FFT and of the PWFS mask on the 4 central pixels
 param['light_threshold'        ] = 0.3                # light threshold to select the valid pixels
-param['post_processing'        ] = 'fullFrame'        # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
+param['post_processing'        ] = 'slopesMaps'       # post-processing of the PWFS signals 'slopesMaps' ou 'fullFrame'
 param['detector_photon_noise']   = True
-param['detector_read_out_noise']  = 3.                 # e- RMS
+param['detector_read_out_noise']  = 0.                # e- RMS
 
 # super resolution
 param['sr_amplitude']        = 0.25                   # [pixel] super resolution shifts amplitude
@@ -260,15 +269,14 @@ param['pupil_shift_bioedge'] = [[param['sr_amplitude'],\
 # -------------------- CALIBRATION - MODAL BASIS ---------------- #
 
 param['modal_basis'] = 'KL'
-param['list_modes_to_keep'] = np.linspace(int(0.5*(np.pi * (param['n_subaperture']/2)**2)), 
-                            int(np.pi * param['n_subaperture']**2), num=10, dtype=int)
 param['stroke'] = 1e-9 # [m] actuator stroke for calibration matrices computation
 param['single_pass'] = False # push-pull or push only for the calibration
+param['compute_M2C_Folder'] = str(pathlib.Path(__file__).parent)
 
 # ----------------------- RECONSTRUCTION ------------------------ #
 
-param['reconstruction_method'] = 'MMSE' # 'MMSE' or 'LSE'
-param['mmse_noise_level_guess'] = 100e-9 # noise level assumption for MMSE reconstruction
+param['mmse_noise_level_guess'] = 10e-9 # noise level assumption for MMSE reconstruction
+param['mmse_noise_level_guess_full_frame'] = 1e-10 # noise level assumption for MMSE full frame reconstruction
 param['mmse_alpha'] = 1. # Weight for the turbulence statistics for MMSE reconstruction
 
 # -------------------- LOOP ----------------------- #
@@ -281,7 +289,7 @@ param['loop_gain'] = 0.5
 
 param['n_iter'] = 200
 
-param['delay'] = 2
+param['delay'] = 1
 
 # --------------------- FILENAME -------------------- #
 
@@ -330,13 +338,13 @@ if param['modal_basis'] == 'KL':
                             atmosphere         = atm,\
                             deformableMirror   = dm,\
                             param              = param,\
-                            nameFolder         = '',\
+                            nameFolder         = param['compute_M2C_Folder'],\
                             remove_piston      = False,\
                             HHtName            = 'KL_covariance_matrix',\
                             baseName           = 'KL_basis' ,\
                             mem_available      = 6.1e9,\
                             minimF             = False,\
-                            nmo                = 1350,\
+                            nmo                = None,\
                             ortho_spm          = True,\
                             SZ                 = np.int64(2*tel.OPD.shape[0]),\
                             nZer               = 3,\
@@ -356,12 +364,22 @@ elif param['modal_basis'] == 'poke':
 
 # grey bioedge
 gbioedge = BioEdge(nSubap = param['n_subaperture'], 
-              telescope = tel, 
+              telescope = tel,
               modulation = 0.,
               grey_width = param['modulation'], 
               lightRatio = param['light_threshold'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = param['post_processing'], 
+              psfCentering = param['psf_centering'])
+
+# grey bioedge - fullFrame
+gbioedge_full_frame = BioEdge(nSubap = param['n_subaperture'], 
+              telescope = tel,
+              modulation = 0.,
+              grey_width = param['modulation'], 
+              lightRatio = param['light_threshold'],
+              n_pix_separation = param['n_pix_separation'],
+              postProcessing = 'fullFrame', 
               psfCentering = param['psf_centering'])
 
 
@@ -385,6 +403,10 @@ calib = InteractionMatrix(ngs, tel, dm, gbioedge, M2C=M2C,
                 stroke=param['stroke'], single_pass=param['single_pass'],
                 noise = 'off', display=True)
 
+calib_full_frame = InteractionMatrix(ngs, tel, dm, gbioedge_full_frame, M2C=M2C,
+                stroke=param['stroke'], single_pass=param['single_pass'],
+                noise = 'off', display=True)
+
 calib_sr = InteractionMatrix(ngs, tel, dm, gbioedge_sr, M2C=M2C,
                 stroke=param['stroke'], single_pass=param['single_pass'],
                 noise = 'off', display=True)
@@ -395,13 +417,15 @@ reconstructor_lse = M2C[:,:param['n_modes_to_show_lse']] @ np.linalg.pinv(calib.
 
 reconstructor_lse_sr = M2C[:,:param['n_modes_to_show_lse_sr']] @ np.linalg.pinv(calib_sr.D[:,:param['n_modes_to_show_lse_sr']])
 
-#%% MMSE Reconstructor computation
+#%% MMSE
 
 # COVARIANCE OF MODES IN ATMOSPHERE
 C_phi_full_KL_basis = (1./tel.pupil.sum()**2.) * M2C_KL_full.T @ HHt @ M2C_KL_full *(tel.src.wavelength/(2.*np.pi))**2
 
 # COVARIANCE OF CONTROLLED MODES (PISTON EXCLUDED)
 C_phi = np.asmatrix(C_phi_full_KL_basis[1:param['n_modes_to_show_mmse']+1,1:param['n_modes_to_show_mmse']+1])*param['r0']**(-5./3.)
+
+#%% MMSE Reconstructor computation - slopesMaps
 
 # COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
 C_n = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge.nSignal))
@@ -416,14 +440,85 @@ reconstructor_mmse = ngs.wavelength/(2. * np.pi) *\
     + param['mmse_alpha']*C_phi.I).I\
     @ calib_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n.I)
 
+#%% MMSE - SR - Reconstructor computation
+
+# COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
+C_n_sr = np.asmatrix(param['mmse_noise_level_guess_full_frame']**2 * np.identity(gbioedge_sr.nSignal))
+
+### INTERACTION MATRIX "IN METERS"
+calib_sr_D_meter = calib_sr.D * ngs.wavelength/(2. * np.pi)
+
+reconstructor_mmse_sr = ngs.wavelength/(2. * np.pi) *\
+    np.asarray(M2C[:,:param['n_modes_to_show_mmse']]\
+    @ (calib_sr_D_meter[:,:param['n_modes_to_show_mmse']].T\
+    @ C_n_sr.I @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse']]\
+    + param['mmse_alpha']*C_phi.I).I\
+    @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n_sr.I)
+
+#%% LSE Reconstructor computation - pseudo open loop
+
+reconstructor_lse_pol = np.zeros((calib.D.shape[1], calib.D.shape[0]))
+reconstructor_lse_pol[:param['n_modes_to_show_lse']] = np.linalg.pinv(calib.D[:,:param['n_modes_to_show_lse']])
+
+reconstructor_lse_sr_pol = np.zeros((calib_sr.D.shape[1], calib_sr.D.shape[0]))
+reconstructor_lse_sr_pol[:param['n_modes_to_show_lse_sr']] = np.linalg.pinv(calib_sr.D[:,:param['n_modes_to_show_lse_sr']])
+
+#%% MMSE Reconstructor computation - pol
+
+# COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
+C_n = np.asmatrix(param['mmse_noise_level_guess']**2 * np.identity(gbioedge.nSignal))
+
+### INTERACTION MATRIX "IN METERS"
+calib_D_meter = calib.D * ngs.wavelength/(2. * np.pi)
+
+reconstructor_mmse_pol = np.zeros(calib.D.T.shape)
+
+reconstructor_mmse_pol[:param['n_modes_to_show_mmse'], :] = ngs.wavelength/(2. * np.pi) *\
+    np.asarray((calib_D_meter[:,:param['n_modes_to_show_mmse']].T\
+    @ C_n.I @ calib_D_meter[:,:param['n_modes_to_show_mmse']]\
+    + param['mmse_alpha']*C_phi.I).I\
+    @ calib_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n.I)
+        
+#%% MMSE Reconstructor computation - pol - fullFrame
+
+# COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
+C_n = np.asmatrix(param['mmse_noise_level_guess_full_frame']**2 * np.identity(gbioedge_full_frame.nSignal))
+
+### INTERACTION MATRIX "IN METERS"
+calib_D_full_frame_meter = calib_full_frame.D * ngs.wavelength/(2. * np.pi)
+
+reconstructor_mmse_full_frame_pol = np.zeros(calib_full_frame.D.T.shape)
+
+reconstructor_mmse_full_frame_pol[:param['n_modes_to_show_mmse'], :] = ngs.wavelength/(2. * np.pi) *\
+    np.asarray((calib_D_full_frame_meter[:,:param['n_modes_to_show_mmse']].T\
+    @ C_n.I @ calib_D_full_frame_meter[:,:param['n_modes_to_show_mmse']]\
+    + param['mmse_alpha']*C_phi.I).I\
+    @ calib_D_full_frame_meter[:,:param['n_modes_to_show_mmse']].T @ C_n.I)
+        
+#%% MMSE - SR - pol Reconstructor computation
+
+# COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
+C_n_sr = np.asmatrix(param['mmse_noise_level_guess_full_frame']**2 * np.identity(gbioedge_sr.nSignal))
+
+### INTERACTION MATRIX "IN METERS"
+calib_sr_D_meter = calib_sr.D * ngs.wavelength/(2. * np.pi)
+
+reconstructor_mmse_sr_pol = np.zeros(calib_sr.D.T.shape)
+
+reconstructor_mmse_sr_pol[:param['n_modes_to_show_mmse'], :] = ngs.wavelength/(2. * np.pi) *\
+    np.asarray((calib_sr_D_meter[:,:param['n_modes_to_show_mmse']].T\
+    @ C_n_sr.I @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse']]\
+    + param['mmse_alpha']*C_phi.I).I\
+    @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse']].T @ C_n_sr.I)
+
 #%% SEED
 
-seed = 0 # seed for atmosphere computation
+seed = 12 # seed for atmosphere computation
 
 #%% Close the loop - LSE
 
 total_lse, residual_lse, strehl_lse, dm_coefs_lse, turbulence_phase_screens_lse,\
-    residual_phase_screens_lse, wfs_frames_lse, short_exposure_psf_lse =\
+    residual_phase_screens_lse, wfs_frames_lse, wfs_signals_lse, short_exposure_psf_lse =\
     close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_lse,
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'], photon_noise=param['detector_photon_noise'], 
@@ -431,12 +526,12 @@ total_lse, residual_lse, strehl_lse, dm_coefs_lse, turbulence_phase_screens_lse,
                        save_telemetry=True, save_psf=True,
                        display = False)
     
-#%% Close the loop - LSE SR
+#%% Close the loop - LSE - SR
 
 total_lse_sr, residual_lse_sr, strehl_lse_sr, dm_coefs_lse_sr, turbulence_phase_screens_lse_sr,\
-    residual_phase_screens_lse_sr, wfs_frames_lse_sr, short_exposure_psf_lse_sr =\
+    residual_phase_screens_lse_sr, wfs_frames_lse_sr, wfs_signals_lse_sr, short_exposure_psf_lse_sr =\
     close_the_loop(tel, ngs, atm, dm, gbioedge_sr, reconstructor_lse_sr,
-                       param['loop_gain'], param['n_iter'], 
+                       param['loop_gain'], param['n_iter'],
                        delay=param['delay'], photon_noise=param['detector_photon_noise'], 
                        read_out_noise=param['detector_read_out_noise'],  seed=seed, 
                        save_telemetry=True, save_psf=True,
@@ -444,20 +539,88 @@ total_lse_sr, residual_lse_sr, strehl_lse_sr, dm_coefs_lse_sr, turbulence_phase_
     
 #%% Close the loop - MMSE
 
+C2M = np.asarray(np.asmatrix(M2C[:,:param['n_modes_to_show_mmse']]).I)
+
 total_mmse, residual_mmse, strehl_mmse, dm_coefs_mmse, turbulence_phase_screens_mmse,\
-    residual_phase_screens_mmse, wfs_frames_mmse, short_exposure_psf_mmse =\
-    close_the_loop(tel, ngs, atm, dm, gbioedge, calib.D, reconstructor_mmse,
+    residual_phase_screens_mmse, wfs_frames_mmse, wfs_signals_mmse, short_exposure_psf_mmse =\
+    close_the_loop(tel, ngs, atm, dm, gbioedge, reconstructor_mmse, # cali.D or calib_D_meter ?
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'], photon_noise=param['detector_photon_noise'],
                        read_out_noise=param['detector_read_out_noise'],  seed=seed, 
                        save_telemetry=True, save_psf=True,
                        display = False)
-        
+
+#%% Close the loop - MMSE - SR 
+
+total_mmse_sr, residual_mmse_sr, strehl_mmse_sr, dm_coefs_mmse_sr, turbulence_phase_screens_mmse_sr,\
+    residual_phase_screens_mmse_sr, wfs_frames_mmse_sr, wfs_signals_mmse_sr, short_exposure_psf_mmse_sr =\
+    close_the_loop(tel, ngs, atm, dm, gbioedge_sr, reconstructor_mmse_sr,
+                       param['loop_gain'], param['n_iter'],
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'], 
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)
+
+#%% Close the loop - LSE - pseudo open loop
+
+total_lse_pol, residual_lse_pol, strehl_lse_pol, dm_coefs_lse_pol, turbulence_phase_screens_lse_pol,\
+    residual_phase_screens_lse_pol, wfs_frames_lse_pol, wfs_signals_lse_pol, short_exposure_psf_lse_pol =\
+    close_the_loop_pol(tel, ngs, atm, dm, gbioedge, M2C,
+                       calib.D, reconstructor_lse_pol,
+                       param['loop_gain'], param['n_iter'], 
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'], 
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)
+    
+#%% Close the loop - LSE - SR - pseudo open loop
+
+total_lse_sr_pol, residual_lse_sr_pol, strehl_lse_sr_pol, dm_coefs_lse_sr_pol, turbulence_phase_screens_lse_sr_pol,\
+    residual_phase_screens_lse_sr_pol, wfs_frames_lse_sr_pol, wfs_signals_lse_sr_pol, short_exposure_psf_lse_sr_pol =\
+    close_the_loop_pol(tel, ngs, atm, dm, gbioedge_sr, M2C,
+                       calib_sr.D, reconstructor_lse_sr_pol,
+                       param['loop_gain'], param['n_iter'], 
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'], 
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)
+
+#%% Close the loop - MMSE - pseudo open loop
+
+total_mmse_pol, residual_mmse_pol, strehl_mmse_pol, dm_coefs_mmse_pol, turbulence_phase_screens_mmse_pol,\
+    residual_phase_screens_mmse_pol, wfs_frames_mmse_pol, wfs_signals_mmse_pol, short_exposure_psf_mmse_pol =\
+    close_the_loop_pol(tel, ngs, atm, dm, gbioedge, M2C,
+                       calib.D, reconstructor_mmse_pol,
+                       param['loop_gain'], param['n_iter'], 
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'], 
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)
+    
+#%% Close the loop - MMSE - SR - pseudo open loop 
+
+total_mmse_sr_pol, residual_mmse_sr_pol, strehl_mmse_sr_pol, dm_coefs_mmse_sr_pol, turbulence_phase_screens_mmse_sr_pol,\
+    residual_phase_screens_mmse_sr_pol, wfs_frames_mmse_sr_pol, wfs_signals_mmse_sr_pol, short_exposure_psf_mmse_sr_pol =\
+    close_the_loop_pol(tel, ngs, atm, dm, gbioedge_sr, M2C,
+                       calib_sr.D, reconstructor_mmse_sr_pol,
+                       param['loop_gain'], param['n_iter'], 
+                       delay=param['delay'], photon_noise=param['detector_photon_noise'], 
+                       read_out_noise=param['detector_read_out_noise'],  seed=seed, 
+                       save_telemetry=True, save_psf=True,
+                       display = False)
+
 #%% post processing
 
 long_exposure_psf_lse = np.sum(short_exposure_psf_lse[:,:,100:], axis=2)
 long_exposure_psf_lse_sr = np.sum(short_exposure_psf_lse_sr[:,:,100:], axis=2)
 long_exposure_psf_mmse = np.sum(short_exposure_psf_mmse[:,:,100:], axis=2)
+
+#%% post processing - psuedo open loop
+
+long_exposure_psf_lse_pol = np.sum(short_exposure_psf_lse_pol[:,:,100:], axis=2)
+long_exposure_psf_lse_sr_pol = np.sum(short_exposure_psf_lse_sr_pol[:,:,100:], axis=2)
+long_exposure_psf_mmse_pol = np.sum(short_exposure_psf_mmse_pol[:,:,100:], axis=2)
+long_exposure_psf_mmse_sr_pol = np.sum(short_exposure_psf_mmse_sr_pol[:,:,100:], axis=2)
 
 #%% plots
 
@@ -492,9 +655,173 @@ axs[2].imshow(np.log(long_exposure_psf_mmse))
 axs[2].set_title('Long Exposure PSF (log scale)\nMMSE reconstruction')
 plt.savefig(dirc / pathlib.Path('long_exposure_psf_lse_sr_mmse'+'.png'), bbox_inches = 'tight')
 
-# # Bi-O-Edge complex amplitude mask
-# fig, axs = plt.subplots(ncols=2, nrows=2)
-# axs[0,0].imshow(np.abs(gbioedge.mask[0]))
-# axs[0,1].imshow(np.abs(gbioedge.mask[2]))
-# axs[1,0].imshow(np.angle(gbioedge.mask[0])) # The phase on the "dark" (amplitude = 0) side
-# axs[1,1].imshow(np.angle(gbioedge.mask[2])) # of the Foucault Knife Edge does not matter
+#%% plots - pseudo open loop
+
+plt.figure()
+plt.plot(residual_lse_pol, label='residual_lse')
+plt.plot(residual_lse_sr_pol, label='residual_lse_sr')
+plt.plot(residual_mmse_pol, label='residual_mmse')
+plt.xlabel('loop iteration')
+plt.ylabel('residual phase RMS [nm]')
+plt.title('Closed Loop residuals - Pseudo open-loop reconstruction')
+plt.legend()
+plt.ylim(0,200)
+plt.savefig(dirc / pathlib.Path('residuals_lse_sr_mmse_pol'+'.png'), bbox_inches = 'tight')
+
+
+plt.figure()
+plt.plot(strehl_lse_pol, label='strehl_lse')
+plt.plot(strehl_lse_sr_pol, label='strehl_lse_sr')
+plt.plot(strehl_mmse_pol, label='strehl_mmse')
+plt.xlabel('loop iteration')
+plt.ylabel('Strehl Ratio')
+plt.title('Closed Loop Strehl Ratio - Pseudo open-loop reconstruction')
+plt.legend()
+plt.savefig(dirc / pathlib.Path('strehl_lse_sr_mmse'+'.png'), bbox_inches = 'tight')
+
+fig, axs = plt.subplots(nrows=1, ncols=3)
+axs[0].imshow(np.log(long_exposure_psf_lse_pol))
+axs[0].set_title('Long Exposure PSF (log scale)\nLSE reconstruction')
+axs[1].imshow(np.log(long_exposure_psf_lse_sr_pol))
+axs[1].set_title('Long Exposure PSF (log scale)\nLSE SR reconstruction')
+axs[2].imshow(np.log(long_exposure_psf_mmse_pol))
+axs[2].set_title('Long Exposure PSF (log scale)\nMMSE reconstruction')
+plt.savefig(dirc / pathlib.Path('long_exposure_psf_lse_sr_mmse_pol'+'.png'), bbox_inches = 'tight')
+
+#%% All reconstructions residuals comparisons
+
+plt.figure()
+plt.plot(residual_lse, label='residual_lse')
+plt.plot(residual_lse_sr, label='residual_lse_sr')
+plt.plot(residual_mmse, label='residual_mmse')
+plt.plot(residual_mmse_sr, label='residual_mmse_sr')
+plt.plot(residual_lse_pol, linestyle='dashed',label='residual_lse_pol')
+plt.plot(residual_mmse_pol, linestyle='dashed', label='residual_mmse_pol')
+plt.plot(residual_lse_sr_pol, linestyle='dashed',label='residual_lse_sr_pol')
+plt.plot(residual_mmse_sr_pol, linestyle='dashed', label='residual_mmse_sr_pol')
+#plt.ylim(0, 200)
+plt.legend()
+
+#%% All reconstructions Strehl comparisons
+
+plt.figure()
+plt.plot(strehl_lse, label='strehl_lse')
+plt.plot(strehl_lse_sr, label='strehl_lse_sr')
+plt.plot(strehl_mmse, label='strehl_mmse')
+plt.plot(strehl_mmse_sr, label='strehl_mmse_sr')
+plt.plot(strehl_lse_pol, linestyle='dashed',label='strehl_lse_pol')
+plt.plot(strehl_mmse_pol, linestyle='dashed', label='strehl_mmse_pol')
+plt.plot(strehl_lse_sr_pol, linestyle='dashed',label='strehl_lse_sr_pol')
+plt.plot(strehl_mmse_sr_pol, linestyle='dashed', label='strehl_mmse_sr_pol')
+plt.legend()
+
+#%% debug
+
+#%% MMSE - Slopesmaps
+
+tel.resetOPD()
+dm.coefs = 0
+gbioedge.signal = np.zeros(gbioedge.signal.shape)
+gbioedge.cam.photonNoise = False
+
+stroke = 1e-9
+
+dm.coefs = stroke*M2C
+ngs*tel*dm*gbioedge
+
+#%%
+
+reconstructed_modes_mmse_pol = reconstructor_mmse_pol @ gbioedge.signal
+
+#%%
+
+plt.figure()
+plt.imshow(reconstructed_modes_mmse_pol)
+
+#%%
+
+plt.figure()
+plt.plot(reconstructed_modes_mmse_pol[:,10])
+
+#%%
+
+plt.figure()
+plt.plot(np.diag(reconstructed_modes_mmse_pol)/stroke)
+
+#%% MMSE - fullFrame
+
+tel.resetOPD()
+dm.coefs = 0
+gbioedge_full_frame.signal = np.zeros(gbioedge_full_frame.signal.shape)
+gbioedge_full_frame.cam.photonNoise = False
+
+stroke = 1e-9
+
+dm.coefs = stroke*M2C
+ngs*tel*dm*gbioedge_full_frame
+
+#%%
+
+reconstructed_modes_mmse_full_frame_pol = reconstructor_mmse_full_frame_pol @ gbioedge_full_frame.signal
+
+#%%
+
+plt.figure()
+plt.imshow(reconstructed_modes_mmse_full_frame_pol)
+
+#%%
+
+plt.figure()
+plt.plot(reconstructed_modes_mmse_full_frame_pol[:,10])
+
+#%%
+
+plt.figure()
+plt.plot(np.diag(reconstructed_modes_mmse_full_frame_pol)/stroke)
+
+#%% MMSE - SR 
+
+tel.resetOPD()
+dm.coefs = 0
+gbioedge_sr.signal = np.zeros(gbioedge_sr.signal.shape)
+gbioedge_sr.cam.photonNoise = False
+
+stroke = 1e-9
+
+dm.coefs = stroke*M2C
+ngs*tel*dm*gbioedge_sr
+
+#%%
+
+reconstructed_modes_mmse_sr_pol = reconstructor_mmse_sr_pol @ gbioedge_sr.signal
+
+#%% Plots
+
+plt.figure()
+plt.imshow(reconstructed_modes_mmse_sr_pol)
+
+#%%
+
+plt.figure()
+plt.plot(reconstructed_modes_mmse_sr_pol[:,10])
+
+#%%
+
+plt.figure()
+plt.plot(np.diag(reconstructed_modes_mmse_sr_pol)/stroke)
+
+#%% all
+
+fig, axs = plt.subplots(nrows=2, ncols=3)
+axs[0,0].imshow(reconstructed_modes_mmse_pol)
+axs[0,0].set_title("reconstructed_modes_mmse_pol")
+axs[0,1].imshow(reconstructed_modes_mmse_full_frame_pol)
+axs[0,1].set_title("reconstructed_modes_mmse_full_frame_pol")
+axs[0,2].imshow(reconstructed_modes_mmse_sr_pol)
+axs[0,2].set_title("reconstructed_modes_mmse_sr_pol")
+axs[1,0].plot(np.diag(reconstructed_modes_mmse_pol)/stroke)
+axs[1,0].set_title('np.diag(reconstructed_modes_mmse_pol)/stroke')
+axs[1,1].plot(np.diag(reconstructed_modes_mmse_full_frame_pol)/stroke)
+axs[1,1].set_title('np.diag(reconstructed_modes_mmse_full_frame_pol)/stroke')
+axs[1,2].plot(np.diag(reconstructed_modes_mmse_sr_pol)/stroke)
+axs[1,2].set_title('np.diag(reconstructed_modes_mmse_sr_pol)/stroke')
