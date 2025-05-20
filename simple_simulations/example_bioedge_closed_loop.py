@@ -276,7 +276,7 @@ param['compute_M2C_Folder'] = str(pathlib.Path(__file__).parent)
 # ----------------------- RECONSTRUCTION ------------------------ #
 
 param['mmse_noise_level_guess_slopes_maps'] = 10e-9 # noise level assumption for MMSE reconstruction
-param['mmse_noise_level_guess_full_frame'] = 1e-10 # noise level assumption for MMSE full frame reconstruction
+param['mmse_noise_level_guess_full_frame'] = 5e-11 # noise level assumption for MMSE full frame reconstruction
 param['mmse_alpha'] = 1. # Weight for the turbulence statistics for MMSE reconstruction
 
 # -------------------- LOOP ----------------------- #
