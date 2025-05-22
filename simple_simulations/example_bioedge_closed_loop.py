@@ -182,7 +182,7 @@ def close_the_loop_pol(tel, ngs, atm, dm, wfs, M2C,
         
         pseudo_open_loop_measures = buffer_wfs_measure[:,0] - interaction_matrix @ C2M @ dm.coefs
         
-        dm.coefs = (1-loop_gain) * dm.coefs - loop_gain * M2C @ reconstructor @ pseudo_open_loop_measures 
+        dm.coefs = (1-loop_gain) * dm.coefs - loop_gain * M2C @ reconstructor @ pseudo_open_loop_measures
         
         if save_psf:
             
@@ -210,7 +210,7 @@ param = {}
 # fill the dictionary
 # ------------------ ATMOSPHERE ----------------- #
    
-param['r0'            ] = 0.15                                           # [m] value of r0 in the visibile
+param['r0'            ] = 0.10                                           # [m] value of r0 in the visibile
 param['L0'            ] = 30                                             # [m] value of L0 in the visibile
 param['fractionnal_r0'] = [0.45, 0.1, 0.1, 0.25, 0.1]                    # Cn2 profile (percentage)
 param['wind_speed'    ] = [5,4,8,10,2]                                   # [m.s-1] wind speed of the different layers
@@ -664,7 +664,23 @@ plt.imshow(reconstructed_modes_mmse_full_frame)
 #%%
 
 plt.figure()
-plt.plot(reconstructed_modes_mmse_full_frame[:,10]/stroke)
+plt.plot(reconstructed_modes_mmse_full_frame[:,20]/stroke)
+
+#%%
+
+plt.figure()
+plt.plot(reconstructed_modes_mmse_full_frame[:,200]/stroke)
+
+#%%
+
+plt.figure()
+plt.plot(reconstructed_modes_mmse_full_frame[:,500]/stroke)
+
+#%%
+
+plt.figure()
+plt.plot(reconstructed_modes_mmse_full_frame[:,1000]/stroke)
+
 
 #%%
 
@@ -700,7 +716,17 @@ plt.plot(reconstructed_modes_mmse_sr[:,10]/stroke)
 #%%
 
 plt.figure()
-plt.plot(np.diag(reconstructed_modes_mmse_sr)/stroke)
+plt.plot(reconstructed_modes_mmse_sr[:,500]/stroke, label='reconstructed_modes_mmse_sr')
+plt.plot(reconstructed_modes_mmse_full_frame[:,500]/stroke, linestyle='dashed',label='reconstructed_modes_mmse_full_frame')
+plt.legend()
+
+#%%
+
+plt.figure()
+plt.plot(np.diag(reconstructed_modes_mmse_sr)/stroke, label='np.diag(reconstructed_modes_mmse_sr)')
+plt.plot(np.diag(reconstructed_modes_mmse_full_frame)/stroke, label='np.diag(reconstructed_modes_mmse_full_frame)')
+plt.legend()
+
 
 #%% all
 
