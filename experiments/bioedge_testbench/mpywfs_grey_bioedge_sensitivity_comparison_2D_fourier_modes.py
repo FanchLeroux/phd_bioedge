@@ -20,13 +20,13 @@ from OOPAO.tools.displayTools import display_wfs_signals
 from fanch.basis.fourier import compute_real_fourier_basis,\
     extract_subset, sort_real_fourier_basis, extract_vertical_frequencies,\
     extract_diagonal_frequencies
-from fanch.tools import zeros_padding
+from fanch.tools.miscellaneous import zeros_padding
 
 #%%
 
 n_subapertures = 32
 
-modulation = 0
+modulation = 3
 stroke = 1e-9 # [m]
 
 n_calib = 1
@@ -77,7 +77,8 @@ pywfs = Pyramid(nSubap = n_subapertures,
               lightRatio = 0.5,
               n_pix_separation = 2,
               postProcessing = 'fullFrame', 
-              psfCentering=False)
+              psfCentering=False,
+              nTheta_user_defined=40)
 
 #%% --------------------------- Bio Edge ------------------------------------
 
@@ -86,7 +87,8 @@ bioedge = BioEdge(nSubap = n_subapertures,
                    modulation = float(not(is_grey))*modulation, 
                    grey_width = float(is_grey)*modulation, 
                    lightRatio = 0.5,
-                   postProcessing = 'fullFrame')
+                   postProcessing = 'fullFrame',
+                   nTheta_user_defined=40)
 
 #%% ------------------------- Modal basis --------------------------------
 
@@ -132,13 +134,13 @@ for fourier_modes in modes_calibrations:
 
     tel.resetOPD()
     ngs*tel*dm
-    calib_pywfs = InteractionMatrix(ngs, atm, tel, dm, pywfs, M2C = M2C, 
-                                    stroke = stroke)
+    calib_pywfs = InteractionMatrix(ngs, tel, dm, pywfs, M2C = M2C, 
+                                    stroke = stroke, display=True)
     
     tel.resetOPD()
     ngs*tel*dm
-    calib_bioedge = InteractionMatrix(ngs, atm, tel, dm, bioedge, M2C = M2C, 
-                                      stroke = stroke)
+    calib_bioedge = InteractionMatrix(ngs, tel, dm, bioedge, M2C = M2C, 
+                                      stroke = stroke, display=True)
     
     pywfs_calibrations.append(calib_pywfs)
     bioedge_calibrations.append(calib_bioedge)
@@ -184,9 +186,15 @@ plt.title("Diagonal and vertical Fourier modes sensitivity\n"+
 plt.xlabel("# cycle/pupil (phase amplitude = "+str(1e9*stroke)+" nm)")
 plt.ylabel("Sensitivity")
 
-# plt.figure(4)
-# plt.semilogy(modal_sensitivity_pywfs/modal_sensitivity_bioedge, 'b')
-# plt.plot(np.ones(modal_sensitivity_bioedge.size),'r')
+#%%
+
+plt.figure()
+plt.plot(bioedge_modal_sensitivities[2]/pywfs_modal_sensitivities[2], label='sensitivity_msbioedge/sensitivity_mpywfs')
+plt.plot(2**0.5 * np.ones(bioedge_modal_sensitivities[2].shape[0]), linestyle='dashed', label='sqrt(2)')
+plt.xlabel('# diagonal fourier modes')
+plt.ylabel('uniform noise sensitivity : diag(D.T @ D')
+plt.title('modulation : '+str(modulation)+' lambda/D')
+plt.legend()
 
 #%%
 

@@ -110,7 +110,7 @@ def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain,
     else:
         return total, residual, strehl
     
-# pseudo-open loop mmse reconstruction
+# pseudo-open loop reconstruction
 def close_the_loop_pol(tel, ngs, atm, dm, wfs, M2C, 
                    interaction_matrix, reconstructor, loop_gain, 
                    n_iter=100, delay=1, photon_noise = False, 
@@ -210,7 +210,7 @@ param = {}
 # fill the dictionary
 # ------------------ ATMOSPHERE ----------------- #
    
-param['r0'            ] = 0.10                                           # [m] value of r0 in the visibile
+param['r0'            ] = 0.15                                           # [m] value of r0 in the visibile
 param['L0'            ] = 30                                             # [m] value of L0 in the visibile
 param['fractionnal_r0'] = [0.45, 0.1, 0.1, 0.25, 0.1]                    # Cn2 profile (percentage)
 param['wind_speed'    ] = [5,4,8,10,2]                                   # [m.s-1] wind speed of the different layers
@@ -743,3 +743,19 @@ axs[1,1].plot(np.diag(reconstructed_modes_mmse_full_frame)/stroke)
 axs[1,1].set_title('np.diag(reconstructed_modes_mmse_full_frame)/stroke')
 axs[1,2].plot(np.diag(reconstructed_modes_mmse_sr)/stroke)
 axs[1,2].set_title('np.diag(reconstructed_modes_mmse_sr)/stroke')
+
+#%% Uniform noise propagation
+
+reconstructor_lse_full_frame_to_modes = np.linalg.pinv(calib_full_frame.D[:,:param['n_modes_to_show_lse']])
+reconstructor_lse_sr_to_modes = np.linalg.pinv(calib_sr.D[:,:param['n_modes_to_show_lse_sr']])
+
+plt.figure()
+plt.plot(np.diag(reconstructor_lse_sr_to_modes @ reconstructor_lse_sr_to_modes.T), linestyle='dashed', label='lse_sr')
+plt.plot(np.diag(reconstructor_mmse_full_frame @ reconstructor_mmse_full_frame.T), linestyle='dotted', label='mmse_full_frame')
+plt.plot(np.diag(reconstructor_mmse_sr @ reconstructor_mmse_sr.T), label='mmse_sr')
+plt.plot(np.diag(reconstructor_lse_full_frame_to_modes @ reconstructor_lse_full_frame_to_modes.T), label='lse_full_frame')
+plt.semilogy()
+plt.legend()
+plt.xlabel("# KL mode")
+plt.ylabel("np.diag(R @ R.T)")
+plt.title("Uniform noise propagation")
