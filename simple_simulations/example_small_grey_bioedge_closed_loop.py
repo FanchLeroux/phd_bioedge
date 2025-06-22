@@ -246,7 +246,8 @@ param['n_actuator'] = 2*param['n_subaperture'] # number of actuators
 # ----------------------- WFS ---------------------- #
 
 param['modulation'            ] = 2.                  # [lambda/D] modulation radius or grey width
-param['grey_length']            = param['modulation'] # [lambda/D] grey length in case of small grey bioedge WFS
+param['grey_length']            = param['modulation'] # [lambda/D] grey length in case of grey bioedge WFS
+param['grey_width']             = param['modulation'] # [lambda/D] grey length in case of small grey bioedge WFS
 param['n_pix_separation'      ] = 10                  # [pixel] separation ratio between the PWFS pupils
 param['psf_centering'          ] = False              # centering of the FFT and of the PWFS mask on the 4 central pixels
 param['light_threshold'        ] = 0.3                # light threshold to select the valid pixels
@@ -367,7 +368,8 @@ elif param['modal_basis'] == 'poke':
 gbioedge_slopes_maps = BioEdge(nSubap = param['n_subaperture'], 
               telescope = tel,
               modulation = 0.,
-              grey_width = param['modulation'], 
+              grey_width = param['grey_width'],
+              grey_length= param['grey_length'],
               lightRatio = param['light_threshold'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = 'slopesMaps', 
@@ -377,7 +379,8 @@ gbioedge_slopes_maps = BioEdge(nSubap = param['n_subaperture'],
 gbioedge_full_frame = BioEdge(nSubap = param['n_subaperture'], 
               telescope = tel,
               modulation = 0.,
-              grey_width = param['modulation'], 
+              grey_width = param['grey_width'],
+              grey_length= param['grey_length'],
               lightRatio = param['light_threshold'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = 'fullFrame', 
@@ -388,7 +391,8 @@ gbioedge_full_frame = BioEdge(nSubap = param['n_subaperture'],
 gbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
               telescope = tel, 
               modulation = 0.,
-              grey_width = param['modulation'], 
+              grey_width = param['grey_width'],
+              grey_length= param['grey_length'],
               lightRatio = param['light_threshold'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = 'fullFrame', 
@@ -607,156 +611,3 @@ axs[1,1].imshow(np.log(long_exposure_psf_mmse_full_frame))
 axs[1,1].set_title('long_exposure_psf_mmse_full_frame')
 axs[1,2].imshow(np.log(long_exposure_psf_mmse_sr))
 axs[1,2].set_title('long_exposure_psf_mmse_sr')
-
-#%% debug
-
-#%% MMSE reconstruction - Slopesmaps
-
-tel.resetOPD()
-dm.coefs = 0
-gbioedge_slopes_maps.signal = np.zeros(gbioedge_slopes_maps.signal.shape)
-gbioedge_slopes_maps.cam.photonNoise = False
-
-stroke = 1e-9
-
-dm.coefs = stroke*M2C
-ngs*tel*dm*gbioedge_slopes_maps
-
-#%%
-
-reconstructed_modes_mmse_slopes_maps = reconstructor_mmse_slopes_maps @ gbioedge_slopes_maps.signal
-
-#%%
-
-plt.figure()
-plt.imshow(reconstructed_modes_mmse_slopes_maps)
-
-#%%
-
-plt.figure()
-plt.plot(reconstructed_modes_mmse_slopes_maps[:,10]/stroke)
-
-#%%
-
-plt.figure()
-plt.plot(np.diag(reconstructed_modes_mmse_slopes_maps)/stroke)
-
-#%% MMSE reconstruction - fullFrame
-
-tel.resetOPD()
-dm.coefs = 0
-gbioedge_full_frame.signal = np.zeros(gbioedge_full_frame.signal.shape)
-gbioedge_full_frame.cam.photonNoise = False
-
-stroke = 1e-9
-
-dm.coefs = stroke*M2C
-ngs*tel*dm*gbioedge_full_frame
-
-#%%
-
-reconstructed_modes_mmse_full_frame = reconstructor_mmse_full_frame @ gbioedge_full_frame.signal
-
-#%%
-
-plt.figure()
-plt.imshow(reconstructed_modes_mmse_full_frame)
-
-#%%
-
-plt.figure()
-plt.plot(reconstructed_modes_mmse_full_frame[:,20]/stroke)
-
-#%%
-
-plt.figure()
-plt.plot(reconstructed_modes_mmse_full_frame[:,200]/stroke)
-
-#%%
-
-plt.figure()
-plt.plot(reconstructed_modes_mmse_full_frame[:,500]/stroke)
-
-#%%
-
-plt.figure()
-plt.plot(reconstructed_modes_mmse_full_frame[:,1000]/stroke)
-
-
-#%%
-
-plt.figure()
-plt.plot(np.diag(reconstructed_modes_mmse_full_frame)/stroke)
-
-#%% MMSE reconstruction - SR
-
-tel.resetOPD()
-dm.coefs = 0
-gbioedge_sr.signal = np.zeros(gbioedge_sr.signal.shape)
-gbioedge_sr.cam.photonNoise = False
-
-stroke = 1e-9
-
-dm.coefs = stroke*M2C
-ngs*tel*dm*gbioedge_sr
-
-#%%
-
-reconstructed_modes_mmse_sr = reconstructor_mmse_sr @ gbioedge_sr.signal
-
-#%%
-
-plt.figure()
-plt.imshow(reconstructed_modes_mmse_sr)
-
-#%%
-
-plt.figure()
-plt.plot(reconstructed_modes_mmse_sr[:,10]/stroke)
-
-#%%
-
-plt.figure()
-plt.plot(reconstructed_modes_mmse_sr[:,500]/stroke, label='reconstructed_modes_mmse_sr')
-plt.plot(reconstructed_modes_mmse_full_frame[:,500]/stroke, linestyle='dashed',label='reconstructed_modes_mmse_full_frame')
-plt.legend()
-
-#%%
-
-plt.figure()
-plt.plot(np.diag(reconstructed_modes_mmse_sr)/stroke, label='np.diag(reconstructed_modes_mmse_sr)')
-plt.plot(np.diag(reconstructed_modes_mmse_full_frame)/stroke, label='np.diag(reconstructed_modes_mmse_full_frame)')
-plt.legend()
-
-
-#%% all
-
-fig, axs = plt.subplots(nrows=2, ncols=3)
-axs[0,0].imshow(reconstructed_modes_mmse_slopes_maps)
-axs[0,0].set_title("reconstructed_modes_mmse_slopes_maps")
-axs[0,1].imshow(reconstructed_modes_mmse_full_frame)
-axs[0,1].set_title("reconstructed_modes_mmse_full_frame")
-axs[0,2].imshow(reconstructed_modes_mmse_sr)
-axs[0,2].set_title("reconstructed_modes_mmse_sr")
-axs[1,0].plot(np.diag(reconstructed_modes_mmse_slopes_maps)/stroke)
-axs[1,0].set_title('np.diag(reconstructed_modes_mmse_slopes_maps)/stroke')
-axs[1,1].plot(np.diag(reconstructed_modes_mmse_full_frame)/stroke)
-axs[1,1].set_title('np.diag(reconstructed_modes_mmse_full_frame)/stroke')
-axs[1,2].plot(np.diag(reconstructed_modes_mmse_sr)/stroke)
-axs[1,2].set_title('np.diag(reconstructed_modes_mmse_sr)/stroke')
-
-#%% Uniform noise propagation
-
-reconstructor_lse_full_frame_to_modes = np.linalg.pinv(calib_full_frame.D[:,:param['n_modes_to_show_lse']])
-reconstructor_lse_sr_to_modes = np.linalg.pinv(calib_sr.D[:,:param['n_modes_to_show_lse_sr']])
-
-plt.figure()
-plt.plot(np.diag(reconstructor_lse_sr_to_modes @ reconstructor_lse_sr_to_modes.T), linestyle='dashed', label='lse_sr')
-plt.plot(np.diag(reconstructor_mmse_full_frame @ reconstructor_mmse_full_frame.T), linestyle='dotted', label='mmse_full_frame')
-plt.plot(np.diag(reconstructor_mmse_sr @ reconstructor_mmse_sr.T), label='mmse_sr')
-plt.plot(np.diag(reconstructor_lse_full_frame_to_modes @ reconstructor_lse_full_frame_to_modes.T), label='lse_full_frame')
-plt.semilogy()
-plt.legend()
-plt.xlabel("# KL mode")
-plt.ylabel("np.diag(R @ R.T)")
-plt.title("Uniform noise propagation")
