@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 #%%
 
-dirc = pathlib.Path(__file__).parent / "data" / "orca"
+dirc = pathlib.Path(__file__).parent.parent.parent.parent.parent / "data" / "orca"
 
 #%% ORCA 
 
@@ -112,7 +112,6 @@ def apply_defocus_on_slm(amp=500e-9): # amp : m rms
 #%% Link camera
 
 cam = DCAM.DCAMCamera()
-cam.ID = 518
 
 #%%
 
