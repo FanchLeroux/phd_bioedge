@@ -167,7 +167,7 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 cam.exp_time = 10e-3    # exposure time (s)
 cam.n_frames = 10      # acquire cubes of n_frames images
 cam.ID = 0             # ID for the data saved
-roi = False#[880, 1050, 100, 100]
+roi = False
 
 #%% Aquire image
 
@@ -190,11 +190,14 @@ print(data.max())
 
 #%% set ROI around +1 or -1 diffraction order
 
-roi = [848, 911, 20, 20] # roi[0] is x coordinate, i.e column number
+roi = [853, 915, 20, 20] # roi[0] is x coordinate, i.e column number
 
 #%% Check ROI
 
 data = acquire(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)
+if data.max() > 65000:
+    print("Image is saturated")
+img = np.median(data, axis=0)
 fig, axs = plt.subplots(nrows=1,ncols=1)
 im = axs.imshow(img)
 axs.set_title("ORCA ROI")
@@ -213,13 +216,12 @@ for grey in range(num_data_points):
                               width.value, height.value, 0, grey, pixels_per_stripe)
     
     # add slm_flat
-    pattern = np.mod(pattern.astype('float64') + slm_flat.astype('float64'), 256).astype('uint8')
+    pattern = np.mod(pattern.astype('float64') + slm_flat.astype('float64'), 255).astype('uint8')
     
     # display pattern on slm
     slm_lib.Write_image(board_number, pattern.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
                         wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
     slm_lib.ImageWriteComplete(board_number, timeout_ms)
-    sleep(0.02)
     
     # take image
     
@@ -246,13 +248,15 @@ np.save(dirc_data / (utc_now + "_LUT_measurements.npy"), measurements)
 csv_file = pathlib.Path(dirc_data / (utc_now + "_csv") /"raw0.csv")
 csv_file.parent.mkdir(exist_ok=True, parents=True)
 
+#%%
+
 with open(csv_file, "w") as f:
     for k in range(measurements.shape[0]):
-        f.write(str(int(measurements[k,0]))+", "+str(measurements[k,1])+"\n")
+        f.write(str(int(measurements[k,0]))+", "+str(float(measurements[k,1]))+"\n")
 
 #%% save a .gif of the raw images
 
-make_gif(dirc_data / (utc_now + "_LUT_images..gif"), images, interval=50)
+make_gif(dirc_data / (utc_now + "_LUT_images.gif"), images, interval=50)
 
 #%% Plot raw measurements
 
