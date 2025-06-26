@@ -16,6 +16,7 @@ import ctypes as ct
 from time import sleep
 from PIL import Image
 
+
 from pylablib.devices import DCAM
 from astropy.io import fits
 
@@ -23,10 +24,16 @@ from fanch.plots import make_gif
 
 #%%
 
-dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "data" / "LUT_calibration"
+dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "data" / "slm" / "LUT_calibration"
 
-#%% Functions declarations - ORCA
+#%% Function declaration
 
+# utc datetime now
+
+def utc_now():
+    return datetime.datetime.utcnow().strftime("utc_%Y-%m-%d_%H-%M-%S")
+
+# Get Frames with ORCA
 def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
     
     # roi = [xcenter, ycenter, xwidth, ywidth]
@@ -113,11 +120,11 @@ if num_boards_found.value == 1:
 
 # Load LUT
 
-# slm_lib.Load_LUT_file(board_number,
-#                       b"C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\LUT Files\\12bit_linear.LUT");
-
 slm_lib.Load_LUT_file(board_number,
-                      b"C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\LUT Files\\slm5758_at675.LUT");
+                      b"C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\LUT Files\\12bit_linear.LUT");
+
+# slm_lib.Load_LUT_file(board_number,
+#                       b"C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\LUT Files\\slm5758_at675.LUT");
 
 #%% Get slm flat @ 675 nm
 
@@ -129,6 +136,28 @@ slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C');
 #%% Load flat on SLM
 
 slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+slm_lib.ImageWriteComplete(board_number, timeout_ms)
+
+#%% Load grey level 128 stripe diffraction pattern on slm
+
+grey = 128
+
+num_data_points = 256
+pixels_per_stripe = 8
+
+# allocate memory for the patterns to display on slm
+pattern = np.empty([width.value*height.value], np.uint8, 'C'); 
+
+# generate pattern
+image_lib.Generate_Stripe(pattern.ctypes.data_as(ct.POINTER(ct.c_ubyte)),
+                          width.value, height.value, 0, grey, pixels_per_stripe)
+
+# add slm_flat
+pattern = np.mod(pattern.astype('float64') + slm_flat.astype('float64'), 256).astype('uint8')
+
+# display pattern on slm
+slm_lib.Write_image(board_number, pattern.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
 slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
@@ -150,30 +179,32 @@ if data.max() > 65000:
 
 img = np.median(data, axis=0)
 
-#%% Pots
+#%% Show post-processed image
 
 fig, axs = plt.subplots(nrows=1,ncols=1)
 im = axs.imshow(img)
-axs.set_title("ORCA frame")
+axs.set_title("ORCA full frame")
 plt.colorbar(im, ax=axs, fraction=0.046, pad=0.04)
 
 print(data.max())
 
 #%% set ROI around +1 or -1 diffraction order
 
-roi = [865, 920, 20, 20]
+roi = [848, 911, 20, 20] # roi[0] is x coordinate, i.e column number
+
+#%% Check ROI
+
+data = acquire(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)
+fig, axs = plt.subplots(nrows=1,ncols=1)
+im = axs.imshow(img)
+axs.set_title("ORCA ROI")
+plt.colorbar(im, ax=axs, fraction=0.046, pad=0.04)
 
 #%% Take LUT calibration measurements
-
-num_data_points = 256
-pixels_per_stripe = 8
 
 # allocate memory for the measurments
 images = np.zeros([roi[2], roi[3], num_data_points])
 measurements = np.zeros((num_data_points, 2)) # 1st column : grey level ; # 2nd coloumn : intensity measurement
-
-# allocate memory for the patterns to display on slm
-pattern = np.empty([width.value*height.value], np.uint8, 'C'); 
 
 for grey in range(num_data_points):
     
@@ -202,15 +233,25 @@ for grey in range(num_data_points):
     
     images[:,:,grey] = img
 
-np.save(dirc_data / "20250625_LUT_images_001.npy", images)
-np.save(dirc_data / "20250625_LUT_measurements_001.npy", measurements)
+utc_now = utc_now()
+
+np.save(dirc_data / (utc_now + "_LUT_images.npy"), images)
+np.save(dirc_data / (utc_now + "_LUT_measurements.npy"), measurements)
 
 # To visualize the stripe patterns :
 # plt.imshow(np.reshape(pattern, (height.value,width.value)))
 
 #%% save measurements under .csv file
 
-with open(dirc_data / "20250625_001_csv" /"raw0.csv", "w") as f:
+csv_file = pathlib.Path(dirc_data / (utc_now + "_csv") /"raw0.csv")
+csv_file.parent.mkdir(exist_ok=True, parents=True)
+
+with open(csv_file, "w") as f:
+    for k in range(measurements.shape[0]):
+        f.write(str(int(measurements[k,0]))+", "+str(measurements[k,1])+"\n")
+
+#%%
+with open(dirc_data / "_csv" /"raw0.csv", "w") as f:
     for k in range(measurements.shape[0]):
         f.write(str(int(measurements[k,0]))+", "+str(measurements[k,1])+"\n")
 
@@ -218,7 +259,15 @@ with open(dirc_data / "20250625_001_csv" /"raw0.csv", "w") as f:
 
 #%% save a .gif of the raw images
 
-make_gif(dirc_data / "20250625_LUT_images_001.gif", images, interval=50)
+make_gif(dirc_data / (utc_now + "_LUT_images..gif"), images, interval=50)
+
+#%% Plot raw measurements
+
+plt.figure()
+plt.plot(measurements[:,1])
+plt.title("Raw intensity meadurements")
+plt.xlabel("Grey Level")
+plt.ylabel("Max Intensity on ORCA")
 
 #%% delete slm sdk
 
