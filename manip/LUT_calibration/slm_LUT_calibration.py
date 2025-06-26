@@ -250,13 +250,6 @@ with open(csv_file, "w") as f:
     for k in range(measurements.shape[0]):
         f.write(str(int(measurements[k,0]))+", "+str(measurements[k,1])+"\n")
 
-#%%
-with open(dirc_data / "_csv" /"raw0.csv", "w") as f:
-    for k in range(measurements.shape[0]):
-        f.write(str(int(measurements[k,0]))+", "+str(measurements[k,1])+"\n")
-
-# plt.imshow(np.reshape(pattern, (height.value,width.value)))
-
 #%% save a .gif of the raw images
 
 make_gif(dirc_data / (utc_now + "_LUT_images..gif"), images, interval=50)
