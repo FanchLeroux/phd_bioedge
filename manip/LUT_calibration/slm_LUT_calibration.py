@@ -119,7 +119,7 @@ board_number = ct.c_uint(1)
 wait_For_Trigger = ct.c_uint(0)
 timeout_ms = ct.c_uint(5000)
 OutputPulseImageFlip = ct.c_uint(0)
-OutputPulseImageRefresh = ct.c_uint(0); #only supported on 1920x1152, FW rev 1.8.
+OutputPulseImageRefresh = ct.c_uint(0) #only supported on 1920x1152, FW rev 1.8.
 
 # Call the Create_SDK constructor
 
@@ -136,32 +136,34 @@ if constructed_okay.value == 0:
 
 if num_boards_found.value == 1:
     print ("Blink SDK was successfully constructed");
-    print ("Found %s SLM controller(s)" % num_boards_found.value);
-    height = ct.c_uint(slm_lib.Get_image_height(board_number));
-    width = ct.c_uint(slm_lib.Get_image_width(board_number));
-    center_x = ct.c_uint(width.value//2);
-    center_y = ct.c_uint(height.value//2);
+    print ("Found %s SLM controller(s)" % num_boards_found.value)
+    height = ct.c_uint(slm_lib.Get_image_height(board_number))
+    width = ct.c_uint(slm_lib.Get_image_width(board_number))
+    center_x = ct.c_uint(width.value//2)
+    center_y = ct.c_uint(height.value//2)
 
-# Load LUT
-
-slm_lib.Load_LUT_file(board_number,
-                      b"C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\LUT Files\\12bit_linear.LUT");
-
-# slm_lib.Load_LUT_file(board_number,
-#                       b"C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\LUT Files\\slm5758_at675.LUT");
-
-#%% Get slm flat @ 675 nm
-
-slm_flat = np.asarray(Image.open(
-    b"C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\Flat Files\\slm5758_at675.bmp"))
-
-slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C');
-
-#%% Load flat on SLM
-
+# By default load a linear LUT and a black WFC
+slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "12bit_linear.lut").encode('utf-8'))
+slm_flat = np.asarray(Image.open(str(dirc_data / "WFC" / "1920black.bmp")))
+slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
 slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
 slm_lib.ImageWriteComplete(board_number, timeout_ms)
+
+#%% Load LUT
+
+# slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "12bit_linear.lut").encode('utf-8'))
+# slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "slm5758_at675.lut").encode('utf-8'))
+# slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "utc_2025-06-26_12-12-56_slm0_at675.lut").encode('utf-8'))
+# slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "utc_2025-06-27_07-32-36_slm0_at675.lut").encode('utf-8'))
+
+#%% Load WFC
+
+# slm_flat = np.asarray(Image.open(str(dirc_data / "WFC" / "slm5758_at675.bmp")))
+# slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
+# slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+#                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+# slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
 #%% Load grey level 128 stripe diffraction pattern on slm
 
@@ -188,29 +190,10 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 #%% Setup camera
 
 # initialize settings
-cam.exp_time = 20e-3    # exposure time (s)
+cam.exp_time = 5e-3    # exposure time (s)
 cam.n_frames = 10      # acquire cubes of n_frames images
 cam.ID = 0             # ID for the data saved
 roi = False
-
-#%% Aquire image
-
-data = acquire(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)
-if data.max() > 65000:
-    print("Image is saturated")
-
-#%% Post processing
-
-img = np.median(data, axis=0)
-
-#%% Show post-processed image
-
-fig, axs = plt.subplots(nrows=1,ncols=1)
-im = axs.imshow(img)
-axs.set_title("ORCA full frame")
-plt.colorbar(im, ax=axs, fraction=0.046, pad=0.04)
-
-print(data.max())
 
 #%% Live view
 
@@ -218,18 +201,11 @@ live_view(acquire, cam, roi)
 
 #%% set ROI around +1 or -1 diffraction order
 
-roi = [894, 941, 20, 20] # roi[0] is x coordinate, i.e column number
+roi = [895, 938, 20, 20] # roi[0] is x coordinate, i.e column number
 
-#%% Check ROI
+#%% Check ROI saturation
 
-data = acquire(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)
-if data.max() > 65000:
-    print("Image is saturated")
-img = np.median(data, axis=0)
-fig, axs = plt.subplots(nrows=1,ncols=1)
-im = axs.imshow(img)
-axs.set_title("ORCA ROI")
-plt.colorbar(im, ax=axs, fraction=0.046, pad=0.04)
+live_view(acquire, cam, roi)
 
 #%% Take LUT calibration measurements
 
@@ -268,12 +244,11 @@ for grey in range(num_data_points):
     measurements[grey, 1] = img.max()
     
     images[:,:,grey] = img
+    
+    print(str(grey)+"/"+str(num_data_points)+"\n")
 
 np.save(path_measurements / (utc_now + "_LUT_images.npy"), images)
 np.save(path_measurements / (utc_now + "_LUT_measurements.npy"), measurements)
-
-# To visualize the stripe patterns :
-# plt.imshow(np.reshape(pattern, (height.value,width.value)))
 
 #%% save measurements under .csv file
 

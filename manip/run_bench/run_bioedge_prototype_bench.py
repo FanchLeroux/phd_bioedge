@@ -6,31 +6,36 @@ Created on Wed Apr 16 17:02:10 2025
 """
 
 import datetime
-import os
 import pathlib
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-#%%
+import ctypes as ct
 
-dirc = pathlib.Path(__file__).parent.parent.parent.parent.parent / "data" / "orca"
+from time import sleep
+from PIL import Image
 
-#%% ORCA 
 
 from pylablib.devices import DCAM
 from astropy.io import fits
 
-#%% MEADOWLARK
+from fanch.plots import make_gif
 
-from plico_dm import deformableMirror
-from arte.utils.zernike_generator import ZernikeGenerator
-from arte.types.mask import CircularMask
-import numpy as np
-from slm_4lgs_prototype.utils.my_tools import reshape_map2vector
+from fanch.tools.miscellaneous import get_tilt, get_circular_pupil
 
-#%% Functions declarations - ORCA
+#%%
 
+dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "data" / "slm"
+
+#%% Function declaration
+
+# utc datetime now
+
+def get_utc_now():
+    return datetime.datetime.utcnow().strftime("utc_%Y-%m-%d_%H-%M-%S")
+
+# Get Frames with ORCA
 def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
     
     # roi = [xcenter, ycenter, xwidth, ywidth]
@@ -65,89 +70,173 @@ def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
     
     return image
 
-#%% Functions declarations - MEADOWLARK
+def live_view(get_frame_func, cam, roi, dirc = False, overwrite=True, interval=0.005):
+    
+    cam.n_frames = 1
+    
+    plt.ion()  # Turn on interactive mode
 
-def create_device():
-    '''
-    Return the object that allows to control and interface the SLM
-    Before running this function you should run the script plico_dm_controller_#.exe to interface the device.
-    It is located in the following path:
-    D:\anaconda3\envs\slm\Scripts
-    '''
-    # hostname and port defined in the configuration file (server1)
-    # C:\Users\lgs\AppData\Local\INAF Arcetri Adaptive Optics\inaf.arcetri.ao.plico_dm_server\plico_dm_server.conf
-    hostname = 'localhost'
-    port = 7000
-    slm = deformableMirror(hostname, port)
-    
-    return slm
+    # First frame for setup
+    frame = get_frame_func(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)[0,:,:,]
+    is_color = frame.ndim == 3 and frame.shape[2] == 3
 
-def apply_defocus_on_slm(amp=500e-9): # amp : m rms
-    
-    '''
-    This function display a defocus (Z4) of amplitude 500nm rms on a circular mask
-    of center (517,875) pixel and radius 571pixel, in the frame of the SLM
-    '''
-    # building circular mask
-    frame_shape = (1152, 1920)
-    mask_radius = 500
-    centerYX = (551, 910)
-    cmask_obj = CircularMask(frame_shape, mask_radius, centerYX)
-    
-    #building Zernike polynomial
-    zg = ZernikeGenerator(cmask_obj)
-    
-    j = 4 # Defocus index Noll
-    wavefront2display = amp * zg.getZernike(index = j)
-    
-    #create slm device
-    slm = create_device()
-    #reshape 2D wavefront in 1D vector
-    cmd = np.reshape(wavefront2display, (1152*1920,), 'C')
-    #cmd = reshape_map2vector(wavefront2display, 1152*1920, 'C')
-    #apply command on slm
-    #need a 1D array
-    slm.set_shape(command = cmd)
+    fig, ax = plt.subplots()
+    im = ax.imshow(frame, cmap='viridis' if not is_color else None)
+    cbar = plt.colorbar(im, ax=ax)
+    title = fig.suptitle(f"Max value: {np.max(frame):.2f}", fontsize=24)
 
-#%% Link camera
+    while plt.fignum_exists(fig.number):  # Loop while window is open
+        frame = get_frame_func(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)[0,:,:,]
+        im.set_data(frame)
+        im.set_clim(vmin=np.min(frame), vmax=np.max(frame))  # Adjust color scale
+        title.set_text(f"Max value: {np.max(frame):.2f}")  # Update title
+        plt.pause(interval)
+
+    plt.ioff()
+
+def get_slm_pupil_tilt(pupil_radius, pupil_center, delta_phi, theta=0):
+    phase_map = np.zeros((1152,1920))
+    pupil = get_circular_pupil(2*pupil_radius)
+    tilt = get_tilt(pupil.shape, amplitude=delta_phi)
+    pupil = tilt * pupil
+    phase_map[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
+              pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius] = pupil
+    return phase_map
+    
+
+#%% Link camera ORCA
 
 cam = DCAM.DCAMCamera()
 
-#%%
+#%% Link slm MEADOWLARK
+
+# load slm library
+ct.cdll.LoadLibrary("C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\SDK\\Blink_C_wrapper")
+slm_lib = ct.CDLL("Blink_C_wrapper")
+
+# load image generation library
+ct.cdll.LoadLibrary("C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\SDK\\ImageGen")
+image_lib = ct.CDLL("ImageGen")
+
+# Basic parameters for calling Create_SDK
+
+bit_depth = ct.c_uint(12)
+num_boards_found = ct.c_uint(0)
+constructed_okay = ct.c_uint(-1)
+is_nematic_type = ct.c_bool(1)
+RAM_write_enable = ct.c_bool(1)
+use_GPU = ct.c_bool(1)
+max_transients = ct.c_uint(20)
+board_number = ct.c_uint(1)
+wait_For_Trigger = ct.c_uint(0)
+timeout_ms = ct.c_uint(5000)
+OutputPulseImageFlip = ct.c_uint(0)
+OutputPulseImageRefresh = ct.c_uint(0) #only supported on 1920x1152, FW rev 1.8.
+
+# Call the Create_SDK constructor
+
+# Returns a handle that's passed to subsequent SDK calls
+slm_lib.Create_SDK(bit_depth, ct.byref(num_boards_found), ct.byref(constructed_okay), 
+                   is_nematic_type, RAM_write_enable, use_GPU, max_transients, 0)
+
+if constructed_okay.value == 0:
+    print ("Blink SDK did not construct successfully");
+    # Python ctypes assumes the return value is always int
+    # We need to tell it the return type by setting restype
+    slm_lib.Get_last_error_message.restype = ct.c_char_p
+    print (slm_lib.Get_last_error_message());
+
+if num_boards_found.value == 1:
+    print ("Blink SDK was successfully constructed");
+    print ("Found %s SLM controller(s)" % num_boards_found.value)
+    height = ct.c_uint(slm_lib.Get_image_height(board_number))
+    width = ct.c_uint(slm_lib.Get_image_width(board_number))
+    center_x = ct.c_uint(width.value//2)
+    center_y = ct.c_uint(height.value//2)
+
+# By default load a linear LUT and a black WFC
+slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "12bit_linear.lut").encode('utf-8'))
+slm_flat = np.asarray(Image.open(str(dirc_data / "WFC" / "1920black.bmp")))
+slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
+slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+slm_lib.ImageWriteComplete(board_number, timeout_ms)
+
+#%% Load LUT
+
+# slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "12bit_linear.lut").encode('utf-8'))
+# slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "slm5758_at675.lut").encode('utf-8'))
+# slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "utc_2025-06-26_12-12-56_slm0_at675.lut").encode('utf-8'))
+# slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "utc_2025-06-27_07-32-36_slm0_at675.lut").encode('utf-8'))
+slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "utc_2025-06-27_11-37-41_slm0_at675.lut").encode('utf-8'))
+
+#%% Load WFC
+
+slm_flat = np.asarray(Image.open(str(dirc_data / "WFC" / "slm5758_at675.bmp")))
+
+slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
+
+slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+slm_lib.ImageWriteComplete(board_number, timeout_ms)
+
+#%% Find pupil footprit on SLM
+
+pupil_radius = 100//2
+pupil_center_x = center_x
+pupil_center_y = center_y
+
+tilt_amplitude = 10
+
+zernike_coefficients = [0]*20
+zernike_coefficients[3] = 3
+
+# generate tilt
+tilt =  np.zeros([width.value*height.value], dtype=np.uint8)
+
+image_lib.Generate_Zernike(tilt.ctypes.data_as(ct.POINTER(ct.c_ubyte)), 
+                            width.value, height.value, 
+                            pupil_center_x, pupil_center_y,
+                            pupil_radius,
+                            0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+
+plt.imshow(np.reshape(tilt, (1152,1920)))
+
+#%% Load grey level 128 stripe diffraction pattern on slm
+
+grey = 128
+
+num_data_points = 256
+pixels_per_stripe = 16
+
+# allocate memory for the patterns to display on slm
+pattern = np.empty([width.value*height.value], np.uint8, 'C')
+
+# generate pattern
+image_lib.Generate_Stripe(pattern.ctypes.data_as(ct.POINTER(ct.c_ubyte)),
+                          width.value, height.value, 0, grey, pixels_per_stripe)
+
+# add slm_flat
+pattern = np.mod(pattern.astype('float64') + slm_flat.astype('float64'), 256).astype('uint8')
+
+# display pattern on slm
+slm_lib.Write_image(board_number, pattern.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+slm_lib.ImageWriteComplete(board_number, timeout_ms)
+
+#%% Setup camera
 
 # initialize settings
-
-cam.exp_time = 4e-3    # exposure time (s)
+cam.exp_time = 5e-3    # exposure time (s)
 cam.n_frames = 10      # acquire cubes of n_frames images
 cam.ID = 0             # ID for the data saved
-
 roi = False
-#roi = [1058, 1037, 100, 100]
 
-#%% Aquire image
+#%% Live view
 
-data = acquire(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = dirc, overwrite=True)
+live_view(acquire, cam, roi)
 
-if data.max() > 65000:
-    print("Image is saturated")
+#%% delete slm sdk
 
-#%% Post processing
-
-img = np.median(data, axis=0)
-
-#%% Pots
-
-fig, axs = plt.subplots(nrows=1,ncols=1)
-im = axs.imshow(img)
-
-axs.set_title("ORCA frame")
-plt.colorbar(im, ax=axs, fraction=0.046, pad=0.04)
-
-plt.figure()
-
-plt.plot(img[50,:])
-#plt.yscale('log')
-
-#%% SLM MEADOWLARK
-
-apply_defocus_on_slm(amp=10*500e-9)
+# Always call Delete_SDK before exiting
+slm_lib.Delete_SDK()
