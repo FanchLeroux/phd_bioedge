@@ -30,7 +30,7 @@ dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "
 
 # utc datetime now
 
-def utc_now():
+def get_utc_now():
     return datetime.datetime.utcnow().strftime("utc_%Y-%m-%d_%H-%M-%S")
 
 # Get Frames with ORCA
@@ -67,6 +67,30 @@ def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
         hdu.writeto(file_name, overwrite=overwrite)
     
     return image
+
+def live_view(get_frame_func, cam, roi, dirc = False, overwrite=True, interval=0.005):
+    
+    cam.n_frames = 1
+    
+    plt.ion()  # Turn on interactive mode
+
+    # First frame for setup
+    frame = get_frame_func(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)[0,:,:,]
+    is_color = frame.ndim == 3 and frame.shape[2] == 3
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(frame, cmap='viridis' if not is_color else None)
+    cbar = plt.colorbar(im, ax=ax)
+    title = fig.suptitle(f"Max value: {np.max(frame):.2f}", fontsize=24)
+
+    while plt.fignum_exists(fig.number):  # Loop while window is open
+        frame = get_frame_func(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)[0,:,:,]
+        im.set_data(frame)
+        im.set_clim(vmin=np.min(frame), vmax=np.max(frame))  # Adjust color scale
+        title.set_text(f"Max value: {np.max(frame):.2f}")  # Update title
+        plt.pause(interval)
+
+    plt.ioff()
 
 #%% Link camera ORCA
 
@@ -144,7 +168,7 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 grey = 128
 
 num_data_points = 256
-pixels_per_stripe = 8
+pixels_per_stripe = 16
 
 # allocate memory for the patterns to display on slm
 pattern = np.empty([width.value*height.value], np.uint8, 'C'); 
@@ -164,7 +188,7 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 #%% Setup camera
 
 # initialize settings
-cam.exp_time = 10e-3    # exposure time (s)
+cam.exp_time = 20e-3    # exposure time (s)
 cam.n_frames = 10      # acquire cubes of n_frames images
 cam.ID = 0             # ID for the data saved
 roi = False
@@ -188,9 +212,13 @@ plt.colorbar(im, ax=axs, fraction=0.046, pad=0.04)
 
 print(data.max())
 
+#%% Live view
+
+live_view(acquire, cam, roi)
+
 #%% set ROI around +1 or -1 diffraction order
 
-roi = [853, 915, 20, 20] # roi[0] is x coordinate, i.e column number
+roi = [894, 941, 20, 20] # roi[0] is x coordinate, i.e column number
 
 #%% Check ROI
 
@@ -209,6 +237,12 @@ plt.colorbar(im, ax=axs, fraction=0.046, pad=0.04)
 images = np.zeros([roi[2], roi[3], num_data_points])
 measurements = np.zeros((num_data_points, 2)) # 1st column : grey level ; # 2nd coloumn : intensity measurement
 
+# create measurements folder
+utc_now = get_utc_now()
+path_measurements = dirc_data / utc_now
+path_measurements.mkdir(exist_ok=True, parents=True)
+
+
 for grey in range(num_data_points):
     
     # generate pattern
@@ -216,7 +250,7 @@ for grey in range(num_data_points):
                               width.value, height.value, 0, grey, pixels_per_stripe)
     
     # add slm_flat
-    pattern = np.mod(pattern.astype('float64') + slm_flat.astype('float64'), 255).astype('uint8')
+    pattern = np.mod(pattern.astype('float64') + slm_flat.astype('float64'), 256).astype('uint8')
     
     # display pattern on slm
     slm_lib.Write_image(board_number, pattern.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
@@ -235,17 +269,15 @@ for grey in range(num_data_points):
     
     images[:,:,grey] = img
 
-utc_now = utc_now()
-
-np.save(dirc_data / (utc_now + "_LUT_images.npy"), images)
-np.save(dirc_data / (utc_now + "_LUT_measurements.npy"), measurements)
+np.save(path_measurements / (utc_now + "_LUT_images.npy"), images)
+np.save(path_measurements / (utc_now + "_LUT_measurements.npy"), measurements)
 
 # To visualize the stripe patterns :
 # plt.imshow(np.reshape(pattern, (height.value,width.value)))
 
 #%% save measurements under .csv file
 
-csv_file = pathlib.Path(dirc_data / (utc_now + "_csv") /"raw0.csv")
+csv_file = pathlib.Path(path_measurements / (utc_now + "_csv") /"raw0.csv")
 csv_file.parent.mkdir(exist_ok=True, parents=True)
 
 #%%
@@ -256,7 +288,7 @@ with open(csv_file, "w") as f:
 
 #%% save a .gif of the raw images
 
-make_gif(dirc_data / (utc_now + "_LUT_images.gif"), images, interval=50)
+make_gif(path_measurements / (utc_now + "_LUT_images.gif"), images, interval=50)
 
 #%% Plot raw measurements
 
@@ -265,6 +297,7 @@ plt.plot(measurements[:,1])
 plt.title("Raw intensity meadurements")
 plt.xlabel("Grey Level")
 plt.ylabel("Max Intensity on ORCA")
+plt.savefig(path_measurements / (utc_now + "_raw_measurements.jpg"))
 
 #%% delete slm sdk
 
