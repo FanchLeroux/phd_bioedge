@@ -186,17 +186,38 @@ slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)
                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
 slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
+#%% apply tilt on slm
+
+tilt_amplitude = 1000*np.pi # [rad]
+tilt = np.mod(get_tilt([1152, 1920], theta=45, amplitude = tilt_amplitude)/(2*np.pi), 256)
+
+#%%
+tilt = np.reshape(tilt, [1152*1920])
+tilt = np.mod(tilt+slm_flat, 256)
+tilt = tilt.astype(dtype=np.uint8)
+
+plt.imshow(np.reshape(tilt, [1152,1920]))
+
+#%%
+
+# display pattern on slm
+slm_lib.Write_image(board_number, tilt.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+slm_lib.ImageWriteComplete(board_number, timeout_ms)
+
 #%% Find pupil footprit on SLM
+
+tilt_amplitude = 20*np.pi # [rad]
 
 pupil_radius = 500
 pupil_center = [960,575]
-tilt_amplitude = 20*np.pi # [rad]
 
-phase_map = np.mod(get_slm_pupil_tilt(pupil_radius ,pupil_center, tilt_amplitude, theta=45)+slm_flat, 256)
-phase_map = phase_map.astype(dtype=np.uint8)
+
+pupil_tilt = np.mod(get_slm_pupil_tilt(pupil_radius ,pupil_center, tilt_amplitude, theta=45)+slm_flat, 256)
+pupil_tilt = pupil_tilt.astype(dtype=np.uint8)
 
 # display pattern on slm
-slm_lib.Write_image(board_number, phase_map.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+slm_lib.Write_image(board_number, pupil_tilt.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
 slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
