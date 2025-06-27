@@ -95,14 +95,22 @@ def live_view(get_frame_func, cam, roi, dirc = False, overwrite=True, interval=0
     plt.ioff()
 
 def get_slm_pupil_tilt(pupil_radius, pupil_center, delta_phi, theta=0):
+    
     phase_map = np.zeros((1152,1920))
     pupil = get_circular_pupil(2*pupil_radius)
-    tilt = get_tilt(pupil.shape, amplitude=delta_phi)
+    tilt = get_tilt(pupil.shape, amplitude=1., theta=theta)
     pupil = tilt * pupil
+    pupil = delta_phi*(pupil - pupil.min())/(pupil.max() - pupil.min())
     phase_map[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
               pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius] = pupil
+    
+    phase_map = (phase_map/(2*np.pi) * 255).astype(np.uint8)
+    
+    phase_map = np.reshape(phase_map, [1152*1920], 'C')
+    
     return phase_map
     
+#plt.imshow(np.reshape(get_slm_pupil_tilt(100, [960,575], 1., theta=45), [1152,1920]))
 
 #%% Link camera ORCA
 
@@ -173,34 +181,24 @@ slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "utc_2025-06-27_11-3
 #%% Load WFC
 
 slm_flat = np.asarray(Image.open(str(dirc_data / "WFC" / "slm5758_at675.bmp")))
-
 slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
-
 slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
 slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
 #%% Find pupil footprit on SLM
 
-pupil_radius = 100//2
-pupil_center_x = center_x
-pupil_center_y = center_y
+pupil_radius = 500
+pupil_center = [960,575]
+tilt_amplitude = 20*np.pi # [rad]
 
-tilt_amplitude = 10
+phase_map = np.mod(get_slm_pupil_tilt(pupil_radius ,pupil_center, tilt_amplitude, theta=45)+slm_flat, 256)
+phase_map = phase_map.astype(dtype=np.uint8)
 
-zernike_coefficients = [0]*20
-zernike_coefficients[3] = 3
-
-# generate tilt
-tilt =  np.zeros([width.value*height.value], dtype=np.uint8)
-
-image_lib.Generate_Zernike(tilt.ctypes.data_as(ct.POINTER(ct.c_ubyte)), 
-                            width.value, height.value, 
-                            pupil_center_x, pupil_center_y,
-                            pupil_radius,
-                            0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
-
-plt.imshow(np.reshape(tilt, (1152,1920)))
+# display pattern on slm
+slm_lib.Write_image(board_number, phase_map.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
 #%% Load grey level 128 stripe diffraction pattern on slm
 
