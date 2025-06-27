@@ -188,10 +188,8 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
 #%% apply tilt on slm
 
-tilt_amplitude = 1000*np.pi # [rad]
-tilt = np.mod(get_tilt([1152, 1920], theta=45, amplitude = tilt_amplitude)/(2*np.pi), 256)
-
-#%%
+tilt_amplitude = 20*np.pi # [rad]
+tilt = np.mod(get_tilt([1152, 1920], theta=45, amplitude = tilt_amplitude)/(2*np.pi) * 255, 256)
 tilt = np.reshape(tilt, [1152*1920])
 tilt = np.mod(tilt+slm_flat, 256)
 tilt = tilt.astype(dtype=np.uint8)
