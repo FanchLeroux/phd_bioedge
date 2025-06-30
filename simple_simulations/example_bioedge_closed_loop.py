@@ -361,6 +361,13 @@ if param['modal_basis'] == 'KL':
 elif param['modal_basis'] == 'poke':
     M2C = np.identity(dm.nValidAct)
     
+#%% Save Modal basis OPD in tel.pupil as .npy file to fill SLM on Bi-O-Edge prototype bench
+
+dm.coefs = M2C
+tel*dm
+
+np.save(dirc / "modal_basis_OPD_in_tel_pupil.npy", tel.OPD)
+    
 #%% ----------------------- Grey Bi-O-Edge ---------------------------- #
 
 # grey bioedge
