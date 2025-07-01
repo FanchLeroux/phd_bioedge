@@ -30,6 +30,8 @@ from OOPAO.Source import Source
 from OOPAO.DeformableMirror import DeformableMirror
 from OOPAO.calibration.compute_KL_modal_basis import compute_M2C
 
+from OOPAO.Zernike import Zernike
+
 from scipy.ndimage import zoom
 
 #%%
@@ -170,8 +172,8 @@ if num_boards_found.value == 1:
     center_y = ct.c_uint(height.value//2)
 
 # By default load a linear LUT and a black WFC
-slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "12bit_linear.lut").encode('utf-8'))
-slm_flat = np.asarray(Image.open(str(dirc_data / "WFC" / "1920black.bmp")))
+slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
+slm_flat = np.asarray(Image.open(str(dirc_data / "slm" / "WFC" / "1920black.bmp")))
 slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
 slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
@@ -181,11 +183,11 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
 # slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "12bit_linear.lut").encode('utf-8'))
 # slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "slm5758_at675.lut").encode('utf-8'))
-slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "utc_2025-06-27_11-37-41_slm0_at675.lut").encode('utf-8'))
+slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06-27_11-37-41_slm0_at675.lut").encode('utf-8'))
 
 #%% Load WFC
 
-slm_flat = np.asarray(Image.open(str(dirc_data / "WFC" / "slm5758_at675.bmp")), dtype=np.float64)
+slm_flat = np.asarray(Image.open(str(dirc_data / "slm" / "WFC" / "slm5758_at675.bmp")), dtype=np.float64)
 slm_flat = slm_flat / slm_flat.max() * 255.0
 slm_flat = slm_flat.astype(dtype=np.uint8)
 slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
@@ -201,7 +203,6 @@ tilt = get_tilt([1920, 1152], theta=np.deg2rad(tilt_angle), amplitude = tilt_amp
 tilt = np.reshape(tilt, [1152*1920])
 tilt = np.mod(tilt+slm_flat, 256)
 tilt = tilt.astype(dtype=np.uint8)
-
 
 plt.figure(); plt.imshow(np.reshape(tilt, [1152,1920]))
 
@@ -257,12 +258,16 @@ KL_modes_from_simulation = KL_modes_from_simulation * 255/(2*np.pi)
 
 # offset at half the dynamic
 KL_modes_from_simulation[KL_modes_from_simulation!=0] = KL_modes_from_simulation\
-    [KL_modes_from_simulation!=0] + 128
+    [KL_modes_from_simulation!=0] + 128.0
 
 # adapt to slm shape
 KL_modes_slm_shape = zoom(KL_modes_from_simulation, (2*pupil_radius/KL_modes_from_simulation.shape[0],
                                                     2*pupil_radius/KL_modes_from_simulation.shape[0],
                                                     1))
+
+# multiply by pupil
+KL_modes_slm_shape = KL_modes_slm_shape * get_circular_pupil(2*pupil_radius)[:,:,np.newaxis]
+
 
 np.save(dirc_data / "slm" / "slm_phase_screens" 
                                  / "KL_basis" / "KL_modes_slm_shape.npy", KL_modes_slm_shape)
@@ -276,7 +281,26 @@ KL_modes_full_slm[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
 # add WFC
 # KL_modes_full_slm = np.reshape(KL_modes_full_slm, [1152*1920, KL_modes_full_slm.shape[2]])
 # KL_modes_full_slm = KL_modes_full_slm+np.reshape(slm_flat, (slm_flat.shape[0], 1))
-    
+
+KL_modes_slm = np.empty([KL_modes_full_slm.shape[0]*KL_modes_full_slm.shape[1], KL_modes_full_slm.shape[2]])
+
+for k in range(KL_modes_full_slm.shape[2]):
+    KL_modes_slm[:,k] = np.reshape(KL_modes_full_slm[:,:,k], 
+                                    [KL_modes_full_slm.shape[0]*KL_modes_full_slm.shape[1]])
+    KL_modes_slm[:,k] = np.mod(KL_modes_slm[:,k] + slm_flat, 256)
+
+KL_modes_slm = KL_modes_slm.astype(dtype=np.uint8)
+
+#%%
+
+plt.figure(); plt.imshow(np.reshape(KL_modes_slm[:,0], [1152,1920]))
+
+#%%
+
+slm_lib.Write_image(board_number, KL_modes_slm[:,0].ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+slm_lib.ImageWriteComplete(board_number, timeout_ms)
+
 
 #%% Setup camera
 
