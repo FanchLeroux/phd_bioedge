@@ -22,7 +22,7 @@ from astropy.io import fits
 
 from fanch.plots import make_gif
 
-from fanch.tools.miscellaneous import get_tilt, get_circular_pupil
+from fanch.tools.miscellaneous import get_tilt, get_circular_pupil, zeros_padding
 
 from OOPAO.Telescope import Telescope
 from OOPAO.Atmosphere import Atmosphere
@@ -120,6 +120,15 @@ def get_slm_pupil_tilt(pupil_radius, pupil_center, delta_phi, theta=0, slm_shape
     
     return phase_map
 
+#%% parameters
+
+# pupil radius in SLM pixels
+pupil_radius = 550
+
+# pupil center on slm
+pupil_center = [860,575]
+
+amplitude_calibration = 1 # (std) [rad]
 
 #%% Link camera ORCA
 
@@ -213,12 +222,6 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
 #%% Find pupil footprit on SLM
 
-# pupil radius in SLM pixels
-pupil_radius = 550
-
-# pupil center on slm
-pupil_center = [860,575]
-
 # generate SLM phase screen
 pupil = get_circular_pupil(2*pupil_radius)
 tilt_in_pupil = np.zeros([1152,1920])
@@ -239,8 +242,6 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 plt.figure(); plt.imshow(np.reshape(tilt_in_pupil, [1152,1920]))
 
 #%% Compute KL basis
-
-amplitude_calibration = 1 # (std) [rad]
 
 # get KL modes from OOPAO simulation
 KL_modes_from_simulation = np.load(dirc_data / "slm" / "slm_phase_screens" 
@@ -340,14 +341,26 @@ plt.figure(); plt.imshow(np.reshape(zernike_modes_slm[:,0], [1152,1920]))
 
 #%% apply zernike on slm
 
-zernike_mode = zernike_modes_slm[:,0]
+# zernike_mode = zernike_modes_slm[:,0]
+
+# # display pattern on slm
+# slm_lib.Write_image(board_number, zernike_mode.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+#                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+# slm_lib.ImageWriteComplete(board_number, timeout_ms)
+
+# plt.figure(); plt.imshow(np.reshape(zernike_mode, [1152,1920]))
+
+tilt_in_pupil = zernike_modes_full_slm[:,:,0]
+tilt_in_pupil = np.reshape(tilt_in_pupil, [1152*1920])
+tilt_in_pupil = np.mod(tilt_in_pupil+slm_flat, 256)
+tilt_in_pupil = tilt_in_pupil.astype(dtype=np.uint8)
 
 # display pattern on slm
-slm_lib.Write_image(board_number, zernike_mode.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+slm_lib.Write_image(board_number, tilt_in_pupil.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
 slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
-plt.figure(); plt.imshow(np.reshape(zernike_mode, [1152,1920]))
+plt.figure(); plt.imshow(np.reshape(tilt_in_pupil, [1152,1920]))
 
 #%% Load WFC
 
@@ -375,7 +388,7 @@ tilt_in_pupil[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
 
 tilt = get_tilt([1920, 1152], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
 #tilt_in_pupil = tilt_in_pupil * tilt
-tilt_in_pupil = zernike_modes_full_slm[:,:,0]
+tilt_in_pupil = zernike_modes_full_slm[:,:,6]
 tilt_in_pupil = np.reshape(tilt_in_pupil, [1152*1920])
 tilt_in_pupil = np.mod(tilt_in_pupil+slm_flat, 256)
 tilt_in_pupil = tilt_in_pupil.astype(dtype=np.uint8)
@@ -386,13 +399,7 @@ slm_lib.Write_image(board_number, tilt_in_pupil.ctypes.data_as(ct.POINTER(ct.c_u
 slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
 plt.figure(); plt.imshow(np.reshape(tilt_in_pupil, [1152,1920]))
-
-#%%
-
-plt.figure()
-plt.plot(tilt_in_pupil[:,500], label="tilt_in_pupil")
-plt.plot(zernike_mode[:,500], label="zernike_mode")
-plt.legend()
+plt.figure(); plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(np.exp(1j * zernike_modes_full_slm[:,:,6] * 2*np.pi / 255))))**2)
 
 #%% Setup camera
 
