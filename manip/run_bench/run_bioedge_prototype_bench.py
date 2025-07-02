@@ -327,40 +327,20 @@ zernike_modes_full_slm = np.zeros([1152,1920,zernike_modes.shape[2]])
 zernike_modes_full_slm[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
               pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius,:] = zernike_modes
 
-# reshape 2D maps in vectors and add WFC
-zernike_modes_slm = np.empty([zernike_modes_full_slm.shape[0]*zernike_modes_full_slm.shape[1], zernike_modes_full_slm.shape[2]])
-
-for k in range(zernike_modes_full_slm.shape[2]):
-    zernike_modes_slm[:,k] = np.reshape(zernike_modes_full_slm[:,:,k], 
-                                    [zernike_modes_full_slm.shape[0]*zernike_modes_full_slm.shape[1]], 'C')
-    zernike_modes_slm[:,k] = np.mod(zernike_modes_slm[:,k] + slm_flat, 256)
-
-zernike_modes_slm = zernike_modes_slm.astype(dtype=np.uint8)
-
-plt.figure(); plt.imshow(np.reshape(zernike_modes_slm[:,0], [1152,1920]))
-
 #%% apply zernike on slm
 
-# zernike_mode = zernike_modes_slm[:,0]
-
-# # display pattern on slm
-# slm_lib.Write_image(board_number, zernike_mode.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
-#                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
-# slm_lib.ImageWriteComplete(board_number, timeout_ms)
-
-# plt.figure(); plt.imshow(np.reshape(zernike_mode, [1152,1920]))
-
-tilt_in_pupil = zernike_modes_full_slm[:,:,0]
-tilt_in_pupil = np.reshape(tilt_in_pupil, [1152*1920])
-tilt_in_pupil = np.mod(tilt_in_pupil+slm_flat, 256)
-tilt_in_pupil = tilt_in_pupil.astype(dtype=np.uint8)
+zernike_mode = zernike_modes_full_slm[:,:,6]
+zernike_mode = np.reshape(zernike_mode, [1152*1920])
+zernike_mode = np.mod(zernike_mode+slm_flat, 256)
+zernike_mode = zernike_mode.astype(dtype=np.uint8)
 
 # display pattern on slm
-slm_lib.Write_image(board_number, tilt_in_pupil.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
+slm_lib.Write_image(board_number, zernike_mode.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
 slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
-plt.figure(); plt.imshow(np.reshape(tilt_in_pupil, [1152,1920]))
+plt.figure(); plt.imshow(np.reshape(zernike_mode, [1152,1920]))
+plt.figure(); plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(np.exp(1j * zernike_modes_full_slm[:,:,6] * 2*np.pi / 255))))**2)
 
 #%% Load WFC
 
@@ -371,35 +351,6 @@ slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
 slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
 slm_lib.ImageWriteComplete(board_number, timeout_ms)
-
-#%% Find pupil footprit on SLM
-
-# pupil radius in SLM pixels
-pupil_radius = 550
-
-# pupil center on slm
-pupil_center = [860,575]
-
-# generate SLM phase screen
-pupil = get_circular_pupil(2*pupil_radius)
-tilt_in_pupil = np.zeros([1152,1920])
-tilt_in_pupil[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
-              pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius] = pupil
-
-tilt = get_tilt([1920, 1152], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
-#tilt_in_pupil = tilt_in_pupil * tilt
-tilt_in_pupil = zernike_modes_full_slm[:,:,6]
-tilt_in_pupil = np.reshape(tilt_in_pupil, [1152*1920])
-tilt_in_pupil = np.mod(tilt_in_pupil+slm_flat, 256)
-tilt_in_pupil = tilt_in_pupil.astype(dtype=np.uint8)
-
-# display pattern on slm
-slm_lib.Write_image(board_number, tilt_in_pupil.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
-                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
-slm_lib.ImageWriteComplete(board_number, timeout_ms)
-
-plt.figure(); plt.imshow(np.reshape(tilt_in_pupil, [1152,1920]))
-plt.figure(); plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(np.exp(1j * zernike_modes_full_slm[:,:,6] * 2*np.pi / 255))))**2)
 
 #%% Setup camera
 
@@ -426,17 +377,3 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
 # Always call Delete_SDK before exiting
 slm_lib.Delete_SDK()
-
-#%% debug
-
-tilt_10 = np.asarray(Image.open(pathlib.Path("D:/Francois_Leroux/data/slm/slm_phase_screens/tilt_X_10.bmp")))
-
-slm_flat = np.asarray(Image.open(str(dirc_data / "slm" / "WFC" / "slm5758_at675.bmp")), dtype=np.float64)
-plt.imshow(slm_flat)
-
-slm_flat_rad = slm_flat/slm_flat.max() * 2*np.pi
-slm_fat_rad_unwrap = np.unwrap(slm_flat_rad, discont=np.pi)
-
-
-
-
