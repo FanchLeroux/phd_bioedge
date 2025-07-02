@@ -24,11 +24,7 @@ from fanch.plots import make_gif
 
 from fanch.tools.miscellaneous import get_tilt, get_circular_pupil, zeros_padding
 
-from OOPAO.Telescope import Telescope
-from OOPAO.Atmosphere import Atmosphere
-from OOPAO.Source import Source
-from OOPAO.DeformableMirror import DeformableMirror
-from OOPAO.calibration.compute_KL_modal_basis import compute_M2C
+from fanch.
 
 from OOPAO.Zernike import Zernike
 
@@ -92,7 +88,7 @@ def live_view(get_frame_func, cam, roi, dirc = False, overwrite=True, interval=0
 
     fig, ax = plt.subplots()
     im = ax.imshow(frame, cmap='viridis' if not is_color else None)
-    cbar = plt.colorbar(im, ax=ax)
+    plt.colorbar(im, ax=ax)
     title = fig.suptitle(f"Max value: {np.max(frame):.2f}", fontsize=24)
 
     while plt.fignum_exists(fig.number):  # Loop while window is open
