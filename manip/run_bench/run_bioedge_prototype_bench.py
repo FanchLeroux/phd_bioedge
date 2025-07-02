@@ -120,6 +120,22 @@ def get_slm_pupil_tilt(pupil_radius, pupil_center, delta_phi, theta=0, slm_shape
     
     return phase_map
 
+def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920]):
+    
+    if slm_flat.dtype == np.dtype("bool"):
+        slm_flat = np.zeros([slm_shape[0]*slm_shape[1]])
+    
+    phase = np.reshape(phase, [slm_shape[0]*slm_shape[1]])
+    phase = np.mod(phase+slm_flat, 256)
+    phase = phase.astype(dtype=np.uint8)
+
+    # display pattern on slm
+    slm_lib.Write_image(board_number, phase.ctypes.data_as(ct.POINTER(ct.c_ubyte)), slm_shape[0]*slm_shape[1], 
+                        wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+    slm_lib.ImageWriteComplete(board_number, timeout_ms)
+    
+    return 0
+
 #%% parameters
 
 # pupil radius in SLM pixels
@@ -341,6 +357,14 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
 plt.figure(); plt.imshow(np.reshape(zernike_mode, [1152,1920]))
 plt.figure(); plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(np.exp(1j * zernike_modes_full_slm[:,:,6] * 2*np.pi / 255))))**2)
+
+#%%
+
+display_phase_on_slm(zernike_modes_full_slm[:,:,6], slm_flat, slm_shape=[1152,1920])
+
+#%%
+
+display_phase_on_slm(slm_flat)
 
 #%% Load WFC
 
