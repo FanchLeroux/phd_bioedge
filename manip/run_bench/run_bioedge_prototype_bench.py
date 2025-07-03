@@ -24,8 +24,7 @@ from fanch.plots import make_gif
 
 from fanch.tools.miscellaneous import get_tilt, get_circular_pupil, zeros_padding
 
-from fanch.
-
+from OOPAO.Telescope import Telescope
 from OOPAO.Zernike import Zernike
 
 from scipy.ndimage import zoom
@@ -116,10 +115,13 @@ def get_slm_pupil_tilt(pupil_radius, pupil_center, delta_phi, theta=0, slm_shape
     
     return phase_map
 
-def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920]):
+def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], return_command_vector=False):
     
     if slm_flat.dtype == np.dtype("bool"):
         slm_flat = np.zeros([slm_shape[0]*slm_shape[1]])
+    
+    else:
+        slm_flat = np.reshape(slm_flat, [slm_shape[0]*slm_shape[1]])
     
     phase = np.reshape(phase, [slm_shape[0]*slm_shape[1]])
     phase = np.mod(phase+slm_flat, 256)
@@ -130,15 +132,21 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920]):
                         wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
     slm_lib.ImageWriteComplete(board_number, timeout_ms)
     
-    return 0
+    if return_command_vector:
+        return phase
+    else:
+        return None
 
 #%% parameters
+
+# slm shape
+slm_shape = [1152,1920]
 
 # pupil radius in SLM pixels
 pupil_radius = 550
 
 # pupil center on slm
-pupil_center = [860,575]
+pupil_center = [960,576]
 
 amplitude_calibration = 1 # (std) [rad]
 
@@ -211,26 +219,16 @@ slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06
 slm_flat = np.asarray(Image.open(str(dirc_data / "slm" / "WFC" / "slm5758_at675.bmp")), dtype=np.float64)
 slm_flat = slm_flat / slm_flat.max() * 255.0
 slm_flat = slm_flat.astype(dtype=np.uint8)
-slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
-slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
-                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
-slm_lib.ImageWriteComplete(board_number, timeout_ms)
+display_phase_on_slm(slm_flat)
 
 #%% apply tilt on slm
 
 tilt_amplitude = -50.0*np.pi # [rad]
 tilt_angle = -90.0 # [deg]
 tilt = get_tilt([1920, 1152], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
-tilt = np.reshape(tilt, [1152*1920])
-tilt = np.mod(tilt+slm_flat, 256)
-tilt = tilt.astype(dtype=np.uint8)
 
-plt.figure(); plt.imshow(np.reshape(tilt, [1152,1920]))
-
-# display pattern on slm
-slm_lib.Write_image(board_number, tilt.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
-                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
-slm_lib.ImageWriteComplete(board_number, timeout_ms)
+command = display_phase_on_slm(tilt, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Find pupil footprit on SLM
 
@@ -239,80 +237,10 @@ pupil = get_circular_pupil(2*pupil_radius)
 tilt_in_pupil = np.zeros([1152,1920])
 tilt_in_pupil[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
               pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius] = pupil
-
-tilt = get_tilt([1920, 1152], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
 tilt_in_pupil = tilt_in_pupil * tilt
-tilt_in_pupil = np.reshape(tilt_in_pupil, [1152*1920])
-tilt_in_pupil = np.mod(tilt_in_pupil+slm_flat, 256)
-tilt_in_pupil = tilt_in_pupil.astype(dtype=np.uint8)
 
-# display pattern on slm
-slm_lib.Write_image(board_number, tilt_in_pupil.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
-                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
-slm_lib.ImageWriteComplete(board_number, timeout_ms)
-
-plt.figure(); plt.imshow(np.reshape(tilt_in_pupil, [1152,1920]))
-
-#%% Compute KL basis
-
-# get KL modes from OOPAO simulation
-KL_modes_from_simulation = np.load(dirc_data / "slm" / "slm_phase_screens" 
-                                 / "KL_basis" / "modal_basis_OPD_in_tel_pupil.npy")
-
-# Keep only the first modes to speed up the computations
-KL_modes_from_simulation = KL_modes_from_simulation[:,:,:10]
-
-# normalize in std and consider amplitude_calibration
-KL_modes_from_simulation = amplitude_calibration * (KL_modes_from_simulation\
-                                                    /np.std(KL_modes_from_simulation, axis=(0,1)))
-
-# scale for 2*np.pi <=> 255
-KL_modes_from_simulation = KL_modes_from_simulation * 255/(2*np.pi)
-
-# offset at half the dynamic
-KL_modes_from_simulation[KL_modes_from_simulation!=0] = KL_modes_from_simulation\
-    [KL_modes_from_simulation!=0] + 128.0
-
-# adapt to slm shape
-KL_modes_slm_shape = zoom(KL_modes_from_simulation, (2*pupil_radius/KL_modes_from_simulation.shape[0],
-                                                    2*pupil_radius/KL_modes_from_simulation.shape[0],
-                                                    1))
-
-# multiply by pupil
-KL_modes_slm_shape = KL_modes_slm_shape * get_circular_pupil(2*pupil_radius)[:,:,np.newaxis]
-
-
-np.save(dirc_data / "slm" / "slm_phase_screens" 
-                                 / "KL_basis" / "KL_modes_slm_shape.npy", KL_modes_slm_shape)
-
-#%%
-
-KL_modes_full_slm = np.zeros([1152,1920,KL_modes_slm_shape.shape[2]])
-
-KL_modes_full_slm[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
-              pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius,:] = KL_modes_slm_shape[:,:,:]
-# add WFC
-# KL_modes_full_slm = np.reshape(KL_modes_full_slm, [1152*1920, KL_modes_full_slm.shape[2]])
-# KL_modes_full_slm = KL_modes_full_slm+np.reshape(slm_flat, (slm_flat.shape[0], 1))
-
-KL_modes_slm = np.empty([KL_modes_full_slm.shape[0]*KL_modes_full_slm.shape[1], KL_modes_full_slm.shape[2]])
-
-for k in range(KL_modes_full_slm.shape[2]):
-    KL_modes_slm[:,k] = np.reshape(KL_modes_full_slm[:,:,k], 
-                                    [KL_modes_full_slm.shape[0]*KL_modes_full_slm.shape[1]])
-    KL_modes_slm[:,k] = np.mod(KL_modes_slm[:,k] + slm_flat, 256)
-
-KL_modes_slm = KL_modes_slm.astype(dtype=np.uint8)
-
-#%%
-
-plt.figure(); plt.imshow(np.reshape(KL_modes_slm[:,0], [1152,1920]))
-
-#%%
-
-slm_lib.Write_image(board_number, KL_modes_slm[:,0].ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
-                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
-slm_lib.ImageWriteComplete(board_number, timeout_ms)
+command = display_phase_on_slm(tilt_in_pupil, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Compute Zernike basis
 
@@ -341,36 +269,19 @@ zernike_modes_full_slm[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius
 
 #%% apply zernike on slm
 
-zernike_mode = zernike_modes_full_slm[:,:,6]
-zernike_mode = np.reshape(zernike_mode, [1152*1920])
-zernike_mode = np.mod(zernike_mode+slm_flat, 256)
-zernike_mode = zernike_mode.astype(dtype=np.uint8)
+n_mode = 9
+command = display_phase_on_slm(zernike_modes_full_slm[:,:,n_mode], slm_flat, return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
-# display pattern on slm
-slm_lib.Write_image(board_number, zernike_mode.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
-                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
-slm_lib.ImageWriteComplete(board_number, timeout_ms)
-
-plt.figure(); plt.imshow(np.reshape(zernike_mode, [1152,1920]))
-plt.figure(); plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(np.exp(1j * zernike_modes_full_slm[:,:,6] * 2*np.pi / 255))))**2)
-
-#%%
-
-display_phase_on_slm(zernike_modes_full_slm[:,:,6], slm_flat, slm_shape=[1152,1920])
-
-#%%
-
-display_phase_on_slm(slm_flat)
+plt.figure()
+plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(zeros_padding(np.exp(1j * 
+                                   zernike_modes_full_slm[:,:,n_mode] * 
+                                   2*np.pi / 255),4)))**2))
+plt.title("Focal plane irradiance")
 
 #%% Load WFC
 
-slm_flat = np.asarray(Image.open(str(dirc_data / "slm" / "WFC" / "slm5758_at675.bmp")), dtype=np.float64)
-slm_flat = slm_flat / slm_flat.max() * 255.0
-slm_flat = slm_flat.astype(dtype=np.uint8)
-slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
-slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
-                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
-slm_lib.ImageWriteComplete(board_number, timeout_ms)
+display_phase_on_slm(slm_flat)
 
 #%% Setup camera
 
@@ -387,11 +298,7 @@ live_view(acquire, cam, roi)
 #%% Load a linear LUT and a black WFC
 
 slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
-slm_flat = np.asarray(Image.open(str(dirc_data / "slm" / "WFC" / "1920black.bmp")))
-slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
-slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)), height.value*width.value, 
-                    wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
-slm_lib.ImageWriteComplete(board_number, timeout_ms)
+display_phase_on_slm(np.zeros(slm_shape))
 
 #%% delete slm sdk
 
