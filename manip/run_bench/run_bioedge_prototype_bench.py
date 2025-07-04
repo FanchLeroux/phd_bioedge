@@ -24,6 +24,8 @@ from fanch.plots import make_gif
 
 from fanch.tools.miscellaneous import get_tilt, get_circular_pupil, zeros_padding
 
+from fanch.basis.fourier import compute_real_fourier_basis
+
 from OOPAO.Telescope import Telescope
 from OOPAO.Zernike import Zernike
 
@@ -140,7 +142,10 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], retur
 #%% parameters
 
 # slm shape
-slm_shape = [1152,1920]
+slm_shape = np.array([1152,1920])
+
+# number of phase measurements point
+n_subaperture = 20
 
 # pupil radius in SLM pixels
 pupil_radius = 550
@@ -149,10 +154,6 @@ pupil_radius = 550
 pupil_center = [960,576]
 
 amplitude_calibration = 1 # (std) [rad]
-
-#%% Link camera ORCA
-
-cam = DCAM.DCAMCamera()
 
 #%% Link slm MEADOWLARK
 
@@ -282,6 +283,14 @@ plt.title("Focal plane irradiance")
 #%% Load WFC
 
 display_phase_on_slm(slm_flat)
+
+#%% Load fourier modes
+
+
+
+#%% Link camera ORCA
+
+cam = DCAM.DCAMCamera()
 
 #%% Setup camera
 

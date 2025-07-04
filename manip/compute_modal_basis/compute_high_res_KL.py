@@ -5,6 +5,10 @@ Created on Mon May  6 14:01:52 2024
 @author: fleroux
 """
 
+import pathlib
+
+import numpy as np
+
 from OOPAO.Telescope import Telescope
 from OOPAO.Source import Source
 from OOPAO.Atmosphere import Atmosphere
@@ -15,8 +19,12 @@ from OOPAO.tools.displayTools import displayMap
 
 #%%
 
+dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "data"
+
+#%%
+
 n_subaperture = 20
-n_pixels_in_slm_pupil = 500
+n_pixels_in_slm_pupil = 1000
 
 #%% -----------------------     TELESCOPE   ----------------------------------
 
@@ -89,18 +97,18 @@ dm_HR = DeformableMirror(telescope  = tel_HR,                        # Telescope
 # use the default definition of the KL modes with forced Tip and Tilt. For more complex KL modes, consider the use of the compute_KL_basis function. 
 M2C_KL = compute_KL_basis(tel, atm, dm, lim = 1e-3) # matrix to apply modes on the DM
 
-#%%
+#%% compute high res KL modes
 
-# apply the 10 first KL modes
-dm.coefs = M2C_KL[:,:10]
-# propagate through the DM
-ngs*tel*dm
-# show the first 10 KL modes applied on the DM
-displayMap(tel.OPD)
-
-dm_HR.coefs = M2C_KL[:,:10]
+dm_HR.coefs = M2C_KL
 
 # propagate through the DM
 ngs*tel_HR*dm_HR
-# show the first 10 KL modes applied on the DM
-displayMap(tel_HR.OPD)
+KL_modes = tel_HR.OPD
+
+#%%
+
+np.save(dirc_data / "slm" / "modal_basis" / "KL_modes" / ("KL_modes_" + 
+                                                               str(n_pixels_in_slm_pupil) + 
+                                                               "_pixels_in_slm_pupil_" +
+                                                               str(n_subaperture) +
+                                                               "_subapertures.npy"), KL_modes)
