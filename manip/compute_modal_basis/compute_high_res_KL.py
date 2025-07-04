@@ -24,7 +24,7 @@ dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "
 #%%
 
 n_subaperture = 20
-n_pixels_in_slm_pupil = 1000
+n_pixels_in_slm_pupil = 600
 
 #%% -----------------------     TELESCOPE   ----------------------------------
 
@@ -104,6 +104,18 @@ dm_HR.coefs = M2C_KL
 # propagate through the DM
 ngs*tel_HR*dm_HR
 KL_modes = tel_HR.OPD
+
+# std normalization
+KL_modes = KL_modes / np.std(KL_modes, axis=(0,1))
+
+# set the mean value around pi
+KL_modes = KL_modes + np.pi
+
+# scale from 0 to 255 for a 2pi phase shift
+KL_modes = KL_modes * 255/(2*np.pi)
+
+# convert to 8-bit integers
+KL_modes = KL_modes.astype(np.uint8)
 
 #%%
 

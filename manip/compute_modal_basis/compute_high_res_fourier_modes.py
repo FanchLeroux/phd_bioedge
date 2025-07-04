@@ -24,6 +24,21 @@ n_pixels_in_slm_pupil = 600
 
 fourier_modes = compute_real_fourier_basis(n_pixels_in_slm_pupil, return_map=False, npx_computation_limit=n_subaperture)
 
+# remove piston
+fourier_modes = fourier_modes[:,:,1:]
+
+# std normalization
+fourier_modes = fourier_modes / np.std(fourier_modes, axis=(0,1))
+
+# set the mean value around pi
+fourier_modes = fourier_modes + np.pi
+
+# scale from 0 to 255 for a 2pi phase shift
+fourier_modes = fourier_modes * 255/(2*np.pi)
+
+# convert to 8-bit integers
+fourier_modes = fourier_modes.astype(np.uint8)
+
 np.save(dirc_data / "slm" / "modal_basis" / "fourier_modes" / ("fourier_modes_" + 
                                                                str(n_pixels_in_slm_pupil) + 
                                                                "_pixels_in_slm_pupil_" +
