@@ -148,10 +148,10 @@ slm_shape = np.array([1152,1920])
 n_subaperture = 20
 
 # pupil radius in SLM pixels
-pupil_radius = 550
+pupil_radius = 500
 
 # pupil center on slm
-pupil_center = [960,576]
+pupil_center = [576,960]
 
 amplitude_calibration = 1 # (std) [rad]
 
@@ -265,29 +265,73 @@ zernike_modes = zernike_modes * tel.pupil[:,:,np.newaxis]
 
 zernike_modes_full_slm = np.zeros([1152,1920,zernike_modes.shape[2]])
 
-zernike_modes_full_slm[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
-              pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius,:] = zernike_modes
+zernike_modes_full_slm[pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius,
+              pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,:] = zernike_modes
 
 #%% apply zernike on slm
 
-n_mode = 9
-command = display_phase_on_slm(zernike_modes_full_slm[:,:,n_mode], slm_flat, return_command_vector=True)
+n_mode = 1
+command = display_phase_on_slm(10*zernike_modes_full_slm[:,:,n_mode], slm_flat, return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
-plt.figure()
-plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(zeros_padding(np.exp(1j * 
-                                   zernike_modes_full_slm[:,:,n_mode] * 
-                                   2*np.pi / 255),4)))**2))
-plt.title("Focal plane irradiance")
+# plt.figure()
+# plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(zeros_padding(np.exp(1j * 
+#                                    zernike_modes_full_slm[:,:,n_mode] * 
+#                                    2*np.pi / 255),4)))**2))
+# plt.title("Focal plane irradiance")
 
 #%% Load WFC
 
 display_phase_on_slm(slm_flat)
 
+#%% Load zernike modes
+
+zernike_modes = np.load(dirc_data / "slm" / "modal_basis" / "zernike_modes" / 
+                        "zernike_modes_600_pixels_in_slm_pupil_20_subapertures.npy")
+
+zernike_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], zernike_modes.shape[2]))
+zernike_modes_full_slm[pupil_center[0]-zernike_modes.shape[0]//2:
+              pupil_center[0]+zernike_modes.shape[0]//2,
+              pupil_center[1]-zernike_modes.shape[1]//2:
+              pupil_center[1]+zernike_modes.shape[1]//2, :] = zernike_modes
+
+#%% display zernike mode on slm
+
+command = display_phase_on_slm(zernike_modes_full_slm[:,:,0], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
+#%% Load KL modes
+
+KL_modes = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" / 
+                        "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy")
+
+KL_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], KL_modes.shape[2]))
+KL_modes_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
+              pupil_center[0]+KL_modes.shape[0]//2,
+              pupil_center[1]-KL_modes.shape[1]//2:
+              pupil_center[1]+KL_modes.shape[1]//2, :] = KL_modes
+
+#%% display KL mode on slm
+
+command = display_phase_on_slm(KL_modes_full_slm[:,:,3], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
 #%% Load fourier modes
 
+fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
+                        "fourier_modes_600_pixels_in_slm_pupil_20_subapertures.npy")
 
+fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], fourier_modes.shape[2]))
+fourier_modes_full_slm[pupil_center[0]-fourier_modes.shape[0]//2:
+              pupil_center[0]+fourier_modes.shape[0]//2,
+              pupil_center[1]-fourier_modes.shape[1]//2:
+              pupil_center[1]+fourier_modes.shape[1]//2, :] = fourier_modes
 
+#%% display fourier mode on slm
+
+command = display_phase_on_slm(fourier_modes_full_slm[:,:,200], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+    
 #%% Link camera ORCA
 
 cam = DCAM.DCAMCamera()

@@ -109,7 +109,7 @@ KL_modes = tel_HR.OPD
 KL_modes = KL_modes / np.std(KL_modes, axis=(0,1))
 
 # set the mean value around pi
-KL_modes = KL_modes + np.pi
+KL_modes = (KL_modes + np.pi)*tel_HR.pupil[:,:,np.newaxis]
 
 # scale from 0 to 255 for a 2pi phase shift
 KL_modes = KL_modes * 255/(2*np.pi)
