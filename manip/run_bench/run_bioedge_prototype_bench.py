@@ -16,8 +16,8 @@ import ctypes as ct
 from time import sleep
 from PIL import Image
 
-
 from pylablib.devices import DCAM
+
 from astropy.io import fits
 
 from fanch.plots import make_gif
@@ -77,6 +77,7 @@ def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
     
     return image
 
+# display ORCA frames in real time
 def live_view(get_frame_func, cam, roi, dirc = False, overwrite=True, interval=0.005):
     
     cam.n_frames = 1
@@ -101,22 +102,6 @@ def live_view(get_frame_func, cam, roi, dirc = False, overwrite=True, interval=0
 
     plt.ioff()
 
-def get_slm_pupil_tilt(pupil_radius, pupil_center, delta_phi, theta=0, slm_shape = [1152,1920]):
-    
-    phase_map = np.zeros(slm_shape)
-    pupil = get_circular_pupil(2*pupil_radius)
-    tilt = get_tilt(pupil.shape, amplitude=1., theta=theta)
-    pupil = tilt * pupil
-    pupil = delta_phi*(pupil - pupil.min())/(pupil.max() - pupil.min())
-    phase_map[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
-              pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius] = pupil
-    
-    phase_map = (phase_map/(2*np.pi) * 255).astype(np.uint8)
-    
-    phase_map = np.reshape(phase_map, slm_shape[0]*slm_shape[1], 'C')
-    
-    return phase_map
-
 def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], return_command_vector=False):
     
     if slm_flat.dtype == np.dtype("bool"):
@@ -139,6 +124,23 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], retur
     else:
         return None
 
+def measure_interaction_matrix(slm_phase_screens, cam, n_frames, exp_time, slm_flat=np.False_,
+                               roi=False, dirc = False, overwrite=False, time_sleep = 0.01):
+    
+    # get one image to infer dimensions
+    img = acquire(cam, 1, exp_time, roi=roi)
+    
+    interaction_matrix = np.zeros((img.shape[1], img.shape[2], slm_phase_screens.shape[2]), dtype=np.float64)
+    
+    for n_mode in range(slm_phase_screens.shape[2]):
+        display_phase_on_slm(slm_phase_screens[:,:,n_mode], slm_flat=slm_flat)
+        interaction_matrix[:,:,n_mode] = np.mean(acquire(cam, n_frames, exp_time, roi=roi), axis=0)
+        sleep(time_sleep)
+        
+    display_phase_on_slm(slm_flat)
+    
+    return interaction_matrix
+        
 #%% parameters
 
 # slm shape
@@ -222,27 +224,6 @@ slm_flat = slm_flat / slm_flat.max() * 255.0
 slm_flat = slm_flat.astype(dtype=np.uint8)
 display_phase_on_slm(slm_flat)
 
-#%% apply tilt on slm
-
-tilt_amplitude = -50.0*np.pi # [rad]
-tilt_angle = -90.0 # [deg]
-tilt = get_tilt([1920, 1152], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
-
-command = display_phase_on_slm(tilt, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
-#%% Find pupil footprit on SLM
-
-# generate SLM phase screen
-pupil = get_circular_pupil(2*pupil_radius)
-tilt_in_pupil = np.zeros([1152,1920])
-tilt_in_pupil[pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,
-              pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius] = pupil
-tilt_in_pupil = tilt_in_pupil * tilt
-
-command = display_phase_on_slm(tilt_in_pupil, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
 #%% Load zernike modes
 
 zernike_modes = np.load(dirc_data / "slm" / "modal_basis" / "zernike_modes" / 
@@ -278,7 +259,7 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 #%% Load fourier modes
 
 fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
-                        "fourier_modes_600_pixels_in_slm_pupil_20_subapertures.npy")
+                        "fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
 
 fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], fourier_modes.shape[2]))
 fourier_modes_full_slm[pupil_center[0]-fourier_modes.shape[0]//2:
@@ -288,7 +269,7 @@ fourier_modes_full_slm[pupil_center[0]-fourier_modes.shape[0]//2:
 
 #%% display fourier mode on slm
 
-command = display_phase_on_slm(fourier_modes_full_slm[:,:,200], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+command = display_phase_on_slm(fourier_modes_full_slm[:,:,50], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
     
 #%% Link camera ORCA
@@ -306,6 +287,23 @@ roi = False
 #%% Live view
 
 live_view(acquire, cam, roi)
+
+#%% Enter roi
+
+roi = [995, 860, 200, 200] # roi[0] is x coordinate, i.e column number
+
+#%% Check roi
+
+live_view(acquire, cam, roi)
+
+#%% Make interaction matrix
+
+interaction_matrix = measure_interaction_matrix(fourier_modes_full_slm[:,:,10:20], cam, 10, exp_time=10e-3, slm_flat=slm_flat,
+                                                roi=roi, dirc = False, overwrite=False, time_sleep = 0.01)
+
+#%% save as gif
+
+make_gif(dirc_data / "orca" / "fourier_modes_with_slm.gif", interaction_matrix)
 
 #%% Load a linear LUT and a black WFC
 
