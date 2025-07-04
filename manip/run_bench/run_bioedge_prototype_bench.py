@@ -243,47 +243,6 @@ tilt_in_pupil = tilt_in_pupil * tilt
 command = display_phase_on_slm(tilt_in_pupil, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
-#%% Compute Zernike basis
-
-tel = Telescope(2*pupil_radius, diameter=8)
-Z = Zernike(tel,10) # create a Zernike object considering 300 polynomials
-Z.computeZernike(tel) # compute the Zernike
-zernike_modes = Z.modesFullRes
-
-# std normalization and set amplitude calibration
-zernike_modes = amplitude_calibration * (zernike_modes\
-                                                    /np.std(zernike_modes, axis=(0,1)))
-    
-# scale phase such that 0-2pi <=> 0-255
-zernike_modes = zernike_modes * 255/(2*np.pi)
-    
-# offset modes around half of the slm dynamic
-zernike_modes = zernike_modes + 128.0
-zernike_modes = zernike_modes * tel.pupil[:,:,np.newaxis]
-
-# create SLM phase maps
-
-zernike_modes_full_slm = np.zeros([1152,1920,zernike_modes.shape[2]])
-
-zernike_modes_full_slm[pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius,
-              pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius,:] = zernike_modes
-
-#%% apply zernike on slm
-
-n_mode = 1
-command = display_phase_on_slm(10*zernike_modes_full_slm[:,:,n_mode], slm_flat, return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
-# plt.figure()
-# plt.imshow(np.abs(np.fft.fftshift(np.fft.fft2(zeros_padding(np.exp(1j * 
-#                                    zernike_modes_full_slm[:,:,n_mode] * 
-#                                    2*np.pi / 255),4)))**2))
-# plt.title("Focal plane irradiance")
-
-#%% Load WFC
-
-display_phase_on_slm(slm_flat)
-
 #%% Load zernike modes
 
 zernike_modes = np.load(dirc_data / "slm" / "modal_basis" / "zernike_modes" / 
