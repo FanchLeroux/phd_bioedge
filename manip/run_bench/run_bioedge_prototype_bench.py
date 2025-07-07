@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 
 import ctypes as ct
 
-from time import sleep
 from PIL import Image
 
 from pylablib.devices import DCAM
@@ -22,16 +21,9 @@ from astropy.io import fits
 
 from fanch.plots import make_gif
 
-from fanch.tools.miscellaneous import get_tilt, get_circular_pupil, zeros_padding
-
-from fanch.basis.fourier import compute_real_fourier_basis
-
-from OOPAO.Telescope import Telescope
-from OOPAO.Zernike import Zernike
+from fanch.tools.miscellaneous import zeros_padding
 
 from OOPAO.tools.displayTools import displayMap
-
-from scipy.ndimage import zoom
 
 #%%
 
@@ -229,17 +221,10 @@ slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
 #%% Load LUT
 
-# slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "12bit_linear.lut").encode('utf-8'))
-# slm_lib.Load_LUT_file(board_number, str(dirc_data / "LUT" / "slm5758_at675.lut").encode('utf-8'))
 slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06-27_11-37-41_slm0_at675.lut").encode('utf-8'))
 
 #%% Load WFC
 
-# slm_flat = np.asarray(Image.open(str(dirc_data / "slm" / "WFC" / "slm5758_at675.bmp")), dtype=np.float64)
-# slm_flat = slm_flat / slm_flat.max() * 255.0
-# slm_flat = slm_flat.astype(dtype=np.uint8)
-
-# slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
 slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675_tilt_amplitude10pi_tilt_angle_45degree.npy")
 display_phase_on_slm(slm_flat)
 
