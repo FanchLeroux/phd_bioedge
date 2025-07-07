@@ -49,15 +49,6 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], retur
 # slm shape
 slm_shape = np.array([1152,1920])
 
-# number of phase measurements point
-n_subaperture = 20
-
-# pupil radius in SLM pixels
-pupil_radius = 500 # [pixel]
-
-# pupil center on slm
-pupil_center = [576,960] # [pixel]
-
 #%% Link slm MEADOWLARK
 
 # load slm library
@@ -117,37 +108,39 @@ slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06
 
 #%% Load WFC
 
-slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675_tilt_amplitude10pi_tilt_angle_45degree.npy")
+slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
 display_phase_on_slm(slm_flat)
 
-# #%% Update WFC with a small tilt at 45° to get out of 0th order
+#%% Update WFC with a small tilt at 45° to get out of 0th order
 
-# tilt_amplitude = 10.0*np.pi # [rad]
-# tilt_angle = 45.0 # [deg]
-# tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
+tilt_amplitude = 3.0*np.pi # [rad]
+tilt_angle = 45.0 # [deg]
+tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
 
-# slm_flat = np.mod(tilt+slm_flat, 256)
-# slm_flat = slm_flat.astype(dtype=np.uint8)
+slm_flat = np.mod(tilt+slm_flat, 256)
+slm_flat = slm_flat.astype(dtype=np.uint8)
 
-# np.save(dirc_data / "slm" / "WFC" /
-#            ("slm5758_at675_tilt_amplitude"+
-#             str(int(tilt_amplitude/np.pi))+
-#             "pi_tilt_angle_"+str(int(tilt_angle))+
-#             "degree.npy"), slm_flat)
+np.save(dirc_data / "slm" / "WFC" /
+            ("slm5758_at675_tilt_amplitude"+
+            str(int(tilt_amplitude/np.pi))+
+            "pi_tilt_angle_"+str(int(tilt_angle))+
+            "degree.npy"), slm_flat)
 
-# #%% Load new WFC
+#%% Load new WFC
 
-# display_phase_on_slm(slm_flat)
+display_phase_on_slm(slm_flat)
 
 #%% Find pupil footprit on SLM
 
-tilt_amplitude = 50.0*np.pi # [rad]
-tilt_angle = 90.0 # [deg]
-tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
+# pupil radius in SLM pixels
+pupil_radius = 100 # [pixel]
 
-# apply tilt on full slm
-# command = display_phase_on_slm(tilt, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
-# plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+# pupil center on slm
+pupil_center = [576,960] # [pixel]
+
+tilt_amplitude = 500.0*np.pi # [rad]
+tilt_angle = 45.0 # [deg]
+tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
 
 # generate SLM phase screen
 pupil = get_circular_pupil(2*pupil_radius)

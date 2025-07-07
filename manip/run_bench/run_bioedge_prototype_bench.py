@@ -257,7 +257,7 @@ KL_modes_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
 
 #%% display KL mode on slm
 
-command = display_phase_on_slm(KL_modes_full_slm[:,:,3], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+command = display_phase_on_slm(KL_modes_full_slm[:,:,10], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Load fourier modes
