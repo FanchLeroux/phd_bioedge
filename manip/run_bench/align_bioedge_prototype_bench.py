@@ -120,29 +120,29 @@ slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06
 slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675_tilt_amplitude10pi_tilt_angle_45degree.npy")
 display_phase_on_slm(slm_flat)
 
-#%% Update WFC with a small tilt at 45° to get out of 0th order
+# #%% Update WFC with a small tilt at 45° to get out of 0th order
 
-tilt_amplitude = 10.0*np.pi # [rad]
-tilt_angle = 45.0 # [deg]
-tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
+# tilt_amplitude = 10.0*np.pi # [rad]
+# tilt_angle = 45.0 # [deg]
+# tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
 
-slm_flat = np.mod(tilt+slm_flat, 256)
-slm_flat = slm_flat.astype(dtype=np.uint8)
+# slm_flat = np.mod(tilt+slm_flat, 256)
+# slm_flat = slm_flat.astype(dtype=np.uint8)
 
-np.save(dirc_data / "slm" / "WFC" /
-           ("slm5758_at675_tilt_amplitude"+
-            str(int(tilt_amplitude/np.pi))+
-            "pi_tilt_angle_"+str(int(tilt_angle))+
-            "degree.npy"), slm_flat)
+# np.save(dirc_data / "slm" / "WFC" /
+#            ("slm5758_at675_tilt_amplitude"+
+#             str(int(tilt_amplitude/np.pi))+
+#             "pi_tilt_angle_"+str(int(tilt_angle))+
+#             "degree.npy"), slm_flat)
 
-#%% Load new WFC
+# #%% Load new WFC
 
-display_phase_on_slm(slm_flat)
+# display_phase_on_slm(slm_flat)
 
 #%% Find pupil footprit on SLM
 
-tilt_amplitude = -10.0*np.pi # [rad]
-tilt_angle = -45.0 # [deg]
+tilt_amplitude = 50.0*np.pi # [rad]
+tilt_angle = 90.0 # [deg]
 tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
 
 # apply tilt on full slm
@@ -157,6 +157,11 @@ tilt_in_pupil[pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius,
 tilt_in_pupil = tilt_in_pupil * tilt
 
 command = display_phase_on_slm(tilt_in_pupil, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
+#%% Load back WFC
+
+command = display_phase_on_slm(slm_flat, return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Load a linear LUT and a black WFC
