@@ -125,7 +125,7 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], retur
         return None
 
 def measure_interaction_matrix(slm_phase_screens, cam, n_frames, exp_time, slm_flat=np.False_,
-                               roi=False, dirc = False, overwrite=False, time_sleep = 0.01, display=True):
+                               roi=False, dirc = False, overwrite=False, display=True):
     
     # get one image to infer dimensions
     img = acquire(cam, 1, exp_time, roi=roi)
@@ -137,6 +137,9 @@ def measure_interaction_matrix(slm_phase_screens, cam, n_frames, exp_time, slm_f
         fig, ax = plt.subplots(nrows=1, ncols=2)
         im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],slm_phase_screens.shape[1])), cmap='viridis')
         im2 = ax[1].imshow(interaction_matrix[:,:,0], cmap='viridis')
+        ax[0].set_title("SLM Command")
+        ax[1].set_title("Detector Irradiance")
+        plt.tight_layout()
         plt.show()
         
     for n_mode in range(slm_phase_screens.shape[2]):
@@ -148,9 +151,7 @@ def measure_interaction_matrix(slm_phase_screens, cam, n_frames, exp_time, slm_f
             im1.set_clim(vmin=np.min(slm_phase_screens[:,:,n_mode]), vmax=np.max(slm_phase_screens[:,:,n_mode]))  # Adjust color scale
             im2.set_data(interaction_matrix[:,:,n_mode])
             im2.set_clim(vmin=np.min(interaction_matrix[:,:,n_mode]), vmax=np.max(interaction_matrix[:,:,n_mode]))  # Adjust color scale
-            plt.pause(0.1)
-        
-        sleep(time_sleep)
+            plt.pause(0.005)
         
     display_phase_on_slm(slm_flat)
     
@@ -234,9 +235,12 @@ slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06
 
 #%% Load WFC
 
-slm_flat = np.asarray(Image.open(str(dirc_data / "slm" / "WFC" / "slm5758_at675.bmp")), dtype=np.float64)
-slm_flat = slm_flat / slm_flat.max() * 255.0
-slm_flat = slm_flat.astype(dtype=np.uint8)
+# slm_flat = np.asarray(Image.open(str(dirc_data / "slm" / "WFC" / "slm5758_at675.bmp")), dtype=np.float64)
+# slm_flat = slm_flat / slm_flat.max() * 255.0
+# slm_flat = slm_flat.astype(dtype=np.uint8)
+
+# slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
+slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675_tilt_amplitude10pi_tilt_angle_45degree.npy")
 display_phase_on_slm(slm_flat)
 
 #%% Load zernike modes
@@ -317,24 +321,22 @@ display_phase_on_slm(slm_flat)
 
 #%% Make interaction matrix
 
-interaction_matrix_fourier_modes = measure_interaction_matrix(fourier_modes_full_slm[:,:,10:15], 
+interaction_matrix_fourier_modes = measure_interaction_matrix(fourier_modes_full_slm[:,:,50:60], 
                                                               cam, 10, exp_time=10e-3, slm_flat=slm_flat,
-                                                              roi=roi, dirc = False, overwrite=False, 
-                                                              time_sleep = 0.001, display=True)
+                                                              roi=roi, dirc = False, overwrite=False)
 
 #%%
 
 interaction_matrix_zernike_modes = measure_interaction_matrix(zernike_modes_full_slm[:,:,0:20], 
                                                               cam, 10, exp_time=10e-3, slm_flat=slm_flat,
-                                                              roi=roi, dirc = False, overwrite=False, 
-                                                              time_sleep = 0.001)
+                                                              roi=roi, dirc = False, overwrite=False)
 
 #%%
 
 interaction_matrix_KL_modes = measure_interaction_matrix(KL_modes_full_slm[:,:,0:20], 
                                                          cam, 10, exp_time=10e-3, slm_flat=slm_flat,
-                                                         roi=roi, dirc = False, overwrite=False, 
-                                                         time_sleep = 0.001)
+                                                         roi=roi, dirc = False, overwrite=False,
+                                                         display=True)
 
 #%% Plot interaction matrix
 
