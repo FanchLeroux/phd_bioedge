@@ -29,6 +29,8 @@ from fanch.basis.fourier import compute_real_fourier_basis
 from OOPAO.Telescope import Telescope
 from OOPAO.Zernike import Zernike
 
+from OOPAO.tools.displayTools import displayMap
+
 from scipy.ndimage import zoom
 
 #%%
@@ -123,16 +125,31 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], retur
         return None
 
 def measure_interaction_matrix(slm_phase_screens, cam, n_frames, exp_time, slm_flat=np.False_,
-                               roi=False, dirc = False, overwrite=False, time_sleep = 0.01):
+                               roi=False, dirc = False, overwrite=False, time_sleep = 0.01, display=True):
     
     # get one image to infer dimensions
     img = acquire(cam, 1, exp_time, roi=roi)
     
     interaction_matrix = np.zeros((img.shape[1], img.shape[2], slm_phase_screens.shape[2]), dtype=np.float64)
     
+    if display:
+        plt.ion()  # Turn on interactive mode
+        fig, ax = plt.subplots(nrows=1, ncols=2)
+        im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],slm_phase_screens.shape[1])), cmap='viridis')
+        im2 = ax[1].imshow(interaction_matrix[:,:,0], cmap='viridis')
+        plt.show()
+        
     for n_mode in range(slm_phase_screens.shape[2]):
         display_phase_on_slm(slm_phase_screens[:,:,n_mode], slm_flat=slm_flat)
         interaction_matrix[:,:,n_mode] = np.mean(acquire(cam, n_frames, exp_time, roi=roi), axis=0)
+        
+        if display:
+            im1.set_data(slm_phase_screens[:,:,n_mode])
+            im1.set_clim(vmin=np.min(slm_phase_screens[:,:,n_mode]), vmax=np.max(slm_phase_screens[:,:,n_mode]))  # Adjust color scale
+            im2.set_data(interaction_matrix[:,:,n_mode])
+            im2.set_clim(vmin=np.min(interaction_matrix[:,:,n_mode]), vmax=np.max(interaction_matrix[:,:,n_mode]))  # Adjust color scale
+            plt.pause(0.1)
+        
         sleep(time_sleep)
         
     display_phase_on_slm(slm_flat)
@@ -300,12 +317,32 @@ display_phase_on_slm(slm_flat)
 
 #%% Make interaction matrix
 
-interaction_matrix = measure_interaction_matrix(fourier_modes_full_slm[:,:,10:20], cam, 10, exp_time=10e-3, slm_flat=slm_flat,
-                                                roi=roi, dirc = False, overwrite=False, time_sleep = 0.01)
+interaction_matrix_fourier_modes = measure_interaction_matrix(fourier_modes_full_slm[:,:,10:15], 
+                                                              cam, 10, exp_time=10e-3, slm_flat=slm_flat,
+                                                              roi=roi, dirc = False, overwrite=False, 
+                                                              time_sleep = 0.001, display=True)
+
+#%%
+
+interaction_matrix_zernike_modes = measure_interaction_matrix(zernike_modes_full_slm[:,:,0:20], 
+                                                              cam, 10, exp_time=10e-3, slm_flat=slm_flat,
+                                                              roi=roi, dirc = False, overwrite=False, 
+                                                              time_sleep = 0.001)
+
+#%%
+
+interaction_matrix_KL_modes = measure_interaction_matrix(KL_modes_full_slm[:,:,0:20], 
+                                                         cam, 10, exp_time=10e-3, slm_flat=slm_flat,
+                                                         roi=roi, dirc = False, overwrite=False, 
+                                                         time_sleep = 0.001)
+
+#%% Plot interaction matrix
+
+displayMap(interaction_matrix_KL_modes)
 
 #%% save as gif
 
-make_gif(dirc_data / "orca" / "fourier_modes_with_slm.gif", interaction_matrix)
+make_gif(dirc_data / "orca" / "fourier_modes_with_slm.gif", interaction_matrix_fourier_modes)
 
 #%% Load a linear LUT and a black WFC
 
