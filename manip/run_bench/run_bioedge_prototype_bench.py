@@ -100,8 +100,6 @@ def live_view(get_frame_func, cam, roi, dirc = False, overwrite=True, interval=0
         title.set_text(f"Max value: {np.max(frame):.2f}")  # Update title
         plt.pause(interval)
 
-    plt.ioff()
-
 def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], return_command_vector=False):
     
     if slm_flat.dtype == np.dtype("bool"):
@@ -295,6 +293,10 @@ roi = [995, 860, 200, 200] # roi[0] is x coordinate, i.e column number
 #%% Check roi
 
 live_view(acquire, cam, roi)
+
+#%% Load flat on SLM
+
+display_phase_on_slm(slm_flat)
 
 #%% Make interaction matrix
 
