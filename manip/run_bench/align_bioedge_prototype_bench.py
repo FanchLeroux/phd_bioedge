@@ -5,12 +5,17 @@ Created on Fri Jul  4 14:30:56 2025
 @author: lgs
 """
 
+import datetime
 import pathlib
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 import ctypes as ct
+
+from pylablib.devices import DCAM
+
+from astropy.io import fits
 
 from PIL import Image
 
@@ -21,6 +26,64 @@ from fanch.tools.miscellaneous import get_tilt, get_circular_pupil
 dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "data"
 
 #%%
+
+# Get Frames with ORCA
+def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
+    
+    # roi = [xcenter, ycenter, xwidth, ywidth]
+    
+    cam.set_exposure(exp_time)
+    t = str(datetime.datetime.now())
+    image = np.double(cam.grab(n_frames))
+    
+    if roi != False:
+        image = image[:, roi[1]-roi[3]//2:roi[1]+roi[3]//2, roi[0]-roi[2]//2:roi[0]+roi[2]//2]
+    
+    if dirc != False:
+        
+        hdu = fits.PrimaryHDU(data = image)
+        hdr=hdu.header
+        tmp = cam.get_acquisition_parameters()
+        hdr['NFRAMES']      = (tmp['nframes'],'Size of the data cube')
+                
+        tmp = cam.get_all_attribute_values()
+        hdr['EXP_TIME']     = (tmp['exposure_time'],'Exposure time in s')
+        hdr['FPS']          = (tmp['internal_frame_rate'],'Frame rate in Hz')
+        hdr['INTERVAL']     = (tmp['internal_frame_interval'],'Delay between two successive acquisitions in s')
+        hdr['HPOS']         = (tmp['subarray_hpos'],'X-position of the ROI')
+        hdr['YPOS']         = (tmp['subarray_vpos'],'Y-position of the ROI')
+        hdr['TIME']         = (t,'Local Time of Acquisition')
+    
+        file_name = dirc / pathlib.Path(str(cam.ID)+"_exp_" + 
+                                        str(np.round(cam.get_exposure()*1000, 3)) + '_nframes_' + 
+                                        str(n_frames) + '.fits')
+        
+        hdu.writeto(file_name, overwrite=overwrite)
+    
+    return image
+
+# display ORCA frames in real time
+def live_view(get_frame_func, cam, roi, dirc = False, overwrite=True, interval=0.005):
+    
+    cam.n_frames = 1
+    
+    plt.ion()  # Turn on interactive mode
+
+    # First frame for setup
+    frame = get_frame_func(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)[0,:,:,]
+    is_color = frame.ndim == 3 and frame.shape[2] == 3
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(frame, cmap='viridis' if not is_color else None)
+    plt.colorbar(im, ax=ax)
+    title = fig.suptitle(f"Max value: {np.max(frame):.2f}", fontsize=24)
+
+    while plt.fignum_exists(fig.number):  # Loop while window is open
+        frame = get_frame_func(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)[0,:,:,]
+        im.set_data(frame)
+        im.set_clim(vmin=np.min(frame), vmax=np.max(frame))  # Adjust color scale
+        title.set_text(f"Max value: {np.max(frame):.2f}")  # Update title
+        plt.pause(interval)
 
 def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], return_command_vector=False):
     
@@ -102,6 +165,30 @@ slm_lib.Write_image(board_number, slm_flat.ctypes.data_as(ct.POINTER(ct.c_ubyte)
                     wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
 slm_lib.ImageWriteComplete(board_number, timeout_ms)
 
+#%% Link camera ORCA
+
+cam = DCAM.DCAMCamera()
+
+#%% Setup camera
+
+# initialize settings
+cam.exp_time = 5e-3    # exposure time (s)
+cam.n_frames = 10      # acquire cubes of n_frames images
+cam.ID = 0             # ID for the data saved
+roi = False
+
+#%% Live view
+
+live_view(acquire, cam, roi)
+
+#%% Enter roi
+
+roi = [995, 860, 200, 200] # roi[0] is x coordinate, i.e column number
+
+#%% Check roi
+
+live_view(acquire, cam, roi)
+
 #%% Load LUT
 
 slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06-27_11-37-41_slm0_at675.lut").encode('utf-8'))
@@ -109,11 +196,12 @@ slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06
 #%% Load WFC
 
 slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
-display_phase_on_slm(slm_flat)
+command = display_phase_on_slm(slm_flat, return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Update WFC with a small tilt at 45° to get out of 0th order
 
-tilt_amplitude = 3.0*np.pi # [rad]
+tilt_amplitude = 6.0*np.pi # [rad]
 tilt_angle = 45.0 # [deg]
 tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
 
@@ -128,7 +216,8 @@ np.save(dirc_data / "slm" / "WFC" /
 
 #%% Load new WFC
 
-display_phase_on_slm(slm_flat)
+command = display_phase_on_slm(slm_flat, return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Find pupil footprit on SLM
 
@@ -138,8 +227,8 @@ pupil_radius = 100 # [pixel]
 # pupil center on slm
 pupil_center = [576,960] # [pixel]
 
-tilt_amplitude = 500.0*np.pi # [rad]
-tilt_angle = 45.0 # [deg]
+tilt_amplitude = 10000.0*np.pi # [rad]
+tilt_angle = -135.0 # [deg]
 tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
 
 # generate SLM phase screen
@@ -151,6 +240,10 @@ tilt_in_pupil = tilt_in_pupil * tilt
 
 command = display_phase_on_slm(tilt_in_pupil, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
+#%% Live view
+
+live_view(acquire, cam, roi)
 
 #%% Load back WFC
 

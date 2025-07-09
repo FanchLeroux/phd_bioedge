@@ -211,7 +211,8 @@ if num_boards_found.value == 1:
     center_x = ct.c_uint(width.value//2)
     center_y = ct.c_uint(height.value//2)
 
-# By default load a linear LUT and a black WFC
+#%% By default load a linear LUT and a black WFC
+
 slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
 slm_flat = np.asarray(Image.open(str(dirc_data / "slm" / "WFC" / "1920black.bmp")))
 slm_flat = np.reshape(slm_flat, [width.value*height.value], 'C')
@@ -225,8 +226,9 @@ slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06
 
 #%% Load WFC
 
-slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675_tilt_amplitude10pi_tilt_angle_45degree.npy")
-display_phase_on_slm(slm_flat)
+slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675_tilt_amplitude6pi_tilt_angle_45degree.npy")
+command = display_phase_on_slm(slm_flat, return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Load zernike modes
 
@@ -257,7 +259,7 @@ KL_modes_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
 
 #%% display KL mode on slm
 
-command = display_phase_on_slm(KL_modes_full_slm[:,:,10], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+command = display_phase_on_slm(KL_modes_full_slm[:,:,2], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Load fourier modes
@@ -273,7 +275,7 @@ fourier_modes_full_slm[pupil_center[0]-fourier_modes.shape[0]//2:
 
 #%% display fourier mode on slm
 
-command = display_phase_on_slm(fourier_modes_full_slm[:,:,50], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+command = display_phase_on_slm(fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
     
 #%% Link camera ORCA
@@ -294,11 +296,18 @@ live_view(acquire, cam, roi)
 
 #%% Enter roi
 
-roi = [995, 860, 200, 200] # roi[0] is x coordinate, i.e column number
+roi = [900, 830, 500, 500] # roi[0] is x coordinate, i.e column number
 
 #%% Check roi
 
 live_view(acquire, cam, roi)
+
+#%% Acquire image
+
+data_orca = acquire(cam, n_frames=10, exp_time=5e-3, roi=roi,
+                    dirc = dirc_data / "orca", overwrite=True)
+
+
 
 #%% Load flat on SLM
 
