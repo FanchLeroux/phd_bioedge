@@ -21,7 +21,7 @@ dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "
 #%%
 
 n_subaperture = 20
-n_pixels_in_slm_pupil = 600
+n_pixels_in_slm_pupil = 1100
 
 #%%
 

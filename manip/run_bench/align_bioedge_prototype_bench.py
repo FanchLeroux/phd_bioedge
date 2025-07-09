@@ -222,10 +222,10 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 #%% Find pupil footprit on SLM
 
 # pupil radius in SLM pixels
-pupil_radius = 100 # [pixel]
+pupil_radius = 550 # [pixel]
 
 # pupil center on slm
-pupil_center = [576,960] # [pixel]
+pupil_center = [565,1010] # [pixel]
 
 tilt_amplitude = 10000.0*np.pi # [rad]
 tilt_angle = -135.0 # [deg]
