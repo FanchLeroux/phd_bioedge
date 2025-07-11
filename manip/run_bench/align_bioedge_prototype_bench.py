@@ -214,6 +214,21 @@ np.save(dirc_data / "slm" / "WFC" /
             "pi_tilt_angle_"+str(int(tilt_angle))+
             "degree.npy"), slm_flat)
 
+#%% Save WFC=0 + a small tilt at 45° to get out of 0th order
+
+tilt_amplitude = 120.0*np.pi # [rad]
+tilt_angle = 135.0 # [deg]
+tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
+
+slm_flat = np.mod(tilt, 256)
+slm_flat = slm_flat.astype(dtype=np.uint8)
+
+np.save(dirc_data / "slm" / "WFC" /
+            ("slm_no_WFC_tilt_amplitude_"+
+            str(int(np.round(tilt_amplitude/np.pi)))+
+            "pi_tilt_angle_"+str(int(tilt_angle))+
+            "degree.npy"), slm_flat)
+
 #%% Load new WFC
 
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
@@ -222,7 +237,7 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 #%% Find pupil footprit on SLM
 
 # pupil radius in SLM pixels
-pupil_radius = 550 # [pixel]
+pupil_radius = 350 # [pixel]
 
 # pupil center on slm
 pupil_center = [565,1010] # [pixel]

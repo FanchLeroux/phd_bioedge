@@ -227,8 +227,9 @@ slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06
 
 #%% Load WFC
 
+slm_flat = np.zeros(slm_shape)
 slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
-slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675_tilt_amplitude6pi_tilt_angle_45degree.npy")
+#slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675_tilt_amplitude6pi_tilt_angle_45degree.npy")
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
@@ -279,12 +280,32 @@ fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
 
 #%% display fourier mode on slm
 
-command = display_phase_on_slm(0.05*fourier_modes_full_slm[:,:,-50], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+n_mode = -24
+
+fourier_mode = fourier_modes_full_slm[:,:,n_mode] - 128.0
+fourier_mode[fourier_modes_full_slm[:,:,n_mode] == 0] = 0
+fourier_mode = 128*np.ones(slm_shape) + 0.2*fourier_mode
+
+slm_flat = np.zeros(slm_shape)
+# command = display_phase_on_slm(1*fourier_modes_full_slm[:,:,-24], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+# slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm_no_WFC_tilt_amplitude_120pi_tilt_angle_135degree.npy")
+# slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
+command = display_phase_on_slm(fourier_mode, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
+#%% Load mode without flat on SLM
+
+command = display_phase_on_slm(fourier_mode,slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Load flat on SLM
 
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
+#%% Load zeros on SLM
+
+command = display_phase_on_slm(np.zeros(slm_shape), return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Link camera ORCA
