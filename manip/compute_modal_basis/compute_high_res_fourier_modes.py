@@ -13,12 +13,12 @@ from fanch.basis.fourier import compute_real_fourier_basis
 
 #%%
 
-dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "data"
+dirc_data = pathlib.Path(__file__).parent.parent.parent.parent / "data"
 
 #%%
 
-n_subaperture = 20
-n_pixels_in_slm_pupil = 600
+n_subaperture = 40
+n_pixels_in_slm_pupil = 1152
 
 #%%
 
