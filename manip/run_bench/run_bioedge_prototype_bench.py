@@ -248,7 +248,7 @@ zernike_modes_full_slm[pupil_center[0]-zernike_modes.shape[0]//2:
 
 #%% display zernike mode on slm
 
-command = display_phase_on_slm(0.5*zernike_modes_full_slm[:,:,-60], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+command = display_phase_on_slm(0.5*zernike_modes_full_slm[:,:,50], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Load KL modes
@@ -264,7 +264,7 @@ KL_modes_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
 
 #%% display KL mode on slm
 
-command = display_phase_on_slm(KL_modes_full_slm[:,:,200], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+command = display_phase_on_slm(0.5*KL_modes_full_slm[:,:,100], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Load fourier modes
@@ -280,7 +280,7 @@ fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
 
 #%% display fourier mode on slm
 
-n_mode = -50
+n_mode = -1
 
 fourier_mode = fourier_modes_full_slm[:,:,n_mode] - 128.0
 fourier_mode[fourier_modes_full_slm[:,:,n_mode] == 0] = 0
@@ -299,7 +299,7 @@ n_mode = 100
 
 fourier_mode = fourier_modes_full_slm[:,:,n_mode] - 128.0
 fourier_mode[fourier_modes_full_slm[:,:,n_mode] == 0] = 0
-fourier_mode = 128*np.ones(slm_shape) + 0.5*fourier_mode
+fourier_mode = 128*np.ones(slm_shape) + 0.1*fourier_mode
 
 # slm_flat = np.zeros(slm_shape)
 # command = display_phase_on_slm(1*fourier_modes_full_slm[:,:,-24], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
