@@ -19,6 +19,7 @@ from pylablib.devices import DCAM
 
 from astropy.io import fits
 
+from fanch.tools.miscellaneous import get_tilt, get_circular_pupil
 from fanch.plots import make_gif
 
 from OOPAO.tools.displayTools import displayMap
@@ -223,6 +224,39 @@ slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "slm5758_at6
 
 # slm_flat = np.zeros(slm_shape)
 slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
+command = display_phase_on_slm(slm_flat, return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
+#%% Modify WFC to simulate pupil
+
+# define pupil
+
+# pupil radius in SLM pixels
+pupil_radius = 500 # [pixel]
+# pupil center on slm
+pupil_center = [565,1010] # [pixel]
+
+# get large tilt on slm shaped support
+
+tilt_amplitude = 1000.0*np.pi # [rad]
+tilt_angle = -135.0 # [deg]
+tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
+
+# replace pupil location by zeros
+
+pupil = np.abs(get_circular_pupil(2*pupil_radius)-1)
+tilt_out_of_pupil = np.ones([1152,1920])
+tilt_out_of_pupil[pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius,
+              pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius] = pupil
+tilt_out_of_pupil = tilt_out_of_pupil * tilt
+
+slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
+slm_flat = slm_flat + tilt_out_of_pupil
+
+plt.imshow(slm_flat)
+
+#%% Load new WFC
+
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 

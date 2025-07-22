@@ -226,7 +226,7 @@ slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
-#%% Load zernike modes
+#%% Load Zernike modes
 
 zernike_modes = np.load(dirc_data / "slm" / "modal_basis" / "zernike_modes" / 
                         ("zernike_modes_" + str(n_pixels_in_slm_pupil) +
@@ -251,7 +251,7 @@ KL_modes_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
               pupil_center[1]-KL_modes.shape[1]//2:
               pupil_center[1]+KL_modes.shape[1]//2, :] = KL_modes
 
-#%% Load fourier modes
+#%% Load Fourier modes
 
 fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
                         "fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
