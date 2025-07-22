@@ -21,13 +21,7 @@ from astropy.io import fits
 
 from fanch.plots import make_gif
 
-from fanch.tools.miscellaneous import zeros_padding
-
 from OOPAO.tools.displayTools import displayMap
-
-#%%
-
-dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "data"
 
 #%% Function declaration
 
@@ -150,6 +144,9 @@ def measure_interaction_matrix(slm_phase_screens, cam, n_frames, exp_time, slm_f
     return interaction_matrix
         
 #%% parameters
+
+# directories
+dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "data"
 
 # slm shape
 slm_shape = np.array([1152,1920])

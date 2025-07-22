@@ -91,6 +91,7 @@ DCAM.get_cameras_number()
 
 cam1 = DCAM.DCAMCamera(idx=0)
 cam2 = DCAM.DCAMCamera(idx=1)
+cam3 = DCAM.DCAMCamera(idx=2)
 
 #%%
 
@@ -100,9 +101,9 @@ cam1.get_device_info()
 
 cam2.get_device_info()
 
-#%% Link camera ORCA
+#%%
 
-cam = DCAM.DCAMCamera()
+cam3.get_device_info()
 
 #%% Setup camera 1
 
@@ -120,13 +121,17 @@ cam2.n_frames = 10      # acquire cubes of n_frames images
 cam2.ID = 0             # ID for the data saved
 roi = False
 
+#%% Setup camera 3
+
+# initialize settings
+cam3.exp_time = 5e-3    # exposure time (s)
+cam3.n_frames = 10      # acquire cubes of n_frames images
+cam3.ID = 0             # ID for the data saved
+roi = False
+
 #%% Enter roi
 
 roi = [900, 830, 500, 500] # roi[0] is x coordinate, i.e column number
-
-#%% Check roi
-
-live_view(acquire, cam, roi)
 
 #%% Acquire image cam1
 
@@ -144,12 +149,20 @@ data_orca_cam2 = acquire(cam2, n_frames=10, exp_time=5e-3, roi=roi,
 plt.figure()
 plt.imshow(np.median(data_orca_cam2, axis=0))
 
+#%% Acquire image cam3
+
+data_orca_cam3 = acquire(cam3, n_frames=10, exp_time=5e-3, roi=roi,
+                    dirc = False, overwrite=True)
+
+plt.figure()
+plt.imshow(np.median(data_orca_cam2, axis=0))
+
 #%% Live view
 
-live_view(acquire, cam1, roi)
+live_view(acquire, cam3, roi)
 
 #%%
 
 cam1.close()
 cam2.close()
-
+cam3.close()
