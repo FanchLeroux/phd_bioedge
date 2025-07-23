@@ -307,25 +307,25 @@ horizontal_fourier_modes_full_slm[slm_shape[0]//2-horizontal_fourier_modes.shape
     
 #%% Load  vertical fourier modes
 
-fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
-                        "fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
+vertical_fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
+                        "vertical_fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
 
-fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], fourier_modes.shape[2]))
-fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
-              slm_shape[0]//2+fourier_modes.shape[0]//2,
-              pupil_center[1]-fourier_modes.shape[1]//2:
-              pupil_center[1]+fourier_modes.shape[1]//2, :] = fourier_modes
+vertical_fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], vertical_fourier_modes.shape[2]))
+vertical_fourier_modes_full_slm[slm_shape[0]//2-vertical_fourier_modes.shape[0]//2:
+              slm_shape[0]//2+vertical_fourier_modes.shape[0]//2,
+              pupil_center[1]-vertical_fourier_modes.shape[1]//2:
+              pupil_center[1]+vertical_fourier_modes.shape[1]//2, :] = vertical_fourier_modes
     
 #%% Load diagonal fourier modes
 
-fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
-                        "fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
+diagonal_fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
+                        "diagonal_fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
 
-fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], fourier_modes.shape[2]))
-fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
-              slm_shape[0]//2+fourier_modes.shape[0]//2,
-              pupil_center[1]-fourier_modes.shape[1]//2:
-              pupil_center[1]+fourier_modes.shape[1]//2, :] = fourier_modes
+diagonal_fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], diagonal_fourier_modes.shape[2]))
+diagonal_fourier_modes_full_slm[slm_shape[0]//2-diagonal_fourier_modes.shape[0]//2:
+              slm_shape[0]//2+diagonal_fourier_modes.shape[0]//2,
+              pupil_center[1]-diagonal_fourier_modes.shape[1]//2:
+              pupil_center[1]+diagonal_fourier_modes.shape[1]//2, :] = diagonal_fourier_modes
     
 #%% display zernike mode on slm
 
