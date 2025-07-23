@@ -142,6 +142,9 @@ def measure_interaction_matrix(slm_phase_screens, cam, n_frames, exp_time, slm_f
         
     display_phase_on_slm(slm_flat)
     
+    if dirc != False:
+        np.save(dirc, interaction_matrix)
+    
     return interaction_matrix
         
 #%% parameters
@@ -374,8 +377,8 @@ cam = DCAM.DCAMCamera()
 #%% Setup camera
 
 # initialize settings
-cam.exp_time = 50e-3    # exposure time (s)
-cam.n_frames = 10      # acquire cubes of n_frames images
+cam.exp_time = 40e-3    # exposure time (s)
+cam.n_frames = 3      # acquire cubes of n_frames images
 cam.ID = 0             # ID for the data saved
 roi = False
 
@@ -413,9 +416,23 @@ plt.imshow(pupils)
 
 #%% Make interaction matrix
 
-interaction_matrix_fourier_modes = measure_interaction_matrix(fourier_modes_full_slm[:,:,50:60], 
-                                                              cam, 10, exp_time=10e-3, slm_flat=slm_flat,
-                                                              roi=roi, dirc = False, overwrite=False)
+amplitude_calibration = 0.2
+
+interaction_matrix_fourier_modes = measure_interaction_matrix(amplitude_calibration*fourier_modes_full_slm[:,:,:100], 
+                                                              cam, 3, exp_time=40e-3, slm_flat=slm_flat,
+                                                              roi=False, 
+                                                              dirc = dirc_data / "orca" / "interaction_matrix" / 
+                                                              "raw_interaction_matrix_fourier_modes.npy", 
+                                                              overwrite=False,
+                                                              display=True)
+
+#%%
+
+# keep only valid pixels
+interaction_matrix_fourier_modes = interaction_matrix_fourier_modes * pupils[:,:,np.newaxis]
+
+# display interaction matrix
+displayMap(interaction_matrix_fourier_modes)
 
 #%%
 
