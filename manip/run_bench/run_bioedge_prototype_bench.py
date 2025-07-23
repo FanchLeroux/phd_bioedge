@@ -232,7 +232,7 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 # define pupil
 
 # pupil radius in SLM pixels
-pupil_radius = 500 # [pixel]
+pupil_radius = 400 # [pixel]
 # pupil center on slm
 pupil_center = [565,1010] # [pixel]
 
@@ -253,7 +253,7 @@ tilt_out_of_pupil = tilt_out_of_pupil * tilt
 slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
 slm_flat = slm_flat + tilt_out_of_pupil
 
-#%% Load new WFC
+# Load new WFC
 
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
@@ -374,7 +374,7 @@ cam = DCAM.DCAMCamera()
 #%% Setup camera
 
 # initialize settings
-cam.exp_time = 5e-3    # exposure time (s)
+cam.exp_time = 50e-3    # exposure time (s)
 cam.n_frames = 10      # acquire cubes of n_frames images
 cam.ID = 0             # ID for the data saved
 roi = False
@@ -383,35 +383,33 @@ roi = False
 
 live_view(acquire, cam, roi)
 
-#%% Enter roi
-
-roi = [900, 830, 500, 500] # roi[0] is x coordinate, i.e column number
-
-#%% Check roi
-
-live_view(acquire, cam, roi)
-
-#%% Acquire image
-
-data_orca = acquire(cam, n_frames=10, exp_time=5e-3, roi=roi,
-                    dirc = dirc_data / "orca", overwrite=True)
-
-#%% Load flat on SLM
-
-command = display_phase_on_slm(slm_flat, return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
 #%% Select valid pixels
 
 n_frames = 100
-threshold = 0.2
+threshold = 0.1
 
 pupils_raw = np.median(acquire(cam, n_frames=10, exp_time=5e-3, roi=roi), axis=0)
 pupils = pupils_raw/pupils_raw.max()
 pupils[pupils>threshold] = 1.0
 pupils[pupils!=1.0] = 0.0
 
-plt.figure(plt.imshow(pupils))
+#%%
+
+plt.figure()
+plt.imshow(pupils)
+
+#%% Get rid of slm edges
+
+x1, x2, x3, x4 = 450, 820, 1120, 1490
+y1, y2, y3, y4 = 400, 800, 1320, 1690
+
+pupils[:y1,:], pupils[y2:y3, :], pupils[y4:, :] = 0, 0, 0
+pupils[:, :x1], pupils[:, x2:x3], pupils[:, x4:] = 0, 0, 0
+
+#%%
+
+plt.figure()
+plt.imshow(pupils)
 
 #%% Make interaction matrix
 
