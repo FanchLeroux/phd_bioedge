@@ -72,14 +72,14 @@ np.save(dirc_data / "slm" / "modal_basis" / "fourier_modes" / ("horizontal_fouri
                                                                str(n_pixels_in_slm_pupil) + 
                                                                "_pixels_in_slm_pupil_" +
                                                                str(n_subaperture) +
-                                                               "_subapertures.npy"), fourier_modes)
+                                                               "_subapertures.npy"), horizontal_fourier_modes)
 np.save(dirc_data / "slm" / "modal_basis" / "fourier_modes" / ("vertical_fourier_modes_" + 
                                                                str(n_pixels_in_slm_pupil) + 
                                                                "_pixels_in_slm_pupil_" +
                                                                str(n_subaperture) +
-                                                               "_subapertures.npy"), fourier_modes)
+                                                               "_subapertures.npy"), vertical_fourier_modes)
 np.save(dirc_data / "slm" / "modal_basis" / "fourier_modes" / ("diagonal_fourier_modes_" + 
                                                                str(n_pixels_in_slm_pupil) + 
                                                                "_pixels_in_slm_pupil_" +
                                                                str(n_subaperture) +
-                                                               "_subapertures.npy"), fourier_modes)
+                                                               "_subapertures.npy"), diagonal_fourier_modes)

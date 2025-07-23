@@ -253,8 +253,6 @@ tilt_out_of_pupil = tilt_out_of_pupil * tilt
 slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
 slm_flat = slm_flat + tilt_out_of_pupil
 
-plt.imshow(slm_flat)
-
 #%% Load new WFC
 
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
@@ -298,14 +296,14 @@ fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
 
 #%% Load horizontal fourier modes
 
-fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
-                        "fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
+horizontal_fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
+                        "horizontal_fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
 
-fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], fourier_modes.shape[2]))
-fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
-              slm_shape[0]//2+fourier_modes.shape[0]//2,
-              pupil_center[1]-fourier_modes.shape[1]//2:
-              pupil_center[1]+fourier_modes.shape[1]//2, :] = fourier_modes
+horizontal_fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], horizontal_fourier_modes.shape[2]))
+horizontal_fourier_modes_full_slm[slm_shape[0]//2-horizontal_fourier_modes.shape[0]//2:
+              slm_shape[0]//2+horizontal_fourier_modes.shape[0]//2,
+              pupil_center[1]-horizontal_fourier_modes.shape[1]//2:
+              pupil_center[1]+horizontal_fourier_modes.shape[1]//2, :] = horizontal_fourier_modes
     
 #%% Load  vertical fourier modes
 
