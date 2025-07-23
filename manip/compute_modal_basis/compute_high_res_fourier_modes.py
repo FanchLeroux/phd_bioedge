@@ -21,17 +21,21 @@ dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "
 
 #%%
 
-n_subaperture = 1152
-n_pixels_in_slm_pupil = 20
+n_subaperture = 20
+n_pixels_in_slm_pupil = 1152
 
 #%%
 
 fourier_modes_map = compute_real_fourier_basis(n_pixels_in_slm_pupil, return_map=True, npx_computation_limit=n_subaperture)
 
+#%%
+
 fourier_modes = sort_real_fourier_basis(fourier_modes_map)
 horizontal_fourier_modes = extract_horizontal_frequencies(fourier_modes_map)
 vertical_fourier_modes = extract_vertical_frequencies(fourier_modes_map)
 diagonal_fourier_modes = extract_diagonal_frequencies(fourier_modes_map)
+
+#%%
 
 # remove piston
 fourier_modes = fourier_modes[:,:,1:]
@@ -62,6 +66,8 @@ fourier_modes = fourier_modes.astype(np.uint8)
 horizontal_fourier_modes = horizontal_fourier_modes.astype(np.uint8)
 vertical_fourier_modes = vertical_fourier_modes.astype(np.uint8)
 diagonal_fourier_modes = diagonal_fourier_modes.astype(np.uint8)
+
+#%%
 
 np.save(dirc_data / "slm" / "modal_basis" / "fourier_modes" / ("fourier_modes_" + 
                                                                str(n_pixels_in_slm_pupil) + 

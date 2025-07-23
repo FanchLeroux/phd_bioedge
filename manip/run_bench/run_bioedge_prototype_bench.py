@@ -354,7 +354,7 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% display diagonal fourier mode on slm
 
-command = display_phase_on_slm(0.5*diagonal_fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+command = display_phase_on_slm(0.5*diagonal_fourier_modes_full_slm[:,:,2], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Load flat on SLM
@@ -396,12 +396,22 @@ live_view(acquire, cam, roi)
 data_orca = acquire(cam, n_frames=10, exp_time=5e-3, roi=roi,
                     dirc = dirc_data / "orca", overwrite=True)
 
-
-
 #%% Load flat on SLM
 
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
+#%% Select valid pixels
+
+n_frames = 100
+threshold = 0.2
+
+pupils_raw = np.median(acquire(cam, n_frames=10, exp_time=5e-3, roi=roi), axis=0)
+pupils = pupils_raw/pupils_raw.max()
+pupils[pupils>threshold] = 1.0
+pupils[pupils!=1.0] = 0.0
+
+plt.figure(plt.imshow(pupils))
 
 #%% Make interaction matrix
 
