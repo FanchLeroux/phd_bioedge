@@ -342,6 +342,21 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 command = display_phase_on_slm(0.5*fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
+#%% display horizontal fourier mode on slm
+
+command = display_phase_on_slm(0.5*horizontal_fourier_modes_full_slm[:,:,9], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
+#%% display vertical fourier mode on slm
+
+command = display_phase_on_slm(0.5*vertical_fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
+#%% display diagonal fourier mode on slm
+
+command = display_phase_on_slm(0.5*diagonal_fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+
 #%% Load flat on SLM
 
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
