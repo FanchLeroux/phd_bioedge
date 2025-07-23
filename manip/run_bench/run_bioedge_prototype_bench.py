@@ -296,6 +296,39 @@ fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
               pupil_center[1]-fourier_modes.shape[1]//2:
               pupil_center[1]+fourier_modes.shape[1]//2, :] = fourier_modes
 
+#%% Load horizontal fourier modes
+
+fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
+                        "fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
+
+fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], fourier_modes.shape[2]))
+fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
+              slm_shape[0]//2+fourier_modes.shape[0]//2,
+              pupil_center[1]-fourier_modes.shape[1]//2:
+              pupil_center[1]+fourier_modes.shape[1]//2, :] = fourier_modes
+    
+#%% Load  vertical fourier modes
+
+fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
+                        "fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
+
+fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], fourier_modes.shape[2]))
+fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
+              slm_shape[0]//2+fourier_modes.shape[0]//2,
+              pupil_center[1]-fourier_modes.shape[1]//2:
+              pupil_center[1]+fourier_modes.shape[1]//2, :] = fourier_modes
+    
+#%% Load diagonal fourier modes
+
+fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
+                        "fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
+
+fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], fourier_modes.shape[2]))
+fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
+              slm_shape[0]//2+fourier_modes.shape[0]//2,
+              pupil_center[1]-fourier_modes.shape[1]//2:
+              pupil_center[1]+fourier_modes.shape[1]//2, :] = fourier_modes
+    
 #%% display zernike mode on slm
 
 command = display_phase_on_slm(0.5*zernike_modes_full_slm[:,:,50], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
@@ -303,7 +336,7 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% display KL mode on slm
 
-command = display_phase_on_slm(0.5*KL_modes_full_slm[:,:,100], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+command = display_phase_on_slm(0.2*KL_modes_full_slm[:,:,100], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% display fourier mode on slm
