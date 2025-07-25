@@ -16,7 +16,6 @@ from OOPAO.Source import Source
 from OOPAO.DeformableMirror import DeformableMirror
 from OOPAO.calibration.compute_KL_modal_basis import compute_M2C
 from OOPAO.BioEdge import BioEdge
-from OOPAO.Pyramid import Pyramid
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
 
 #%%
@@ -361,13 +360,6 @@ if param['modal_basis'] == 'KL':
 elif param['modal_basis'] == 'poke':
     M2C = np.identity(dm.nValidAct)
     
-#%% Save Modal basis OPD in tel.pupil as .npy file to fill SLM on Bi-O-Edge prototype bench
-
-dm.coefs = M2C
-tel*dm
-
-np.save(dirc / "modal_basis_OPD_in_tel_pupil.npy", tel.OPD)
-    
 #%% ----------------------- Grey Bi-O-Edge ---------------------------- #
 
 # grey bioedge
@@ -497,7 +489,7 @@ total_lse_slopes_maps, residual_lse_slopes_maps, strehl_lse_slopes_maps, dm_coef
                        delay=param['delay'], photon_noise=param['detector_photon_noise'], 
                        read_out_noise=param['detector_read_out_noise'],  seed=seed, 
                        save_telemetry=True, save_psf=True,
-                       display = False)
+                       display = True)
     
 #%% Close the loop - LSE - fullFrame
 
