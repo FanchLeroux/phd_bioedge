@@ -26,6 +26,7 @@ echo "Running script in tmux session '${TMUX_SESSION}'..."
 ssh "${REMOTE_USER}@${REMOTE_HOST}" "tmux new-session -d -s ${TMUX_SESSION} \
   'source \"${REMOTE_VENV}/bin/activate\" && \
    python \"${REMOTE_TMP_SCRIPT}\" ; \
+   echo \"Python script exited with status \$?\" ; \
    rm -f \"${REMOTE_TMP_SCRIPT}\" ; \
    exec bash'"
 
