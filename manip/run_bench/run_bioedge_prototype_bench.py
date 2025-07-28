@@ -261,6 +261,43 @@ slm_flat = slm_flat + tilt_out_of_pupil
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
+#%% Link WFS cameras (ORCA)
+
+DCAM.get_cameras_number()
+
+#%% connect
+
+cam1 = DCAM.DCAMCamera(idx=0)
+cam2 = DCAM.DCAMCamera(idx=1)
+
+if cam1.get_device_info().serial_number == 'S/N: 002369':
+    orca_inline = cam1
+    del cam1
+    orca_folded = cam2
+    del cam2
+    
+else:
+    orca_inline = cam2
+    del cam2
+    orca_folded = cam1
+    del cam1
+
+#%% Setup cameras
+
+# initialize settings
+orca_inline.exp_time = 40e-3    # exposure time (s)
+orca_inline.n_frames = 3        # acquire cubes of n_frames images
+orca_inline.ID = 0              # ID for the data saved
+
+# initialize settings
+orca_folded.exp_time = orca_inline.exp_time    # exposure time (s)
+orca_folded.n_frames = orca_inline.n_frames    # acquire cubes of n_frames images
+orca_folded.ID = 0                             # ID for the data saved
+
+#%% Link focal plane camera (Thorlabs)
+
+
+
 #%% Load zernike modes
 
 zernike_modes = np.load(dirc_data / "slm" / "modal_basis" / "zernike_modes" / 
@@ -370,21 +407,10 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 command = display_phase_on_slm(np.zeros(slm_shape), return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
-#%% Link camera ORCA
-
-cam = DCAM.DCAMCamera()
-
-#%% Setup camera
-
-# initialize settings
-cam.exp_time = 40e-3    # exposure time (s)
-cam.n_frames = 3      # acquire cubes of n_frames images
-cam.ID = 0             # ID for the data saved
-roi = False
-
 #%% Live view
 
-live_view(acquire, cam, roi)
+roi=False
+live_view(acquire, orca_folded, roi)
 
 #%% Select valid pixels
 
@@ -455,7 +481,9 @@ displayMap(interaction_matrix_KL_modes)
 
 make_gif(dirc_data / "orca" / "fourier_modes_with_slm.gif", interaction_matrix_fourier_modes)
 
-#%% Load a linear LUT and a black WFC
+#%% End connection with SLM
+
+# Load a linear LUT and a black WFC
 
 slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
 display_phase_on_slm(np.zeros(slm_shape))
@@ -464,3 +492,8 @@ display_phase_on_slm(np.zeros(slm_shape))
 
 # Always call Delete_SDK before exiting
 slm_lib.Delete_SDK()
+
+#%% End conection with cameras
+
+orca_inline.close()
+orca_folded.close()
