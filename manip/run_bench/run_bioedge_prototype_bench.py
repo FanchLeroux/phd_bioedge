@@ -69,6 +69,10 @@ def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
     return image
 
 # display ORCA frames in real time
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+
 def live_view(cams, roi=None, interval=0.005):
     """
     Live view for one or multiple cameras, displaying serial numbers.
@@ -97,10 +101,11 @@ def live_view(cams, roi=None, interval=0.005):
     axes = np.atleast_1d(axes).flatten()
 
     ims, titles = [], []
-    for i, (frame, ax, serial) in enumerate(zip(frames, axes, serials)):
+    for i, (frame, ax) in enumerate(zip(frames, axes)):
         im = ax.imshow(frame, cmap='viridis')
         plt.colorbar(im, ax=ax)
-        titles.append(ax.set_title(f"Serial: {serial} - Max: {np.max(frame):.2f}"))
+        serial = serials[i]
+        titles.append(ax.set_title(f"Serial: {serial} - \nMax: {np.max(frame):.2f}\nMean: {np.mean(frame):.2f}"))
         ims.append(im)
 
     # Hide unused subplots
@@ -113,8 +118,10 @@ def live_view(cams, roi=None, interval=0.005):
             frame = cam.grab(1)[0]
             ims[i].set_data(frame)
             ims[i].set_clim(vmin=np.min(frame), vmax=np.max(frame))
-            titles[i].set_text(f"Serial: {serials[i]} - Max: {np.max(frame):.2f}")
+            serial = serials[i]  # <- Fix here
+            titles[i].set_text(f"Serial: {serial} - \nMax: {np.max(frame):.2f}\nMean: {np.mean(frame):.2f}")
         plt.pause(interval)
+
 
 def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], return_command_vector=False):
     
@@ -312,7 +319,7 @@ else:
 #%% Setup cameras
 
 # initialize settings
-orca_inline.exp_time = 40e-3    # exposure time (s)
+orca_inline.exp_time = 100e-3    # exposure time (s)
 orca_inline.n_frames = 3        # acquire cubes of n_frames images
 orca_inline.ID = 0              # ID for the data saved
 
@@ -321,12 +328,7 @@ orca_folded.exp_time = orca_inline.exp_time    # exposure time (s)
 orca_folded.n_frames = orca_inline.n_frames    # acquire cubes of n_frames images
 orca_folded.ID = 0                             # ID for the data saved
 
-#%% Live view
-
-roi=False
-live_view(acquire, orca_folded, roi)
-
-#%% liv view 2
+#%% live view
 
 roi=False
 live_view([orca_inline, orca_folded])
@@ -426,7 +428,7 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% display vertical fourier mode on slm
 
-command = display_phase_on_slm(0.5*vertical_fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+command = display_phase_on_slm(0.1*vertical_fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% display diagonal fourier mode on slm
@@ -447,22 +449,28 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 #%% Live view
 
 roi=False
-live_view(acquire, orca_folded, roi)
+live_view([orca_inline, orca_folded], roi)
 
 #%% Select valid pixels
 
 n_frames = 100
-threshold = 0.1
+threshold = 0.05
 
-pupils_raw = np.median(acquire(cam, n_frames=10, exp_time=5e-3, roi=roi), axis=0)
-pupils = pupils_raw/pupils_raw.max()
-pupils[pupils>threshold] = 1.0
-pupils[pupils!=1.0] = 0.0
+pupils_raw_orca_inline = np.median(acquire(orca_inline, n_frames=10, exp_time=5e-3, roi=roi), axis=0)
+pupils_orca_inline = pupils_raw_orca_inline/pupils_raw_orca_inline.max()
+pupils_orca_inline[pupils_orca_inline>threshold] = 1.0
+pupils_orca_inline[pupils_orca_inline!=1.0] = 0.0
+
+pupils_raw_orca_folded = np.median(acquire(orca_folded, n_frames=10, exp_time=5e-3, roi=roi), axis=0)
+pupils_orca_folded = pupils_raw_orca_folded/pupils_raw_orca_folded.max()
+pupils_orca_folded[pupils_orca_folded>threshold] = 1.0
+pupils_orca_folded[pupils_orca_folded!=1.0] = 0.0
 
 #%%
 
-plt.figure()
-plt.imshow(pupils)
+fig, axs = plt.subplots(nrows=1, ncols=2)
+axs[0].imshow(pupils_orca_inline)
+axs[1].imshow(pupils_orca_folded)
 
 #%% Get rid of slm edges
 
