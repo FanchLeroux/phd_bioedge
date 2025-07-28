@@ -24,6 +24,8 @@ from fanch.plots import make_gif
 
 from OOPAO.tools.displayTools import displayMap
 
+import math
+
 #%% Function declaration
 
 # utc datetime now
@@ -67,26 +69,51 @@ def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
     return image
 
 # display ORCA frames in real time
-def live_view(get_frame_func, cam, roi, dirc = False, overwrite=True, interval=0.005):
-    
-    cam.n_frames = 1
-    
-    plt.ion()  # Turn on interactive mode
+def live_view(cams, roi=None, interval=0.005):
+    """
+    Live view for one or multiple cameras, displaying serial numbers.
 
-    # First frame for setup
-    frame = get_frame_func(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)[0,:,:,]
-    is_color = frame.ndim == 3 and frame.shape[2] == 3
+    Parameters:
+        cams: camera object or list of camera objects
+        roi: region of interest (not currently used in this version)
+        interval: pause time between frame updates
+    """
+    plt.ion()
 
-    fig, ax = plt.subplots()
-    im = ax.imshow(frame, cmap='viridis' if not is_color else None)
-    plt.colorbar(im, ax=ax)
-    title = fig.suptitle(f"Max value: {np.max(frame):.2f}", fontsize=24)
+    # Ensure cams is a list
+    if not isinstance(cams, (list, tuple)):
+        cams = [cams]
 
-    while plt.fignum_exists(fig.number):  # Loop while window is open
-        frame = get_frame_func(cam, cam.n_frames, cam.exp_time, roi=roi, dirc = False, overwrite=True)[0,:,:,]
-        im.set_data(frame)
-        im.set_clim(vmin=np.min(frame), vmax=np.max(frame))  # Adjust color scale
-        title.set_text(f"Max value: {np.max(frame):.2f}")  # Update title
+    # Get initial frames and serial numbers
+    frames = [cam.grab(1)[0] for cam in cams]
+    serials = [cam.get_device_info().serial_number for cam in cams]
+
+    # Set up subplot layout
+    n = len(cams)
+    n_cols = math.ceil(math.sqrt(n))
+    n_rows = math.ceil(n / n_cols)
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 4 * n_rows))
+    axes = np.atleast_1d(axes).flatten()
+
+    ims, titles = [], []
+    for i, (frame, ax, serial) in enumerate(zip(frames, axes, serials)):
+        im = ax.imshow(frame, cmap='viridis')
+        plt.colorbar(im, ax=ax)
+        titles.append(ax.set_title(f"Serial: {serial} - Max: {np.max(frame):.2f}"))
+        ims.append(im)
+
+    # Hide unused subplots
+    for ax in axes[n:]:
+        ax.axis('off')
+
+    # Live update loop
+    while plt.fignum_exists(fig.number):
+        for i, cam in enumerate(cams):
+            frame = cam.grab(1)[0]
+            ims[i].set_data(frame)
+            ims[i].set_clim(vmin=np.min(frame), vmax=np.max(frame))
+            titles[i].set_text(f"Serial: {serials[i]} - Max: {np.max(frame):.2f}")
         plt.pause(interval)
 
 def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], return_command_vector=False):
@@ -293,6 +320,16 @@ orca_inline.ID = 0              # ID for the data saved
 orca_folded.exp_time = orca_inline.exp_time    # exposure time (s)
 orca_folded.n_frames = orca_inline.n_frames    # acquire cubes of n_frames images
 orca_folded.ID = 0                             # ID for the data saved
+
+#%% Live view
+
+roi=False
+live_view(acquire, orca_folded, roi)
+
+#%% liv view 2
+
+roi=False
+live_view([orca_inline, orca_folded])
 
 #%% Link focal plane camera (Thorlabs)
 
