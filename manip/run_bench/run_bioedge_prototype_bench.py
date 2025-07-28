@@ -357,7 +357,7 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% display diagonal fourier mode on slm
 
-command = display_phase_on_slm(0.5*diagonal_fourier_modes_full_slm[:,:,2], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+command = display_phase_on_slm(0.5*diagonal_fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Load flat on SLM
