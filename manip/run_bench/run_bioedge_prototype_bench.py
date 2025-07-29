@@ -13,8 +13,6 @@ import matplotlib.pyplot as plt
 
 import ctypes as ct
 
-from PIL import Image
-
 from pylablib.devices import DCAM
 
 from astropy.io import fits
@@ -69,10 +67,6 @@ def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
     return image
 
 # display ORCA frames in real time
-import matplotlib.pyplot as plt
-import numpy as np
-import math
-
 def live_view(cams, roi=None, interval=0.005):
     """
     Live view for one or multiple cameras, displaying serial numbers.
@@ -87,6 +81,9 @@ def live_view(cams, roi=None, interval=0.005):
     # Ensure cams is a list
     if not isinstance(cams, (list, tuple)):
         cams = [cams]
+
+    for cam in cams:
+        cam.set_exposure(cam.exp_time)
 
     # Get initial frames and serial numbers
     frames = [cam.grab(1)[0] for cam in cams]
@@ -269,7 +266,7 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 # define pupil
 
 # pupil radius in SLM pixels
-pupil_radius = 400 # [pixel]
+pupil_radius = 300 # [pixel]
 # pupil center on slm
 pupil_center = [565,1010] # [pixel]
 
@@ -319,9 +316,9 @@ else:
 #%% Setup cameras
 
 # initialize settings
-orca_inline.exp_time = 100e-3    # exposure time (s)
-orca_inline.n_frames = 3        # acquire cubes of n_frames images
-orca_inline.ID = 0              # ID for the data saved
+orca_inline.exp_time = 200e-3    # exposure time (s)
+orca_inline.n_frames = 3         # acquire cubes of n_frames images
+orca_inline.ID = 0               # ID for the data saved
 
 # initialize settings
 orca_folded.exp_time = orca_inline.exp_time    # exposure time (s)
@@ -454,14 +451,14 @@ live_view([orca_inline, orca_folded], roi)
 #%% Select valid pixels
 
 n_frames = 100
-threshold = 0.05
+threshold = 0.1
 
-pupils_raw_orca_inline = np.median(acquire(orca_inline, n_frames=10, exp_time=5e-3, roi=roi), axis=0)
+pupils_raw_orca_inline = np.median(acquire(orca_inline, n_frames=10, exp_time=orca_inline.exp_time, roi=roi), axis=0)
 pupils_orca_inline = pupils_raw_orca_inline/pupils_raw_orca_inline.max()
 pupils_orca_inline[pupils_orca_inline>threshold] = 1.0
 pupils_orca_inline[pupils_orca_inline!=1.0] = 0.0
 
-pupils_raw_orca_folded = np.median(acquire(orca_folded, n_frames=10, exp_time=5e-3, roi=roi), axis=0)
+pupils_raw_orca_folded = np.median(acquire(orca_folded, n_frames=10, exp_time=orca_folded.exp_time, roi=roi), axis=0)
 pupils_orca_folded = pupils_raw_orca_folded/pupils_raw_orca_folded.max()
 pupils_orca_folded[pupils_orca_folded>threshold] = 1.0
 pupils_orca_folded[pupils_orca_folded!=1.0] = 0.0
@@ -472,59 +469,117 @@ fig, axs = plt.subplots(nrows=1, ncols=2)
 axs[0].imshow(pupils_orca_inline)
 axs[1].imshow(pupils_orca_folded)
 
-#%% Get rid of slm edges
+#%% Get rid of slm edges - orca_inline
 
 x1, x2, x3, x4 = 450, 820, 1120, 1490
 y1, y2, y3, y4 = 400, 800, 1320, 1690
 
-pupils[:y1,:], pupils[y2:y3, :], pupils[y4:, :] = 0, 0, 0
-pupils[:, :x1], pupils[:, x2:x3], pupils[:, x4:] = 0, 0, 0
+pupils_orca_inline[:y1,:], pupils_orca_inline[y2:y3, :], pupils_orca_inline[y4:, :] = 0, 0, 0
+pupils_orca_inline[:, :x1], pupils_orca_inline[:, x2:x3], pupils_orca_inline[:, x4:] = 0, 0, 0
 
 #%%
 
 plt.figure()
-plt.imshow(pupils)
+plt.imshow(pupils_orca_inline)
 
-#%% Make interaction matrix
+#%% Measure reference intensities
 
-amplitude_calibration = 0.2
+command = display_phase_on_slm(slm_flat, return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
-interaction_matrix_fourier_modes = measure_interaction_matrix(amplitude_calibration*fourier_modes_full_slm[:,:,:100], 
-                                                              cam, 3, exp_time=40e-3, slm_flat=slm_flat,
-                                                              roi=False, 
+reference_intensities_orca_inline = np.mean(acquire(orca_inline, n_frames=10, exp_time=orca_inline.exp_time), axis=0)
+
+#%%
+
+plt.figure()
+plt.imshow(reference_intensities_orca_inline)
+
+#%% Measure interaction matrix - orca_inline
+
+amplitude_calibration = 0.1
+
+interaction_matrix_KL_modes = measure_interaction_matrix(amplitude_calibration*KL_modes_full_slm[:,:,:50],
+                                                              orca_inline, 3, exp_time=orca_inline.exp_time, slm_flat=slm_flat,
+                                                              roi=False,
                                                               dirc = dirc_data / "orca" / "interaction_matrix" / 
                                                               "raw_interaction_matrix_fourier_modes.npy", 
-                                                              overwrite=False,
+                                                              overwrite=True,
                                                               display=True)
 
 #%%
 
 # keep only valid pixels
-interaction_matrix_fourier_modes = interaction_matrix_fourier_modes * pupils[:,:,np.newaxis]
+interaction_matrix_KL_modes = interaction_matrix_KL_modes * pupils_orca_inline[:,:,np.newaxis]
 
 # display interaction matrix
-displayMap(interaction_matrix_fourier_modes)
-
-#%%
-
-interaction_matrix_zernike_modes = measure_interaction_matrix(zernike_modes_full_slm[:,:,0:20], 
-                                                              cam, 10, exp_time=10e-3, slm_flat=slm_flat,
-                                                              roi=roi, dirc = False, overwrite=False)
-
-#%%
-
-interaction_matrix_KL_modes = measure_interaction_matrix(KL_modes_full_slm[:,:,0:20], 
-                                                         cam, 10, exp_time=10e-3, slm_flat=slm_flat,
-                                                         roi=roi, dirc = False, overwrite=False,
-                                                         display=True)
-
-#%% Plot interaction matrix
-
 displayMap(interaction_matrix_KL_modes)
 
-#%% save as gif
+#%%
 
-make_gif(dirc_data / "orca" / "fourier_modes_with_slm.gif", interaction_matrix_fourier_modes)
+interaction_matrix_KL_modes_substracted = interaction_matrix_KL_modes - reference_intensities_orca_inline * pupils_orca_inline[:,:,np.newaxis]
+
+#%%
+
+interaction_matrix_KL_modes_normalized = interaction_matrix_KL_modes / interaction_matrix_KL_modes.sum(axis=(0,1), keepdims=True)
+
+#%%
+
+interaction_matrix_KL_modes_normalized_reshaped = np.reshape(interaction_matrix_KL_modes_normalized[pupils_orca_inline == 1.0],
+                                                             (int(pupils_orca_inline.sum()), interaction_matrix_KL_modes_normalized.shape[-1]))
+
+#%% SVD
+
+U, S, Vt = np.linalg.svd(interaction_matrix_KL_modes_normalized_reshaped, full_matrices=False)
+
+plt.figure()
+plt.plot(S/S.max())
+plt.yscale('log')
+
+#%% Inversion
+
+command_matrix = np.linalg.pinv(interaction_matrix_KL_modes_normalized_reshaped)
+
+plt.figure()
+plt.imshow(command_matrix @ interaction_matrix_KL_modes_normalized_reshaped)
+
+#%% Measure test matrix - orca_inline
+
+amplitude_calibration = 0.3
+
+modes = amplitude_calibration*KL_modes_full_slm[:,:,:50]
+
+#%%
+
+test_matrix_KL_modes = measure_interaction_matrix(modes,
+                                                              orca_inline, 3, exp_time=orca_inline.exp_time, slm_flat=slm_flat,
+                                                              roi=False,
+                                                              dirc = dirc_data / "orca" / "interaction_matrix" / 
+                                                              "raw_test_matrix_fourier_modes.npy", 
+                                                              overwrite=True,
+                                                              display=True)
+
+#%%
+
+# keep only valid pixels
+test_matrix_KL_modes = test_matrix_KL_modes * pupils_orca_inline[:,:,np.newaxis]
+
+#%%
+
+test_matrix_KL_modes_substracted = test_matrix_KL_modes - (reference_intensities_orca_inline * pupils_orca_inline)[:,:,np.newaxis]
+
+#%%
+
+test_matrix_KL_modes_normalized = test_matrix_KL_modes_substracted / test_matrix_KL_modes_substracted.sum(axis=(0,1), keepdims=True)
+
+#%%
+
+test_matrix_KL_modes_normalized_reshaped = np.reshape(test_matrix_KL_modes_normalized[pupils_orca_inline == 1.0],
+                                                             (int(pupils_orca_inline.sum()), test_matrix_KL_modes_normalized.shape[-1]))
+
+#%%
+
+plt.figure()
+plt.imshow(command_matrix @ test_matrix_KL_modes_normalized_reshaped)
 
 #%% End connection with SLM
 

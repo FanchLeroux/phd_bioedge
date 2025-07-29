@@ -23,8 +23,8 @@ dirc_data = pathlib.Path(__file__).parent
 
 #%%
 
-n_subaperture = 10
-n_pixels_in_slm_pupil = 20
+n_subaperture = 30
+n_pixels_in_slm_pupil = 400
 
 #%% -----------------------     TELESCOPE   ----------------------------------
 
