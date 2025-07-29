@@ -19,12 +19,12 @@ from OOPAO.tools.displayTools import displayMap
 
 #%%
 
-dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "data"
+dirc_data = pathlib.Path(__file__).parent
 
 #%%
 
-n_subaperture = 20
-n_pixels_in_slm_pupil = 600
+n_subaperture = 10
+n_pixels_in_slm_pupil = 20
 
 #%% -----------------------     TELESCOPE   ----------------------------------
 
@@ -119,8 +119,4 @@ KL_modes = KL_modes.astype(np.uint8)
 
 #%%
 
-np.save(dirc_data / "slm" / "modal_basis" / "KL_modes" / ("KL_modes_" + 
-                                                               str(n_pixels_in_slm_pupil) + 
-                                                               "_pixels_in_slm_pupil_" +
-                                                               str(n_subaperture) +
-                                                               "_subapertures.npy"), KL_modes)
+np.save(dirc_data / "compute_high_res_KL_output.npy", KL_modes)
