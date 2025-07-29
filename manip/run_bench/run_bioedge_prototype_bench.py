@@ -548,7 +548,7 @@ slm_phase_screens = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" /
 
 #%%
 
-n_modes_calib = slm_phase_screens.shape[2]
+n_phase_screens_calib = slm_phase_screens.shape[2]
 
 amplitude_calibration = 0.1
 
@@ -557,7 +557,7 @@ display=True
 # get one image to infer dimensions
 img = acquire(orca_inline, 1, orca_inline.exp_time, roi=roi)
 
-interaction_matrix = np.zeros((img.shape[1], img.shape[2], n_modes_calib), dtype=np.float32)
+interaction_matrix = np.zeros((img.shape[1], img.shape[2], n_phase_screens_calib), dtype=np.float32)
 
 if display:
     plt.ion()  # Turn on interactive mode
@@ -569,19 +569,19 @@ if display:
     plt.tight_layout()
     plt.show()
 
-for n_mode in range(n_modes_calib):
+for n_phase_screen in range(n_phase_screens_calib):
     
     KL_mode_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
     KL_mode_full_slm[pupil_center[0]-slm_phase_screens.shape[0]//2:
                   pupil_center[0]+slm_phase_screens.shape[0]//2,
                   pupil_center[1]-slm_phase_screens.shape[1]//2:
-                  pupil_center[1]+slm_phase_screens.shape[1]//2] = slm_phase_screens[:,:,n_mode]
+                  pupil_center[1]+slm_phase_screens.shape[1]//2] = slm_phase_screens[:,:,n_phase_screen]
     
     command = display_phase_on_slm(amplitude_calibration*KL_mode_full_slm, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
     
-    interaction_matrix[:,:,n_mode] = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi), axis=0)
+    interaction_matrix[:,:,n_phase_screen] = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi), axis=0)
     
-    print(str(n_mode))
+    print(str(n_phase_screen))
     
     if display:
         im1.set_data(slm_phase_screens[:,:,n_phase_screen])
