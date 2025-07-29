@@ -23,6 +23,7 @@ from fanch.plots import make_gif
 from OOPAO.tools.displayTools import displayMap
 
 import math
+import time
 
 #%% Function declaration
 
@@ -140,7 +141,34 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], retur
     if return_command_vector:
         return phase
     else:
+        del phase
         return None
+
+# def display_phase_on_slm(phase, slm_flat=None, slm_shape=(1152, 1920), return_command_vector=False):
+#     slm_size = slm_shape[0] * slm_shape[1]
+
+#     if slm_flat is None:
+#         slm_flat = np.zeros(slm_size, dtype=np.uint8)
+#     else:
+#         slm_flat = np.asarray(slm_flat, dtype=np.uint8).reshape(slm_size)
+
+#     phase = np.asarray(phase, dtype=np.uint8).reshape(slm_size)
+#     phase = (phase + slm_flat) % 256
+
+#     # display pattern on SLM
+#     slm_lib.Write_image(
+#         board_number,
+#         phase.ctypes.data_as(ct.POINTER(ct.c_ubyte)),
+#         slm_size,
+#         wait_For_Trigger,
+#         OutputPulseImageFlip,
+#         OutputPulseImageRefresh,
+#         timeout_ms
+#     )
+#     slm_lib.ImageWriteComplete(board_number, timeout_ms)
+
+#     return phase if return_command_vector else None
+
 
 def measure_interaction_matrix(slm_phase_screens, cam, n_frames, exp_time, slm_flat=np.False_,
                                roi=False, dirc = False, overwrite=False, display=True):
@@ -161,8 +189,16 @@ def measure_interaction_matrix(slm_phase_screens, cam, n_frames, exp_time, slm_f
         plt.show()
         
     for n_mode in range(slm_phase_screens.shape[2]):
-        display_phase_on_slm(slm_phase_screens[:,:,n_mode], slm_flat=slm_flat)
+        a =time.time()
+        mode = np.copy(slm_phase_screens[:,:,n_mode])
+        display_phase_on_slm(mode, slm_flat=slm_flat)
+        b =time.time()
+        print('display:'+str(b-a))
         interaction_matrix[:,:,n_mode] = np.mean(acquire(cam, n_frames, exp_time, roi=roi), axis=0)
+        c =time.time()
+        print('orca:'+str(c-b))
+        
+        
         
         if display:
             im1.set_data(slm_phase_screens[:,:,n_mode])
@@ -171,7 +207,7 @@ def measure_interaction_matrix(slm_phase_screens, cam, n_frames, exp_time, slm_f
             im2.set_clim(vmin=np.min(interaction_matrix[:,:,n_mode]), vmax=np.max(interaction_matrix[:,:,n_mode]))  # Adjust color scale
             plt.pause(0.005)
         
-    display_phase_on_slm(slm_flat)
+    #display_phase_on_slm(slm_flat)
     
     if dirc != False:
         np.save(dirc, interaction_matrix)
@@ -496,36 +532,64 @@ plt.imshow(reference_intensities_orca_inline)
 
 #%% Measure interaction matrix - orca_inline
 
+# Load KL modes
+
+KL_modes = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" / 
+                        "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy", mmap_mode='r')
+
+KL_mode_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
+KL_mode_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
+              pupil_center[0]+KL_modes.shape[0]//2,
+              pupil_center[1]-KL_modes.shape[1]//2:
+              pupil_center[1]+KL_modes.shape[1]//2] = KL_modes[:,:,-1]
+
+command = display_phase_on_slm(0.2*KL_mode_full_slm, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
+    
+#%%
+
+KL_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], KL_modes.shape[2]))
+KL_modes_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
+              pupil_center[0]+KL_modes.shape[0]//2,
+              pupil_center[1]-KL_modes.shape[1]//2:
+              pupil_center[1]+KL_modes.shape[1]//2, :] = KL_modes
+
+#%%
+    
+n_modes_calib = -1
+
 amplitude_calibration = 0.1
 
-interaction_matrix_KL_modes = measure_interaction_matrix(amplitude_calibration*KL_modes_full_slm[:,:,:50],
+modes = amplitude_calibration*KL_modes_full_slm[:,:,:n_modes_calib]
+
+interaction_matrix_KL_modes = measure_interaction_matrix(modes,
                                                               orca_inline, 3, exp_time=orca_inline.exp_time, slm_flat=slm_flat,
                                                               roi=False,
                                                               dirc = dirc_data / "orca" / "interaction_matrix" / 
                                                               "raw_interaction_matrix_fourier_modes.npy", 
                                                               overwrite=True,
-                                                              display=True)
+                                                              display=False)
 
 #%%
 
 # keep only valid pixels
 interaction_matrix_KL_modes = interaction_matrix_KL_modes * pupils_orca_inline[:,:,np.newaxis]
 
-# display interaction matrix
-displayMap(interaction_matrix_KL_modes)
+#%%
+
+interaction_matrix_KL_modes_substracted = interaction_matrix_KL_modes -\
+    (reference_intensities_orca_inline * pupils_orca_inline)[:,:,np.newaxis]
 
 #%%
 
-interaction_matrix_KL_modes_substracted = interaction_matrix_KL_modes - reference_intensities_orca_inline * pupils_orca_inline[:,:,np.newaxis]
-
-#%%
-
-interaction_matrix_KL_modes_normalized = interaction_matrix_KL_modes / interaction_matrix_KL_modes.sum(axis=(0,1), keepdims=True)
+interaction_matrix_KL_modes_normalized = interaction_matrix_KL_modes_substracted /\
+    interaction_matrix_KL_modes_substracted.sum(axis=(0,1), keepdims=True)
 
 #%%
 
 interaction_matrix_KL_modes_normalized_reshaped = np.reshape(interaction_matrix_KL_modes_normalized[pupils_orca_inline == 1.0],
-                                                             (int(pupils_orca_inline.sum()), interaction_matrix_KL_modes_normalized.shape[-1]))
+                                                             (int(pupils_orca_inline.sum()), 
+                                                              interaction_matrix_KL_modes_normalized.shape[-1]))
 
 #%% SVD
 
@@ -534,6 +598,13 @@ U, S, Vt = np.linalg.svd(interaction_matrix_KL_modes_normalized_reshaped, full_m
 plt.figure()
 plt.plot(S/S.max())
 plt.yscale('log')
+#%%
+support = np.zeros((2048,2048))
+
+support[np.where(pupils_orca_inline==1)] = U[:,1]
+plt.figure()
+plt.imshow(support)
+
 
 #%% Inversion
 
@@ -544,9 +615,11 @@ plt.imshow(command_matrix @ interaction_matrix_KL_modes_normalized_reshaped)
 
 #%% Measure test matrix - orca_inline
 
+n_modes_calib =100
+
 amplitude_calibration = 0.3
 
-modes = amplitude_calibration*KL_modes_full_slm[:,:,:50]
+modes = amplitude_calibration*KL_modes_full_slm[:,:,:n_modes_calib]
 
 #%%
 
@@ -569,12 +642,14 @@ test_matrix_KL_modes_substracted = test_matrix_KL_modes - (reference_intensities
 
 #%%
 
-test_matrix_KL_modes_normalized = test_matrix_KL_modes_substracted / test_matrix_KL_modes_substracted.sum(axis=(0,1), keepdims=True)
+test_matrix_KL_modes_normalized = test_matrix_KL_modes_substracted / test_matrix_KL_modes_substracted.sum(axis=(0,1), 
+                                                                                                          keepdims=True)
 
 #%%
 
 test_matrix_KL_modes_normalized_reshaped = np.reshape(test_matrix_KL_modes_normalized[pupils_orca_inline == 1.0],
-                                                             (int(pupils_orca_inline.sum()), test_matrix_KL_modes_normalized.shape[-1]))
+                                                             (int(pupils_orca_inline.sum()), 
+                                                              test_matrix_KL_modes_normalized.shape[-1]))
 
 #%%
 
@@ -597,3 +672,9 @@ slm_lib.Delete_SDK()
 
 orca_inline.close()
 orca_folded.close()
+
+#%% Bonus - Make gif
+
+make_gif(dirc_data / "interaction_matrix_measeurements.gif", interaction_matrix_KL_modes)
+make_gif(dirc_data / "test_matrix_measeurements.gif", test_matrix_KL_modes)
+
