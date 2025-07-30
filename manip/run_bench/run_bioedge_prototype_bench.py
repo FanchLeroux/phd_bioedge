@@ -291,7 +291,7 @@ orca_folded.exp_time = orca_inline.exp_time    # exposure time (s)
 orca_folded.n_frames = orca_inline.n_frames    # acquire cubes of n_frames images
 orca_folded.ID = 0                             # ID for the data saved
 
-#%% live view
+#%% live view - align Bi-O-Edge mask
 
 roi=False
 live_view([orca_inline, orca_folded])
@@ -299,11 +299,6 @@ live_view([orca_inline, orca_folded])
 #%% Link focal plane camera (Thorlabs)
 
 # to be done
-    
-#%% Live view
-
-roi=False
-live_view([orca_inline, orca_folded], roi)
 
 #%% Select valid pixels
 
@@ -345,11 +340,8 @@ plt.imshow(pupils_orca_inline)
 #%% Measure reference intensities
 
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 reference_intensities_orca_inline = np.mean(acquire(orca_inline, n_frames=10, exp_time=orca_inline.exp_time), axis=0)
-
-#%%
 
 plt.figure()
 plt.imshow(reference_intensities_orca_inline)
@@ -363,7 +355,7 @@ slm_phase_screens = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" /
 
 #%% Measure interaction matrix - orca_inline
 
-n_phase_screens_calib = slm_phase_screens.shape[2]
+n_phase_screens_calib = 10# slm_phase_screens.shape[2]
 
 amplitude_calibration = 0.1
 
@@ -457,7 +449,9 @@ dirc_matrices = dirc_data / "matrices" / utc_now
 
 pathlib.Path(dirc_matrices).mkdir(parents=True, exist_ok=True)
 
+np.save(dirc_matrices / (utc_now + "_reference_intensities_orca_inline.npy"), reference_intensities_orca_inline)
 np.save(dirc_matrices / (utc_now + "_interaction_matrix.npy"), interaction_matrix)
+np.save(dirc_matrices / (utc_now + "_test_matrix.npy"), test_matrix)
 
 #%% Post-processing - interaction matrix
 
@@ -521,7 +515,7 @@ np.save(dirc_matrices / (utc_now + "_test_matrix_normalized.npy"),
 
 support = np.zeros((2048,2048))
 
-support[np.where(pupils_orca_inline==1)] = interaction_matrix_normalized[:,50]
+support[np.where(pupils_orca_inline==1)] = interaction_matrix_normalized[:,8]
 plt.figure()
 plt.imshow(support)
 
@@ -573,9 +567,9 @@ orca_folded.close()
 #%% Bonus - Make gif
 
 interaction_matrix = np.load(dirc_matrices / (utc_now + "_interaction_matrix.npy"))
-make_gif(dirc_data / (get_utc_now()+"_interaction_matrix_measeurements.gif"), interaction_matrix)
+make_gif(dirc_data / "gif" /(get_utc_now()+"_interaction_matrix_measeurements.gif"), interaction_matrix)
 del interaction_matrix
 
 test_matrix = np.load(dirc_matrices / (utc_now + "_test_matrix.npy"))
-make_gif(dirc_data / (get_utc_now()+"_test_matrix_measeurements.gif"), test_matrix)
+make_gif(dirc_data / "gif" / (get_utc_now()+"_test_matrix_measeurements.gif"), test_matrix)
 del test_matrix
