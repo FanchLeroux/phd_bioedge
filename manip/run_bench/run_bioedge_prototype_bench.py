@@ -143,85 +143,6 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], retur
     else:
         del phase
         return None
-
-# def display_phase_on_slm(phase, slm_flat=None, slm_shape=(1152, 1920), return_command_vector=False):
-#     slm_size = slm_shape[0] * slm_shape[1]
-
-#     if slm_flat is None:
-#         slm_flat = np.zeros(slm_size, dtype=np.uint8)
-#     else:
-#         slm_flat = np.asarray(slm_flat, dtype=np.uint8).reshape(slm_size)
-
-#     phase = np.asarray(phase, dtype=np.uint8).reshape(slm_size)
-#     phase = (phase + slm_flat) % 256
-
-#     # display pattern on SLM
-#     slm_lib.Write_image(
-#         board_number,
-#         phase.ctypes.data_as(ct.POINTER(ct.c_ubyte)),
-#         slm_size,
-#         wait_For_Trigger,
-#         OutputPulseImageFlip,
-#         OutputPulseImageRefresh,
-#         timeout_ms
-#     )
-#     slm_lib.ImageWriteComplete(board_number, timeout_ms)
-
-#     return phase if return_command_vector else None
-
-
-def measure_interaction_matrix(path_to_slm_phase_screens, n_modes_calib, cam, n_frames, exp_time, 
-                               slm_flat=np.False_, slm_shape=(1152, 1920), pupil_center=[565,1010],
-                               roi=False, dirc = False, overwrite=False, display=True):
-    
-    # load modes (carefully)
-    slm_phase_screens = np.load(path_to_slm_phase_screens, mmap_mode='r')
-    
-    # get one image to infer dimensions
-    img = acquire(cam, 1, exp_time, roi=roi)
-    
-    interaction_matrix = np.zeros((img.shape[1], img.shape[2], slm_phase_screens.shape[2]), dtype=np.float64)
-    
-    if display:
-        plt.ion()  # Turn on interactive mode
-        fig, ax = plt.subplots(nrows=1, ncols=2)
-        im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],slm_phase_screens.shape[1])), cmap='viridis')
-        im2 = ax[1].imshow(interaction_matrix[:,:,0], cmap='viridis')
-        ax[0].set_title("SLM Command")
-        ax[1].set_title("Detector Irradiance")
-        plt.tight_layout()
-        plt.show()
-        
-    
-    for n_phase_screen in range(n_modes_calib):
-        a =time.time()
-        mode_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
-        mode_full_slm[pupil_center[0]-slm_phase_screens.shape[0]//2:
-              pupil_center[0]+slm_phase_screens.shape[0]//2,
-              pupil_center[1]-slm_phase_screens.shape[1]//2:
-              pupil_center[1]+slm_phase_screens.shape[1]//2] = slm_phase_screens[:,:,n_phase_screen]
-        display_phase_on_slm(mode_full_slm, slm_flat=slm_flat)
-        b =time.time()
-        print('display:'+str(b-a))
-        interaction_matrix[:,:,n_phase_screen] = np.mean(acquire(cam, n_frames, exp_time, roi=roi), axis=0)
-        c =time.time()
-        print('orca:'+str(c-b))
-        
-        
-        
-        if display:
-            im1.set_data(slm_phase_screens[:,:,n_phase_screen])
-            im1.set_clim(vmin=np.min(slm_phase_screens[:,:,n_phase_screen]), vmax=np.max(slm_phase_screens[:,:,n_phase_screen]))  # Adjust color scale
-            im2.set_data(interaction_matrix[:,:,n_phase_screen])
-            im2.set_clim(vmin=np.min(interaction_matrix[:,:,n_phase_screen]), vmax=np.max(interaction_matrix[:,:,n_phase_screen]))  # Adjust color scale
-            plt.pause(0.005)
-        del mode_full_slm
-    #display_phase_on_slm(slm_flat)
-    
-    if dirc != False:
-        np.save(dirc, interaction_matrix)
-    
-    return interaction_matrix
         
 #%% parameters
 
@@ -377,117 +298,8 @@ live_view([orca_inline, orca_folded])
 
 #%% Link focal plane camera (Thorlabs)
 
-
-
-#%% Load zernike modes
-
-zernike_modes = np.load(dirc_data / "slm" / "modal_basis" / "zernike_modes" / 
-                        ("zernike_modes_" + str(n_pixels_in_slm_pupil) +
-                        "_pixels_in_slm_pupil_" + str(n_subaperture) +
-                        "_subapertures.npy"))
-
-zernike_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], zernike_modes.shape[2]))
-zernike_modes_full_slm[pupil_center[0]-zernike_modes.shape[0]//2:
-              pupil_center[0]+zernike_modes.shape[0]//2,
-              pupil_center[1]-zernike_modes.shape[1]//2:
-              pupil_center[1]+zernike_modes.shape[1]//2, :] = zernike_modes
-
-
-#%% Load KL modes
-
-KL_modes = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" / 
-                        "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy")
-
-KL_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], KL_modes.shape[2]))
-KL_modes_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
-              pupil_center[0]+KL_modes.shape[0]//2,
-              pupil_center[1]-KL_modes.shape[1]//2:
-              pupil_center[1]+KL_modes.shape[1]//2, :] = KL_modes
-
-#%% Load fourier modes
-
-fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
-                        "fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
-
-fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], fourier_modes.shape[2]))
-fourier_modes_full_slm[slm_shape[0]//2-fourier_modes.shape[0]//2:
-              slm_shape[0]//2+fourier_modes.shape[0]//2,
-              pupil_center[1]-fourier_modes.shape[1]//2:
-              pupil_center[1]+fourier_modes.shape[1]//2, :] = fourier_modes
-
-#%% Load horizontal fourier modes
-
-horizontal_fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
-                        "horizontal_fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
-
-horizontal_fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], horizontal_fourier_modes.shape[2]))
-horizontal_fourier_modes_full_slm[slm_shape[0]//2-horizontal_fourier_modes.shape[0]//2:
-              slm_shape[0]//2+horizontal_fourier_modes.shape[0]//2,
-              pupil_center[1]-horizontal_fourier_modes.shape[1]//2:
-              pupil_center[1]+horizontal_fourier_modes.shape[1]//2, :] = horizontal_fourier_modes
+# to be done
     
-#%% Load  vertical fourier modes
-
-vertical_fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
-                        "vertical_fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
-
-vertical_fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], vertical_fourier_modes.shape[2]))
-vertical_fourier_modes_full_slm[slm_shape[0]//2-vertical_fourier_modes.shape[0]//2:
-              slm_shape[0]//2+vertical_fourier_modes.shape[0]//2,
-              pupil_center[1]-vertical_fourier_modes.shape[1]//2:
-              pupil_center[1]+vertical_fourier_modes.shape[1]//2, :] = vertical_fourier_modes
-    
-#%% Load diagonal fourier modes
-
-diagonal_fourier_modes = np.load(dirc_data / "slm" / "modal_basis" / "fourier_modes" / 
-                        "diagonal_fourier_modes_1152_pixels_in_slm_pupil_20_subapertures.npy")
-
-diagonal_fourier_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], diagonal_fourier_modes.shape[2]))
-diagonal_fourier_modes_full_slm[slm_shape[0]//2-diagonal_fourier_modes.shape[0]//2:
-              slm_shape[0]//2+diagonal_fourier_modes.shape[0]//2,
-              pupil_center[1]-diagonal_fourier_modes.shape[1]//2:
-              pupil_center[1]+diagonal_fourier_modes.shape[1]//2, :] = diagonal_fourier_modes
-    
-#%% display zernike mode on slm
-
-command = display_phase_on_slm(0.5*zernike_modes_full_slm[:,:,50], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
-#%% display KL mode on slm
-
-command = display_phase_on_slm(0.2*KL_modes_full_slm[:,:,100], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
-#%% display fourier mode on slm
-
-command = display_phase_on_slm(0.5*fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
-#%% display horizontal fourier mode on slm
-
-command = display_phase_on_slm(0.5*horizontal_fourier_modes_full_slm[:,:,9], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
-#%% display vertical fourier mode on slm
-
-command = display_phase_on_slm(0.1*vertical_fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
-#%% display diagonal fourier mode on slm
-
-command = display_phase_on_slm(0.2*diagonal_fourier_modes_full_slm[:,:,-1], slm_flat, slm_shape=[1152,1920], return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
-#%% Load flat on SLM
-
-command = display_phase_on_slm(slm_flat, return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
-#%% Load zeros on SLM
-
-command = display_phase_on_slm(np.zeros(slm_shape), return_command_vector=True)
-plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
-
 #%% Live view
 
 roi=False
@@ -502,11 +314,14 @@ pupils_raw_orca_inline = np.median(acquire(orca_inline, n_frames=10, exp_time=or
 pupils_orca_inline = pupils_raw_orca_inline/pupils_raw_orca_inline.max()
 pupils_orca_inline[pupils_orca_inline>threshold] = 1.0
 pupils_orca_inline[pupils_orca_inline!=1.0] = 0.0
+pupils_orca_inline = pupils_orca_inline.astype(np.float32)
+
 
 pupils_raw_orca_folded = np.median(acquire(orca_folded, n_frames=10, exp_time=orca_folded.exp_time, roi=roi), axis=0)
 pupils_orca_folded = pupils_raw_orca_folded/pupils_raw_orca_folded.max()
 pupils_orca_folded[pupils_orca_folded>threshold] = 1.0
 pupils_orca_folded[pupils_orca_folded!=1.0] = 0.0
+pupils_orca_folded = pupils_orca_folded.astype(np.float32)
 
 #%%
 
@@ -539,14 +354,14 @@ reference_intensities_orca_inline = np.mean(acquire(orca_inline, n_frames=10, ex
 plt.figure()
 plt.imshow(reference_intensities_orca_inline)
 
-#%% Measure interaction matrix - orca_inline
+#%% Load modal basis
 
 # Load KL modes
 
 slm_phase_screens = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" / 
                         "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy", mmap_mode='r')
 
-#%%
+#%% Measure interaction matrix - orca_inline
 
 n_phase_screens_calib = slm_phase_screens.shape[2]
 
@@ -560,6 +375,7 @@ img = acquire(orca_inline, 1, orca_inline.exp_time, roi=roi)
 interaction_matrix = np.zeros((img.shape[1], img.shape[2], n_phase_screens_calib), dtype=np.float32)
 
 if display:
+    
     plt.ion()  # Turn on interactive mode
     fig, ax = plt.subplots(nrows=1, ncols=2)
     im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],slm_phase_screens.shape[1])), cmap='viridis')
@@ -589,130 +405,120 @@ for n_phase_screen in range(n_phase_screens_calib):
         im2.set_data(interaction_matrix[:,:,n_phase_screen])
         im2.set_clim(vmin=np.min(interaction_matrix[:,:,n_phase_screen]), vmax=np.max(interaction_matrix[:,:,n_phase_screen]))  # Adjust color scale
         plt.pause(0.005)
+
+#%% Measure test matrix - orca_inline
+
+amplitude_calibration = 0.3
+
+display=True
+
+# get one image to infer dimensions
+img = acquire(orca_inline, 1, orca_inline.exp_time, roi=roi)
+
+test_matrix = np.zeros((img.shape[1], img.shape[2], n_phase_screens_calib), dtype=np.float32)
+
+if display:
     
-#%%
+    plt.ion()  # Turn on interactive mode
+    fig, ax = plt.subplots(nrows=1, ncols=2)
+    im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],slm_phase_screens.shape[1])), cmap='viridis')
+    im2 = ax[1].imshow(test_matrix[:,:,0], cmap='viridis')
+    ax[0].set_title("SLM Command")
+    ax[1].set_title("Detector Irradiance")
+    plt.tight_layout()
+    plt.show()
 
-KL_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1], KL_modes.shape[2]))
-KL_modes_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
-              pupil_center[0]+KL_modes.shape[0]//2,
-              pupil_center[1]-KL_modes.shape[1]//2:
-              pupil_center[1]+KL_modes.shape[1]//2, :] = KL_modes
-
-#%% try
-
-n_modes_calib = 4
-
-amplitude_calibration = 0.1
-
-interaction_matrix_KL_modes = measure_interaction_matrix(dirc_data / "slm" / "modal_basis" / "KL_modes" / "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy",
-                                                         n_modes_calib,
-                                                         orca_inline, 3, exp_time=orca_inline.exp_time, slm_flat=slm_flat,
-                                                         roi=False,
-                                                         dirc = dirc_data / "orca" / "interaction_matrix" / "raw_interaction_matrix_fourier_modes.npy", 
-                                                         overwrite=True,
-                                                         display=False)
-
-#%%
+for n_phase_screen in range(n_phase_screens_calib):
     
-n_modes_calib = -1
+    KL_mode_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
+    KL_mode_full_slm[pupil_center[0]-slm_phase_screens.shape[0]//2:
+                  pupil_center[0]+slm_phase_screens.shape[0]//2,
+                  pupil_center[1]-slm_phase_screens.shape[1]//2:
+                  pupil_center[1]+slm_phase_screens.shape[1]//2] = slm_phase_screens[:,:,n_phase_screen]
+    
+    command = display_phase_on_slm(amplitude_calibration*KL_mode_full_slm, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+    
+    test_matrix[:,:,n_phase_screen] = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi), axis=0)
+    
+    print(str(n_phase_screen))
+    
+    if display:
+        im1.set_data(slm_phase_screens[:,:,n_phase_screen])
+        im1.set_clim(vmin=np.min(slm_phase_screens[:,:,n_phase_screen]), vmax=np.max(slm_phase_screens[:,:,n_phase_screen]))  # Adjust color scale
+        im2.set_data(test_matrix[:,:,n_phase_screen])
+        im2.set_clim(vmin=np.min(test_matrix[:,:,n_phase_screen]), vmax=np.max(test_matrix[:,:,n_phase_screen]))  # Adjust color scale
+        plt.pause(0.005)
 
-amplitude_calibration = 0.1
 
-modes = amplitude_calibration*KL_modes_full_slm[:,:,:n_modes_calib]
+#%% Post-processing - interaction matrix
 
-interaction_matrix_KL_modes = measure_interaction_matrix(modes,
-                                                              orca_inline, 3, exp_time=orca_inline.exp_time, slm_flat=slm_flat,
-                                                              roi=False,
-                                                              dirc = dirc_data / "orca" / "interaction_matrix" / 
-                                                              "raw_interaction_matrix_fourier_modes.npy", 
-                                                              overwrite=True,
-                                                              display=False)
-
-#%%
-
-# keep only valid pixels
-interaction_matrix_KL_modes = interaction_matrix_KL_modes * pupils_orca_inline[:,:,np.newaxis]
-
-#%%
-
-interaction_matrix_KL_modes_substracted = interaction_matrix_KL_modes -\
-    (reference_intensities_orca_inline * pupils_orca_inline)[:,:,np.newaxis]
-
-#%%
-
-interaction_matrix_KL_modes_normalized = interaction_matrix_KL_modes_substracted /\
-    interaction_matrix_KL_modes_substracted.sum(axis=(0,1), keepdims=True)
-
-#%%
-
-interaction_matrix_KL_modes_normalized_reshaped = np.reshape(interaction_matrix_KL_modes_normalized[pupils_orca_inline == 1.0],
+interaction_matrix_valid_pixel_reshaped = np.reshape(interaction_matrix[pupils_orca_inline == 1.0],
                                                              (int(pupils_orca_inline.sum()), 
-                                                              interaction_matrix_KL_modes_normalized.shape[-1]))
+                                                              interaction_matrix.shape[-1]))
+
+#%%
+
+interaction_matrix_substracted = interaction_matrix_valid_pixel_reshaped -\
+    (np.reshape(reference_intensities_orca_inline[pupils_orca_inline == 1.0],
+                                                                 (int(pupils_orca_inline.sum()))))[:,np.newaxis]
+
+#%%
+
+interaction_matrix_normalized = interaction_matrix_substracted /\
+    interaction_matrix_substracted.sum(axis=0, keepdims=True)
+
+#%% Post-processing - test matrix
+
+test_matrix_valid_pixel_reshaped = np.reshape(test_matrix[pupils_orca_inline == 1.0],
+                                                             (int(pupils_orca_inline.sum()), 
+                                                              test_matrix.shape[-1]))
+
+#%%
+
+test_matrix_substracted = test_matrix_valid_pixel_reshaped -\
+    (np.reshape(reference_intensities_orca_inline[pupils_orca_inline == 1.0],
+                                                                 (int(pupils_orca_inline.sum()))))[:,np.newaxis]
+
+#%%
+
+test_matrix_normalized = test_matrix_substracted /\
+    test_matrix_substracted.sum(axis=0, keepdims=True)
+
+#%% see interaction matrix as camera frame
+
+support = np.zeros((2048,2048))
+
+support[np.where(pupils_orca_inline==1)] = interaction_matrix_normalized[:,50]
+plt.figure()
+plt.imshow(support)
 
 #%% SVD
 
-U, S, Vt = np.linalg.svd(interaction_matrix_KL_modes_normalized_reshaped, full_matrices=False)
+U, S, Vt = np.linalg.svd(interaction_matrix_normalized, full_matrices=False)
 
 plt.figure()
 plt.plot(S/S.max())
 plt.yscale('log')
-#%%
+
+#%% see eigen modes
+
 support = np.zeros((2048,2048))
 
-support[np.where(pupils_orca_inline==1)] = U[:,1]
+support[np.where(pupils_orca_inline==1)] = U[:,0]
 plt.figure()
 plt.imshow(support)
 
-
 #%% Inversion
 
-command_matrix = np.linalg.pinv(interaction_matrix_KL_modes_normalized_reshaped)
+command_matrix = np.linalg.pinv(interaction_matrix_normalized)
 
 plt.figure()
-plt.imshow(command_matrix @ interaction_matrix_KL_modes_normalized_reshaped)
-
-#%% Measure test matrix - orca_inline
-
-n_modes_calib =100
-
-amplitude_calibration = 0.3
-
-modes = amplitude_calibration*KL_modes_full_slm[:,:,:n_modes_calib]
-
-#%%
-
-test_matrix_KL_modes = measure_interaction_matrix(modes,
-                                                              orca_inline, 3, exp_time=orca_inline.exp_time, slm_flat=slm_flat,
-                                                              roi=False,
-                                                              dirc = dirc_data / "orca" / "interaction_matrix" / 
-                                                              "raw_test_matrix_fourier_modes.npy", 
-                                                              overwrite=True,
-                                                              display=True)
-
-#%%
-
-# keep only valid pixels
-test_matrix_KL_modes = test_matrix_KL_modes * pupils_orca_inline[:,:,np.newaxis]
-
-#%%
-
-test_matrix_KL_modes_substracted = test_matrix_KL_modes - (reference_intensities_orca_inline * pupils_orca_inline)[:,:,np.newaxis]
-
-#%%
-
-test_matrix_KL_modes_normalized = test_matrix_KL_modes_substracted / test_matrix_KL_modes_substracted.sum(axis=(0,1), 
-                                                                                                          keepdims=True)
-
-#%%
-
-test_matrix_KL_modes_normalized_reshaped = np.reshape(test_matrix_KL_modes_normalized[pupils_orca_inline == 1.0],
-                                                             (int(pupils_orca_inline.sum()), 
-                                                              test_matrix_KL_modes_normalized.shape[-1]))
+plt.imshow(command_matrix @ interaction_matrix_normalized)
 
 #%%
 
 plt.figure()
-plt.imshow(command_matrix @ test_matrix_KL_modes_normalized_reshaped)
+plt.imshow(command_matrix @ test_matrix_normalized)
 
 #%% End connection with SLM
 
@@ -733,6 +539,5 @@ orca_folded.close()
 
 #%% Bonus - Make gif
 
-make_gif(dirc_data / "interaction_matrix_measeurements.gif", interaction_matrix_KL_modes)
-make_gif(dirc_data / "test_matrix_measeurements.gif", test_matrix_KL_modes)
-
+make_gif(dirc_data / (get_utc_now()+"_interaction_matrix_measeurements.gif"), interaction_matrix)
+make_gif(dirc_data / (get_utc_now()+"_test_matrix_measeurements.gif"), test_matrix)
