@@ -449,6 +449,15 @@ for n_phase_screen in range(n_phase_screens_calib):
         im2.set_clim(vmin=np.min(test_matrix[:,:,n_phase_screen]), vmax=np.max(test_matrix[:,:,n_phase_screen]))  # Adjust color scale
         plt.pause(0.005)
 
+#%% Create folder to save results
+
+utc_now = get_utc_now()
+
+dirc_matrices = dirc_data / "matrices" / utc_now
+
+pathlib.Path(dirc_matrices).mkdir(parents=True, exist_ok=True)
+
+np.save(dirc_matrices / (utc_now + "_interaction_matrix.npy"), interaction_matrix)
 
 #%% Post-processing - interaction matrix
 
@@ -456,22 +465,38 @@ interaction_matrix_valid_pixel_reshaped = np.reshape(interaction_matrix[pupils_o
                                                              (int(pupils_orca_inline.sum()), 
                                                               interaction_matrix.shape[-1]))
 
+del interaction_matrix
+np.save(dirc_matrices / (utc_now + "_interaction_matrix_valid_pixel_reshaped.npy"), 
+        interaction_matrix_valid_pixel_reshaped)
+
 #%%
 
 interaction_matrix_substracted = interaction_matrix_valid_pixel_reshaped -\
     (np.reshape(reference_intensities_orca_inline[pupils_orca_inline == 1.0],
                                                                  (int(pupils_orca_inline.sum()))))[:,np.newaxis]
 
+del interaction_matrix_valid_pixel_reshaped
+np.save(dirc_matrices / (utc_now + "_interaction_matrix_substracted.npy"), 
+        interaction_matrix_substracted)
+
 #%%
 
 interaction_matrix_normalized = interaction_matrix_substracted /\
     interaction_matrix_substracted.sum(axis=0, keepdims=True)
 
-#%% Post-processing - test matrix
+del interaction_matrix_substracted
+np.save(dirc_matrices / (utc_now + "_interaction_matrix_normalized.npy"), 
+        interaction_matrix_normalized)
+
+#%% Post-processing - interaction matrix
 
 test_matrix_valid_pixel_reshaped = np.reshape(test_matrix[pupils_orca_inline == 1.0],
                                                              (int(pupils_orca_inline.sum()), 
                                                               test_matrix.shape[-1]))
+
+del test_matrix
+np.save(dirc_matrices / (utc_now + "_test_matrix_valid_pixel_reshaped.npy"), 
+        test_matrix_valid_pixel_reshaped)
 
 #%%
 
@@ -479,12 +504,20 @@ test_matrix_substracted = test_matrix_valid_pixel_reshaped -\
     (np.reshape(reference_intensities_orca_inline[pupils_orca_inline == 1.0],
                                                                  (int(pupils_orca_inline.sum()))))[:,np.newaxis]
 
+del test_matrix_valid_pixel_reshaped
+np.save(dirc_matrices / (utc_now + "_test_matrix_substracted.npy"), 
+        test_matrix_substracted)
+
 #%%
 
 test_matrix_normalized = test_matrix_substracted /\
     test_matrix_substracted.sum(axis=0, keepdims=True)
 
-#%% see interaction matrix as camera frame
+del test_matrix_substracted
+np.save(dirc_matrices / (utc_now + "_test_matrix_normalized.npy"), 
+        test_matrix_normalized)
+
+#%% see post-processed interaction matrix as camera frame
 
 support = np.zeros((2048,2048))
 
@@ -539,5 +572,10 @@ orca_folded.close()
 
 #%% Bonus - Make gif
 
+interaction_matrix = np.load(dirc_matrices / (utc_now + "_interaction_matrix.npy"))
 make_gif(dirc_data / (get_utc_now()+"_interaction_matrix_measeurements.gif"), interaction_matrix)
+del interaction_matrix
+
+test_matrix = np.load(dirc_matrices / (utc_now + "_test_matrix.npy"))
 make_gif(dirc_data / (get_utc_now()+"_test_matrix_measeurements.gif"), test_matrix)
+del test_matrix
