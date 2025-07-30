@@ -566,8 +566,8 @@ orca_folded.close()
 
 if do_gif:
 
-    print("start making gif")    
-
+    print("start making gif")
+    
     interaction_matrix = np.load(dirc_matrices / (utc_now + "_interaction_matrix.npy"))
     make_gif(dirc_data / "gif" /(get_utc_now()+"_interaction_matrix_measeurements.gif"), interaction_matrix)
     del interaction_matrix
