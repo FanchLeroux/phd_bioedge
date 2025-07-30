@@ -168,7 +168,7 @@ tilt_amplitude = 1000.0*np.pi # [rad]
 tilt_angle = -135.0 # [deg]
 
 amplitude_calibration_interaction_matrix = 0.1 # (std) [rad]
-amplitude_calibration_test_matrix = 0.1 # (std) [rad]
+amplitude_calibration_test_matrix = 0.3 # (std) [rad]
 
 # orcas exposure time
 exposure_time = 200e-3    # exposure time (s)
@@ -178,7 +178,12 @@ n_frames = 100
 threshold = 0.1
 
 # calibration
-n_phase_screens_calib = 10 # slm_phase_screens.shape[2]
+
+# Load KL modes
+slm_phase_screens = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" / 
+                        "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy", mmap_mode='r')
+# chose how many modes are used to calibrate
+n_phase_screens_calib = slm_phase_screens.shape[2]
 
 #%% Link slm MEADOWLARK
 
@@ -348,13 +353,6 @@ reference_intensities_orca_inline = np.mean(acquire(orca_inline, n_frames=10, ex
 
 plt.figure()
 plt.imshow(reference_intensities_orca_inline)
-
-#%% Load modal basis
-
-# Load KL modes
-
-slm_phase_screens = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" / 
-                        "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy", mmap_mode='r')
 
 #%% Measure interaction matrix - orca_inline
 
