@@ -155,13 +155,30 @@ slm_shape = np.array([1152,1920])
 # number of phase measurements point
 n_subaperture = 20
 
-# pupil radius in SLM pixels
-n_pixels_in_slm_pupil = 1100
+# define pupil
 
+# pupil radius in SLM pixels
+pupil_radius = 300 # [pixel]
 # pupil center on slm
 pupil_center = [565,1010] # [pixel]
 
-amplitude_calibration = 1 # (std) [rad]
+# get large tilt on slm shaped support
+
+tilt_amplitude = 1000.0*np.pi # [rad]
+tilt_angle = -135.0 # [deg]
+
+amplitude_calibration_interaction_matrix = 0.1 # (std) [rad]
+amplitude_calibration_test_matrix = 0.1 # (std) [rad]
+
+# orcas exposure time
+exposure_time = 200e-3    # exposure time (s)
+
+# valid pixel selection
+n_frames = 100
+threshold = 0.1
+
+# calibration
+n_phase_screens_calib = 10 # slm_phase_screens.shape[2]
 
 #%% Link slm MEADOWLARK
 
@@ -229,18 +246,7 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Modify WFC to simulate pupil
 
-# define pupil
-
-# pupil radius in SLM pixels
-pupil_radius = 300 # [pixel]
-# pupil center on slm
-pupil_center = [565,1010] # [pixel]
-
-# get large tilt on slm shaped support
-
-tilt_amplitude = 1000.0*np.pi # [rad]
-tilt_angle = -135.0 # [deg]
-tilt = get_tilt([1152,1920], theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
+tilt = get_tilt(slm_shape, theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
 
 # replace pupil location by zeros
 
@@ -282,7 +288,7 @@ else:
 #%% Setup cameras
 
 # initialize settings
-orca_inline.exp_time = 200e-3    # exposure time (s)
+orca_inline.exp_time = exposure_time
 orca_inline.n_frames = 3         # acquire cubes of n_frames images
 orca_inline.ID = 0               # ID for the data saved
 
@@ -301,9 +307,6 @@ live_view([orca_inline, orca_folded])
 # to be done
 
 #%% Select valid pixels
-
-n_frames = 100
-threshold = 0.1
 
 pupils_raw_orca_inline = np.median(acquire(orca_inline, n_frames=10, exp_time=orca_inline.exp_time, roi=roi), axis=0)
 pupils_orca_inline = pupils_raw_orca_inline/pupils_raw_orca_inline.max()
@@ -355,10 +358,6 @@ slm_phase_screens = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" /
 
 #%% Measure interaction matrix - orca_inline
 
-n_phase_screens_calib = 10# slm_phase_screens.shape[2]
-
-amplitude_calibration = 0.1
-
 display=True
 
 # get one image to infer dimensions
@@ -385,7 +384,7 @@ for n_phase_screen in range(n_phase_screens_calib):
                   pupil_center[1]-slm_phase_screens.shape[1]//2:
                   pupil_center[1]+slm_phase_screens.shape[1]//2] = slm_phase_screens[:,:,n_phase_screen]
     
-    command = display_phase_on_slm(amplitude_calibration*KL_mode_full_slm, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+    command = display_phase_on_slm(amplitude_calibration_interaction_matrix*KL_mode_full_slm, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
     
     interaction_matrix[:,:,n_phase_screen] = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi), axis=0)
     
@@ -399,8 +398,6 @@ for n_phase_screen in range(n_phase_screens_calib):
         plt.pause(0.005)
 
 #%% Measure test matrix - orca_inline
-
-amplitude_calibration = 0.3
 
 display=True
 
@@ -428,7 +425,7 @@ for n_phase_screen in range(n_phase_screens_calib):
                   pupil_center[1]-slm_phase_screens.shape[1]//2:
                   pupil_center[1]+slm_phase_screens.shape[1]//2] = slm_phase_screens[:,:,n_phase_screen]
     
-    command = display_phase_on_slm(amplitude_calibration*KL_mode_full_slm, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+    command = display_phase_on_slm(amplitude_calibration_test_matrix*KL_mode_full_slm, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
     
     test_matrix[:,:,n_phase_screen] = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi), axis=0)
     
