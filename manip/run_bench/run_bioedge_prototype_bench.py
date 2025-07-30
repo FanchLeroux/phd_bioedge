@@ -185,6 +185,9 @@ slm_phase_screens = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" /
 # chose how many modes are used to calibrate
 n_phase_screens_calib = slm_phase_screens.shape[2]
 
+# do gif
+do_gif = True
+
 #%% Link slm MEADOWLARK
 
 # load slm library
@@ -561,10 +564,14 @@ orca_folded.close()
 
 #%% Bonus - Make gif
 
-interaction_matrix = np.load(dirc_matrices / (utc_now + "_interaction_matrix.npy"))
-make_gif(dirc_data / "gif" /(get_utc_now()+"_interaction_matrix_measeurements.gif"), interaction_matrix)
-del interaction_matrix
+if do_gif:
 
-test_matrix = np.load(dirc_matrices / (utc_now + "_test_matrix.npy"))
-make_gif(dirc_data / "gif" / (get_utc_now()+"_test_matrix_measeurements.gif"), test_matrix)
-del test_matrix
+    print("start making gif")    
+
+    interaction_matrix = np.load(dirc_matrices / (utc_now + "_interaction_matrix.npy"))
+    make_gif(dirc_data / "gif" /(get_utc_now()+"_interaction_matrix_measeurements.gif"), interaction_matrix)
+    del interaction_matrix
+    
+    test_matrix = np.load(dirc_matrices / (utc_now + "_test_matrix.npy"))
+    make_gif(dirc_data / "gif" / (get_utc_now()+"_test_matrix_measeurements.gif"), test_matrix)
+    del test_matrix
