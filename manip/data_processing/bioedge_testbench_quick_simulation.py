@@ -186,8 +186,24 @@ gbioedge_full_frame = BioEdge(nSubap = param['n_subaperture'],
 
 #%% Calibration
 
+dm.coefs = 100. * param['stroke'] * M2C[:,2]
+tel.resetOPD()
+tel*dm
+phase_offset = tel.OPD #* 2*np.pi / tel.src.wavelength
+
+tel.resetOPD()
+
+#%%
+
 calib_full_frame = InteractionMatrix(ngs, tel, dm, gbioedge_full_frame, 
-            M2C=M2C, stroke=param['stroke'], single_pass=param['single_pass'],
+            M2C = M2C, stroke = param['stroke'], 
+            phaseOffset = 0,
+            single_pass = param['single_pass'],
+            noise = 'off', display=True)
+
+calib_full_frame_phase_offset = InteractionMatrix(ngs, tel, dm, 
+            gbioedge_full_frame, M2C = M2C, stroke = param['stroke'], 
+            phaseOffset = phase_offset, single_pass = param['single_pass'],
             noise = 'off', display=True)
 
 #%% Reconstructor computation
@@ -197,7 +213,7 @@ reconstructor_lse_full_frame = M2C[:,:param['n_modes_to_show_lse']] @\
 
 #%% Extract eigen mode
 
-n_mode = 1
+n_mode = -1
 
 eigen_mode_push_pull = np.zeros(gbioedge_full_frame.bioSignal_2D.shape[:-1])
 eigen_mode_push_pull.fill(np.nan)
@@ -217,7 +233,17 @@ plt.plot(calib_full_frame.eigenValues, label="push_pull")
 # plt.plot(interaction_matrix_push.eigenValues, 
 #          label="push", linestyle = 'dashed')
 plt.yscale("log")
-plt.title("Interaction matrices eigenvalues\nlog scale")
+plt.title("Interaction matrice eigenvalues\nlog scale")
+plt.xlabel("Eigen modes")
+plt.ylabel("Eigen Values")
+plt.legend()
+
+plt.figure()
+plt.plot(calib_full_frame_phase_offset.eigenValues, label="push_pull")
+# plt.plot(interaction_matrix_push.eigenValues,
+#          label="push", linestyle = 'dashed')
+plt.yscale("log")
+plt.title("Interaction matrice eigenvalues\nlog scale")
 plt.xlabel("Eigen modes")
 plt.ylabel("Eigen Values")
 plt.legend()
@@ -231,3 +257,6 @@ plt.title(f"Eigen mode {n_mode}, push_pull")
 # plt.figure()
 # plt.imshow(eigen_mode_push)
 # plt.title(f"Eigen mode {n_mode}, push")
+
+#%%
+
