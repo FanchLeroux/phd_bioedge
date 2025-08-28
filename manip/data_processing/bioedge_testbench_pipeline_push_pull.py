@@ -78,9 +78,9 @@ threshold_push_pull = 0.2
 valid_pixels_push_pull =\
     raw_measurements_push_pull_std_normalized > threshold_push_pull
 
-#%%
+#%% truncate some modes
 
-raw_measurements_push_pull = raw_measurements_push_pull[:,:,:30]
+raw_measurements_push_pull = raw_measurements_push_pull[:,:,:]
 
 #%% Post-processing - push_pull
 
@@ -133,12 +133,6 @@ plt.figure()
 plt.imshow(eigen_mode_push_pull)
 plt.title(f"Eigen mode {n_mode}, push_pull")
 
-#%%
-
-plt.figure()
-plt.imshow(eigen_mode_push_pull)
-plt.title(f"eigen mode {n_mode}")
-
 support = np.zeros(reference_intensities_push_pull.shape, dtype=float)
 support.fill(np.nan)
 support[valid_pixels_push_pull==1] =\
@@ -146,3 +140,4 @@ support[valid_pixels_push_pull==1] =\
 
 plt.figure()
 plt.imshow(np.delete(np.delete(support, slicer_x, 1), slicer_y, 0))
+plt.title("reference intensities, push_pull")

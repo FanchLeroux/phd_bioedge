@@ -335,22 +335,22 @@ dm = DeformableMirror(tel, nSubap=param['n_actuator'])
 
 if param['modal_basis'] == 'KL':
     
-    M2C_KL_full, HHt, PSD_atm, df = compute_M2C(telescope= tel,\
-                            atmosphere         = atm,\
-                            deformableMirror   = dm,\
-                            param              = param,\
-                            nameFolder         = param['compute_M2C_Folder'],\
-                            remove_piston      = False,\
-                            HHtName            = 'KL_covariance_matrix',\
-                            baseName           = 'KL_basis' ,\
-                            mem_available      = 6.1e9,\
-                            minimF             = False,\
-                            nmo                = None,\
-                            ortho_spm          = True,\
-                            SZ                 = np.int64(2*tel.OPD.shape[0]),\
-                            nZer               = 3,\
-                            NDIVL              = 1,\
-                            lim_inversion=1e-5,
+    M2C_KL_full, HHt, PSD_atm, df = compute_M2C(telescope = tel,\
+                            atmosphere = atm,\
+                            deformableMirror = dm,\
+                            param = param,\
+                            nameFolder = param['compute_M2C_Folder'],\
+                            remove_piston = False,\
+                            HHtName = 'KL_covariance_matrix',\
+                            baseName = 'KL_basis' ,\
+                            mem_available = 6.1e9,\
+                            minimF = False,\
+                            nmo = None,\
+                            ortho_spm = True,\
+                            SZ = np.int64(2*tel.OPD.shape[0]),\
+                            nZer = 3,\
+                            NDIVL = 1,\
+                            lim_inversion=1e-100,
                             returnHHt_PSD_df=True)
         
     M2C = M2C_KL_full[:,1:] # remove piston
