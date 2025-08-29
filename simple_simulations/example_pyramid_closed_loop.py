@@ -15,8 +15,10 @@ from OOPAO.Atmosphere import Atmosphere
 from OOPAO.Source import Source
 from OOPAO.DeformableMirror import DeformableMirror
 from OOPAO.calibration.compute_KL_modal_basis import compute_M2C
-from OOPAO.BioEdge import BioEdge
+from OOPAO.Pyramid import Pyramid
 from OOPAO.calibration.InteractionMatrix import InteractionMatrix
+
+import tqdm
 
 #%%
 
@@ -71,7 +73,7 @@ def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain,
     
     # close the loop
     
-    for k in range(n_iter):
+    for k in tqdm.tqdm(range(n_iter)):
         
         atm.update()
         total[k] = np.std(tel.OPD[np.where(tel.pupil>0)])*1e9 # [nm]
@@ -166,7 +168,7 @@ def close_the_loop_pol(tel, ngs, atm, dm, wfs, M2C,
     
     # close the loop
     
-    for k in range(n_iter):
+    for k in tqdm.tqdm(range(n_iter)):
         
         atm.update()
         total[k] = np.std(tel.OPD[np.where(tel.pupil>0)])*1e9 # [nm]
@@ -263,28 +265,28 @@ param['n_actuator'] = 2*param['n_subaperture'] # number of actuators
 
 param['modulation'] = 2. # [lambda/D] modulation radius or grey width
 param['grey_length'] = param['modulation'] # [lambda/D] grey length in case of 
-                                           # small grey bioedge WFS
+                                           # small grey Pyramid WFS
 param['n_pix_separation'] = 10 # [pixel] separation ratio between the pupils
 param['psf_centering'] = False # centering of the FFT and of the mask on 
                                # the 4 central pixels
 param['light_threshold'] = 0.3 # light threshold to select the valid pixels
 param['post_processing'] = 'fullFrame' # post-processing of the WFS signals 
                                        # ('slopesMaps' or 'fullFrame')
-param['detector_photon_noise']   = False
-param['detector_read_out_noise'] = 0. # e- RMS
+param['detector_photon_noise']   = True
+param['detector_read_out_noise'] = 3. # e- RMS
 
 # super resolution
 param['sr_amplitude'] = 0.25  # [pixel] super resolution shifts amplitude
 
-# [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for bioedge)
-param['pupil_shift_bioedge'] = [[param['sr_amplitude'],\
-                                 -param['sr_amplitude'],\
-                                 param['sr_amplitude'],\
-                                 -param['sr_amplitude']],\
-                                [param['sr_amplitude'],\
+# [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for Pyramid)
+param['pupil_shift_pyramid'] = [[param['sr_amplitude'],\
                                  -param['sr_amplitude'],\
                                  -param['sr_amplitude'],\
-                                 param['sr_amplitude']]]
+                                 param['sr_amplitude']],\
+                                [-param['sr_amplitude'],\
+                                -param['sr_amplitude'],\
+                                param['sr_amplitude'],\
+                                param['sr_amplitude']]]
 
 # -------------------- CALIBRATION - MODAL BASIS ---------------- #
 
@@ -386,54 +388,51 @@ if param['modal_basis'] == 'KL':
 elif param['modal_basis'] == 'poke':
     M2C = np.identity(dm.nValidAct)
     
-#%% ----------------------- Grey Bi-O-Edge ---------------------------- #
+#%% ----------------------- Pyramid ---------------------------- #
 
-# grey bioedge
-gbioedge_slopes_maps = BioEdge(nSubap = param['n_subaperture'], 
+# pyramid
+pyramid_slopes_maps = Pyramid(nSubap = param['n_subaperture'], 
               telescope = tel,
-              modulation = 0.,
-              grey_width = param['modulation'], 
+              modulation = param['modulation'], 
               lightRatio = param['light_threshold'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = 'slopesMaps', 
               psfCentering = param['psf_centering'])
 
-# grey bioedge - fullFrame
-gbioedge_full_frame = BioEdge(nSubap = param['n_subaperture'], 
+# pyramid - fullFrame
+pyramid_full_frame = Pyramid(nSubap = param['n_subaperture'], 
               telescope = tel,
-              modulation = 0.,
-              grey_width = param['modulation'], 
+              modulation = param['modulation'], 
               lightRatio = param['light_threshold'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = 'fullFrame', 
               psfCentering = param['psf_centering'])
 
 
-# super resolved grey bioedge
-gbioedge_sr = BioEdge(nSubap = param['n_subaperture'], 
+# super resolved pyramid
+pyramid_sr = Pyramid(nSubap = param['n_subaperture'], 
               telescope = tel, 
-              modulation = 0.,
-              grey_width = param['modulation'], 
+              modulation = param['modulation'],
               lightRatio = param['light_threshold'],
               n_pix_separation = param['n_pix_separation'],
               postProcessing = 'fullFrame', 
               psfCentering = param['psf_centering'])
 
-gbioedge_sr.apply_shift_wfs(param['pupil_shift_bioedge'][0], 
-                         param['pupil_shift_bioedge'][1], units='pixels')
-gbioedge_sr.modulation = 0. # update reference intensities etc.
+pyramid_sr.apply_shift_wfs(param['pupil_shift_pyramid'][0], 
+                         param['pupil_shift_pyramid'][1], units='pixels')
+pyramid_sr.modulation = param['modulation'] # update reference intensities etc.
     
 #%% Calibration
 
-calib_slopes_maps = InteractionMatrix(ngs, tel, dm, gbioedge_slopes_maps, 
+calib_slopes_maps = InteractionMatrix(ngs, tel, dm, pyramid_slopes_maps, 
                 M2C=M2C, stroke=param['stroke'], 
                 single_pass=param['single_pass'],noise = 'off', display=True)
 
-calib_full_frame = InteractionMatrix(ngs, tel, dm, gbioedge_full_frame, 
+calib_full_frame = InteractionMatrix(ngs, tel, dm, pyramid_full_frame, 
                 M2C=M2C, stroke=param['stroke'], 
                 single_pass=param['single_pass'],noise = 'off', display=True)
 
-calib_sr = InteractionMatrix(ngs, tel, dm, gbioedge_sr, M2C=M2C,
+calib_sr = InteractionMatrix(ngs, tel, dm, pyramid_sr, M2C=M2C,
                 stroke=param['stroke'], single_pass=param['single_pass'],
                 noise = 'off', display=True)
 
@@ -474,7 +473,7 @@ C_phi_sr = np.asmatrix(
 
 # COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
 C_n_slopes_maps = np.asmatrix(param['mmse_noise_level_guess_slopes_maps']**2 *\
-                              np.identity(gbioedge_slopes_maps.nSignal))
+                              np.identity(pyramid_slopes_maps.nSignal))
 
 ### INTERACTION MATRIX "IN METERS"
 calib_D_meter_slopes_maps = calib_slopes_maps.D * ngs.wavelength/(2. * np.pi)
@@ -494,7 +493,7 @@ reconstructor_mmse_slopes_maps[:param['n_modes_to_show_mmse'], :] =\
 
 # COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
 C_n_full_frame = np.asmatrix(param['mmse_noise_level_guess_full_frame']**2 *\
-                             np.identity(gbioedge_full_frame.nSignal))
+                             np.identity(pyramid_full_frame.nSignal))
 
 ### INTERACTION MATRIX "IN METERS"
 calib_D_full_frame_meter = calib_full_frame.D * ngs.wavelength/(2. * np.pi)
@@ -514,7 +513,7 @@ reconstructor_mmse_full_frame[:param['n_modes_to_show_mmse'], :] =\
 
 # COVARIANCE OF NOISE (assumed to be uncorrelated: Diagonal matrix)
 C_n_sr = np.asmatrix(param['mmse_noise_level_guess_full_frame']**2 *\
-                     np.identity(gbioedge_sr.nSignal))
+                     np.identity(pyramid_sr.nSignal))
 
 ### INTERACTION MATRIX "IN METERS"
 calib_sr_D_meter = calib_sr.D * ngs.wavelength/(2. * np.pi)
@@ -538,7 +537,7 @@ total_lse_slopes_maps, residual_lse_slopes_maps, strehl_lse_slopes_maps,\
     dm_coefs_lse_slopes_maps, turbulence_phase_screens_lse_slopes_maps,\
     residual_phase_screens_lse_slopes_maps, wfs_frames_lse_slopes_maps,\
         wfs_signals_lse_slopes_maps, short_exposure_psf_lse_slopes_maps =\
-    close_the_loop(tel, ngs, atm, dm, gbioedge_slopes_maps,\
+    close_the_loop(tel, ngs, atm, dm, pyramid_slopes_maps,\
                     reconstructor_lse_slopes_maps,\
                     param['loop_gain'], param['n_iter'], 
                     delay=param['delay'],\
@@ -554,7 +553,7 @@ total_lse_full_frame, residual_lse_full_frame, strehl_lse_full_frame,\
     dm_coefs_lse_full_frame, turbulence_phase_screens_lse_full_frame,\
     residual_phase_screens_lse_full_frame, wfs_frames_lse_full_frame,\
         wfs_signals_lse_full_frame, short_exposure_psf_lse_full_frame =\
-    close_the_loop(tel, ngs, atm, dm, gbioedge_full_frame,\
+    close_the_loop(tel, ngs, atm, dm, pyramid_full_frame,\
                    reconstructor_lse_full_frame,
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'],\
@@ -570,7 +569,7 @@ total_lse_sr, residual_lse_sr, strehl_lse_sr, dm_coefs_lse_sr,\
     turbulence_phase_screens_lse_sr,\
     residual_phase_screens_lse_sr, wfs_frames_lse_sr, wfs_signals_lse_sr,\
         short_exposure_psf_lse_sr =\
-    close_the_loop(tel, ngs, atm, dm, gbioedge_sr, reconstructor_lse_sr,
+    close_the_loop(tel, ngs, atm, dm, pyramid_sr, reconstructor_lse_sr,
                        param['loop_gain'], param['n_iter'],
                        delay=param['delay'],\
                            photon_noise=param['detector_photon_noise'], 
@@ -585,7 +584,7 @@ total_mmse_slopes_maps, residual_mmse_slopes_maps, strehl_mmse_slopes_maps,\
     dm_coefs_mmse_slopes_maps, turbulence_phase_screens_mmse_slopes_maps,\
     residual_phase_screens_mmse_slopes_maps, wfs_frames_mmse_slopes_maps,\
         wfs_signals_mmse_slopes_maps, short_exposure_psf_mmse_slopes_maps =\
-    close_the_loop_pol(tel, ngs, atm, dm, gbioedge_slopes_maps, M2C,
+    close_the_loop_pol(tel, ngs, atm, dm, pyramid_slopes_maps, M2C,
                        calib_slopes_maps.D, reconstructor_mmse_slopes_maps,
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'],\
@@ -600,7 +599,7 @@ total_mmse_full_frame, residual_mmse_full_frame, strehl_mmse_full_frame,\
     dm_coefs_mmse_full_frame, turbulence_phase_screens_mmse_full_frame,\
     residual_phase_screens_mmse_full_frame, wfs_frames_mmse_full_frame,\
     wfs_signals_mmse_full_frame, short_exposure_psf_mmse_full_frame =\
-    close_the_loop_pol(tel, ngs, atm, dm, gbioedge_full_frame, M2C,
+    close_the_loop_pol(tel, ngs, atm, dm, pyramid_full_frame, M2C,
                        calib_full_frame.D, reconstructor_mmse_full_frame,
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'],
@@ -615,7 +614,7 @@ total_mmse_sr, residual_mmse_sr, strehl_mmse_sr, dm_coefs_mmse_sr,\
     turbulence_phase_screens_mmse_sr,\
     residual_phase_screens_mmse_sr, wfs_frames_mmse_sr,\
     wfs_signals_mmse_sr, short_exposure_psf_mmse_sr =\
-    close_the_loop_pol(tel, ngs, atm, dm, gbioedge_sr, M2C,
+    close_the_loop_pol(tel, ngs, atm, dm, pyramid_sr, M2C,
                        calib_sr.D, reconstructor_mmse_sr,
                        param['loop_gain'], param['n_iter'], 
                        delay=param['delay'],
@@ -644,11 +643,13 @@ long_exposure_psf_mmse_sr =\
 # residuals
 plt.figure()
 plt.plot(residual_lse_slopes_maps, label='residual_lse_slopes_maps')
-plt.plot(residual_lse_full_frame, label='residual_lse_full_frame')
+plt.plot(residual_lse_full_frame, label='residual_lse_full_frame',
+         linestyle='dashed')
 plt.plot(residual_lse_sr, label='residual_lse_sr')
 plt.plot(residual_mmse_slopes_maps, label='residual_mmse_slopes_maps')
 plt.plot(residual_mmse_full_frame, label='residual_mmse_full_frame')
-plt.plot(residual_mmse_sr, label='residual_mmse_sr')
+plt.plot(residual_mmse_sr, label='residual_mmse_sr',
+         linestyle='dashed')
 plt.xlabel('loop iteration')
 plt.ylabel('residual phase RMS [nm]')
 plt.title('Closed Loop residuals')
@@ -672,7 +673,7 @@ plt.title('Closed Loop strehls')
 plt.legend()
 plt.savefig(dirc / pathlib.Path('strehls'+'.png'), bbox_inches = 'tight')
 
-#%%
+#%% long exposures
 
 fig, axs = plt.subplots(nrows=2, ncols=3)
 axs[0,0].imshow(np.log(long_exposure_psf_lse_slopes_maps))
@@ -696,18 +697,18 @@ axs[1,2].set_title('long_exposure_psf_mmse_sr')
 
 tel.resetOPD()
 dm.coefs = 0
-gbioedge_slopes_maps.signal = np.zeros(gbioedge_slopes_maps.signal.shape)
-gbioedge_slopes_maps.cam.photonNoise = False
+pyramid_slopes_maps.signal = np.zeros(pyramid_slopes_maps.signal.shape)
+pyramid_slopes_maps.cam.photonNoise = False
 
 stroke = 1e-9
 
 dm.coefs = stroke*M2C
-ngs*tel*dm*gbioedge_slopes_maps
+ngs*tel*dm*pyramid_slopes_maps
 
 #%%
 
 reconstructed_modes_mmse_slopes_maps = reconstructor_mmse_slopes_maps @\
-    gbioedge_slopes_maps.signal
+    pyramid_slopes_maps.signal
 
 #%%
 
@@ -728,18 +729,18 @@ plt.plot(np.diag(reconstructed_modes_mmse_slopes_maps)/stroke)
 
 tel.resetOPD()
 dm.coefs = 0
-gbioedge_full_frame.signal = np.zeros(gbioedge_full_frame.signal.shape)
-gbioedge_full_frame.cam.photonNoise = False
+pyramid_full_frame.signal = np.zeros(pyramid_full_frame.signal.shape)
+pyramid_full_frame.cam.photonNoise = False
 
 stroke = 1e-9
 
 dm.coefs = stroke*M2C
-ngs*tel*dm*gbioedge_full_frame
+ngs*tel*dm*pyramid_full_frame
 
 #%%
 
 reconstructed_modes_mmse_full_frame = reconstructor_mmse_full_frame @\
-    gbioedge_full_frame.signal
+    pyramid_full_frame.signal
 
 #%%
 
@@ -776,17 +777,17 @@ plt.plot(np.diag(reconstructed_modes_mmse_full_frame)/stroke)
 
 tel.resetOPD()
 dm.coefs = 0
-gbioedge_sr.signal = np.zeros(gbioedge_sr.signal.shape)
-gbioedge_sr.cam.photonNoise = False
+pyramid_sr.signal = np.zeros(pyramid_sr.signal.shape)
+pyramid_sr.cam.photonNoise = False
 
 stroke = 1e-9
 
 dm.coefs = stroke*M2C
-ngs*tel*dm*gbioedge_sr
+ngs*tel*dm*pyramid_sr
 
 #%%
 
-reconstructed_modes_mmse_sr = reconstructor_mmse_sr @ gbioedge_sr.signal
+reconstructed_modes_mmse_sr = reconstructor_mmse_sr @ pyramid_sr.signal
 
 #%%
 
