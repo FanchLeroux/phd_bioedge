@@ -26,7 +26,7 @@ dirc = pathlib.Path(__file__).parent
 
 #%% define functions
 
-def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain, 
+def close_the_loop(tel, ngs, atm, dm, wfs, M2C, reconstructor, loop_gain, 
                    n_iter=100, delay=1, photon_noise = False, 
                    read_out_noise = 0., seed=0, 
                    save_telemetry=False, save_psf=False,
@@ -96,7 +96,8 @@ def close_the_loop(tel, ngs, atm, dm, wfs, reconstructor, loop_gain,
         residual[k]=np.std(tel.OPD[np.where(tel.pupil>0)])*1e9 # [nm]
         strehl[k] = np.exp(-np.var(tel.src.phase[np.where(tel.pupil>0)]))
            
-        dm.coefs = dm.coefs - loop_gain * reconstructor @ buffer_wfs_measure[:,0]
+        dm.coefs = dm.coefs -\
+            loop_gain * M2C @ reconstructor @ buffer_wfs_measure[:,0]
            
         if save_psf:
             
@@ -276,7 +277,7 @@ param['detector_photon_noise']   = True
 param['detector_read_out_noise'] = 3. # e- RMS
 
 # super resolution
-param['sr_amplitude'] = 0.25  # [pixel] super resolution shifts amplitude
+param['sr_amplitude'] = 0.2  # [pixel] super resolution shifts amplitude
 
 # [pixel] [sx,sy] to be applied with wfs.apply_shift_wfs() method (for Pyramid)
 param['pupil_shift_pyramid'] = [[param['sr_amplitude'],\
@@ -287,6 +288,16 @@ param['pupil_shift_pyramid'] = [[param['sr_amplitude'],\
                                 -param['sr_amplitude'],\
                                 param['sr_amplitude'],\
                                 param['sr_amplitude']]]
+
+# same shifts as Bi-O-Edge
+param['pupil_shift_pyramid'] = [[param['sr_amplitude'],\
+                                 -param['sr_amplitude'],\
+                                 param['sr_amplitude'],\
+                                 -param['sr_amplitude']],\
+                                [param['sr_amplitude'],\
+                                 -param['sr_amplitude'],\
+                                 -param['sr_amplitude'],\
+                                 param['sr_amplitude']]]
 
 # -------------------- CALIBRATION - MODAL BASIS ---------------- #
 
@@ -304,12 +315,12 @@ param['mmse_noise_level_guess_full_frame'] =\
 param['mmse_alpha'] =\
     1. # Weight for the turbulence statistics for MMSE reconstruction
 
-# -------------------- LOOP ----------------------- #
-
 param['n_modes_to_show_lse'] = 310
 param['n_modes_to_show_lse_sr'] = 750
 param['n_modes_to_show_mmse'] = 1300
 param['n_modes_to_show_mmse_sr'] = 1300
+
+# -------------------- LOOP ----------------------- #
 
 param['loop_gain'] = 0.5
 
@@ -346,14 +357,14 @@ ngs = Source(optBand     = param['optical_band'], # Source optical band
 ngs*tel
 
 # create the Atmosphere object
-atm = Atmosphere(telescope     = tel, # Telescope                              
-        r0 = param['r0'], # Fried Parameter [m]
-        L0 = param['L0'], # Outer Scale [m]
-        fractionalR0 = param['fractionnal_r0'], # Cn2 Profile (percentage)
-        windSpeed = param['wind_speed'], # [m.s-1] wind speed of layers
-        windDirection = param['wind_direction'], # [degrees] wind direction 
-                                                 # of layers
-        altitude =  param['altitude'      ]) # [m] altitude of layers
+atm = Atmosphere(telescope = tel, # Telescope                              
+    r0 = param['r0'], # Fried Parameter [m]
+    L0 = param['L0'], # Outer Scale [m]
+    fractionalR0 = param['fractionnal_r0'], # Cn2 Profile (percentage)
+    windSpeed = param['wind_speed'], # [m.s-1] wind speed of layers
+    windDirection = param['wind_direction'], # [degrees] wind direction 
+                                             # of layers
+    altitude =  param['altitude']) # [m] altitude of layers
 
 #%% -------------------------     DM   ----------------------------------
 
@@ -388,6 +399,8 @@ if param['modal_basis'] == 'KL':
 elif param['modal_basis'] == 'poke':
     M2C = np.identity(dm.nValidAct)
     
+tel.resetOPD()
+
 #%% ----------------------- Pyramid ---------------------------- #
 
 # pyramid
@@ -425,27 +438,41 @@ pyramid_sr.modulation = param['modulation'] # update reference intensities etc.
 #%% Calibration
 
 calib_slopes_maps = InteractionMatrix(ngs, tel, dm, pyramid_slopes_maps, 
-                M2C=M2C, stroke=param['stroke'], 
+                M2C=M2C, stroke=param['stroke'],
                 single_pass=param['single_pass'],noise = 'off', display=True)
 
 calib_full_frame = InteractionMatrix(ngs, tel, dm, pyramid_full_frame, 
-                M2C=M2C, stroke=param['stroke'], 
+                M2C=M2C, stroke=param['stroke'],
                 single_pass=param['single_pass'],noise = 'off', display=True)
 
 calib_sr = InteractionMatrix(ngs, tel, dm, pyramid_sr, M2C=M2C,
                 stroke=param['stroke'], single_pass=param['single_pass'],
                 noise = 'off', display=True)
 
+ #%% LSE Reconstructor computation
+
+# reconstructor_lse_slopes_maps = M2C[:,:param['n_modes_to_show_lse']]\
+#     @ np.linalg.pinv(calib_slopes_maps.D[:,:param['n_modes_to_show_lse']])
+    
+# reconstructor_lse_full_frame = M2C[:,:param['n_modes_to_show_lse']]\
+#     @ np.linalg.pinv(calib_full_frame.D[:,:param['n_modes_to_show_lse']])
+    
+# reconstructor_lse_sr = M2C[:,:param['n_modes_to_show_lse_sr']]\
+#     @ np.linalg.pinv(calib_sr.D[:,:param['n_modes_to_show_lse_sr']])
+    
 #%% LSE Reconstructor computation
 
-reconstructor_lse_slopes_maps = M2C[:,:param['n_modes_to_show_lse']]\
-    @ np.linalg.pinv(calib_slopes_maps.D[:,:param['n_modes_to_show_lse']])
+M2C_lse = M2C[:,:param['n_modes_to_show_lse']]
+M2C_lse_sr = M2C[:,:param['n_modes_to_show_lse_sr']]
+
+reconstructor_lse_slopes_maps =\
+    np.linalg.pinv(calib_slopes_maps.D[:,:param['n_modes_to_show_lse']])
     
-reconstructor_lse_full_frame = M2C[:,:param['n_modes_to_show_lse']]\
-    @ np.linalg.pinv(calib_full_frame.D[:,:param['n_modes_to_show_lse']])
+reconstructor_lse_full_frame =\
+    np.linalg.pinv(calib_full_frame.D[:,:param['n_modes_to_show_lse']])
     
-reconstructor_lse_sr = M2C[:,:param['n_modes_to_show_lse_sr']]\
-    @ np.linalg.pinv(calib_sr.D[:,:param['n_modes_to_show_lse_sr']])
+reconstructor_lse_sr =\
+    np.linalg.pinv(calib_sr.D[:,:param['n_modes_to_show_lse_sr']])
 
 #%%
 
@@ -524,7 +551,7 @@ reconstructor_mmse_sr[:param['n_modes_to_show_mmse_sr'], :] =\
     ngs.wavelength/(2. * np.pi) *\
     np.asarray((calib_sr_D_meter[:,:param['n_modes_to_show_mmse_sr']].T\
     @ C_n_sr.I @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse_sr']]\
-    + param['mmse_alpha']*C_phi.I).I\
+    + param['mmse_alpha']*C_phi_sr.I).I\
     @ calib_sr_D_meter[:,:param['n_modes_to_show_mmse_sr']].T @ C_n_sr.I)
 
 #%% SEED
@@ -533,11 +560,14 @@ seed = 12 # seed for atmosphere computation
 
 #%% Close the loop - LSE - slopesMaps
 
+# M2C_lse = np.identity(dm.nValidAct)
+# M2C_lse_sr = np.identity(dm.nValidAct)
+
 total_lse_slopes_maps, residual_lse_slopes_maps, strehl_lse_slopes_maps,\
     dm_coefs_lse_slopes_maps, turbulence_phase_screens_lse_slopes_maps,\
     residual_phase_screens_lse_slopes_maps, wfs_frames_lse_slopes_maps,\
         wfs_signals_lse_slopes_maps, short_exposure_psf_lse_slopes_maps =\
-    close_the_loop(tel, ngs, atm, dm, pyramid_slopes_maps,\
+    close_the_loop(tel, ngs, atm, dm, pyramid_slopes_maps, M2C_lse,\
                     reconstructor_lse_slopes_maps,\
                     param['loop_gain'], param['n_iter'], 
                     delay=param['delay'],\
@@ -552,31 +582,32 @@ total_lse_slopes_maps, residual_lse_slopes_maps, strehl_lse_slopes_maps,\
 total_lse_full_frame, residual_lse_full_frame, strehl_lse_full_frame,\
     dm_coefs_lse_full_frame, turbulence_phase_screens_lse_full_frame,\
     residual_phase_screens_lse_full_frame, wfs_frames_lse_full_frame,\
-        wfs_signals_lse_full_frame, short_exposure_psf_lse_full_frame =\
-    close_the_loop(tel, ngs, atm, dm, pyramid_full_frame,\
-                   reconstructor_lse_full_frame,
-                       param['loop_gain'], param['n_iter'], 
-                       delay=param['delay'],\
-                           photon_noise=param['detector_photon_noise'], 
-                       read_out_noise=param['detector_read_out_noise'],\
-                           seed=seed, 
-                       save_telemetry=True, save_psf=True,
-                       display = False)
+    wfs_signals_lse_full_frame, short_exposure_psf_lse_full_frame =\
+    close_the_loop(tel, ngs, atm, dm, pyramid_full_frame, M2C_lse,\
+                    reconstructor_lse_full_frame,
+                    param['loop_gain'], param['n_iter'], 
+                    delay=param['delay'],\
+                    photon_noise=param['detector_photon_noise'], 
+                    read_out_noise=param['detector_read_out_noise'],\
+                    seed=seed, 
+                    save_telemetry=True, save_psf=True,
+                    display = False)
     
 #%% Close the loop - LSE - SR
 
 total_lse_sr, residual_lse_sr, strehl_lse_sr, dm_coefs_lse_sr,\
     turbulence_phase_screens_lse_sr,\
     residual_phase_screens_lse_sr, wfs_frames_lse_sr, wfs_signals_lse_sr,\
-        short_exposure_psf_lse_sr =\
-    close_the_loop(tel, ngs, atm, dm, pyramid_sr, reconstructor_lse_sr,
-                       param['loop_gain'], param['n_iter'],
-                       delay=param['delay'],\
-                           photon_noise=param['detector_photon_noise'], 
-                       read_out_noise=param['detector_read_out_noise'],\
-                           seed=seed, 
-                       save_telemetry=True, save_psf=True,
-                       display = False)
+    short_exposure_psf_lse_sr =\
+    close_the_loop(tel, ngs, atm, dm, pyramid_sr, M2C_lse_sr,
+                    reconstructor_lse_sr,
+                    param['loop_gain'], param['n_iter'],
+                    delay=param['delay'],\
+                    photon_noise=param['detector_photon_noise'], 
+                    read_out_noise=param['detector_read_out_noise'],\
+                    seed=seed, 
+                    save_telemetry=True, save_psf=True,
+                    display = False)
     
 #%% Close the loop - MMSE - SlopesMaps - pseudo open loop
 
@@ -585,13 +616,13 @@ total_mmse_slopes_maps, residual_mmse_slopes_maps, strehl_mmse_slopes_maps,\
     residual_phase_screens_mmse_slopes_maps, wfs_frames_mmse_slopes_maps,\
         wfs_signals_mmse_slopes_maps, short_exposure_psf_mmse_slopes_maps =\
     close_the_loop_pol(tel, ngs, atm, dm, pyramid_slopes_maps, M2C,
-                       calib_slopes_maps.D, reconstructor_mmse_slopes_maps,
-                       param['loop_gain'], param['n_iter'], 
-                       delay=param['delay'],\
-                       photon_noise=param['detector_photon_noise'], 
-                       read_out_noise=param['detector_read_out_noise'],\
-                       seed=seed, save_telemetry=True, save_psf=True,
-                       display = False)
+                        calib_slopes_maps.D, reconstructor_mmse_slopes_maps,
+                        param['loop_gain'], param['n_iter'], 
+                        delay=param['delay'],\
+                        photon_noise=param['detector_photon_noise'], 
+                        read_out_noise=param['detector_read_out_noise'],\
+                        seed=seed, save_telemetry=True, save_psf=True,
+                        display = False)
     
 #%% Close the loop - MMSE - fullFrame - pseudo open loop
 
@@ -600,28 +631,28 @@ total_mmse_full_frame, residual_mmse_full_frame, strehl_mmse_full_frame,\
     residual_phase_screens_mmse_full_frame, wfs_frames_mmse_full_frame,\
     wfs_signals_mmse_full_frame, short_exposure_psf_mmse_full_frame =\
     close_the_loop_pol(tel, ngs, atm, dm, pyramid_full_frame, M2C,
-                       calib_full_frame.D, reconstructor_mmse_full_frame,
-                       param['loop_gain'], param['n_iter'], 
-                       delay=param['delay'],
-                       photon_noise=param['detector_photon_noise'], 
-                       read_out_noise=param['detector_read_out_noise'],
-                       seed=seed, save_telemetry=True, save_psf=True,
-                       display = False)
+                        calib_full_frame.D, reconstructor_mmse_full_frame,
+                        param['loop_gain'], param['n_iter'], 
+                        delay=param['delay'],
+                        photon_noise=param['detector_photon_noise'], 
+                        read_out_noise=param['detector_read_out_noise'],
+                        seed=seed, save_telemetry=True, save_psf=True,
+                        display = False)
 
-#%% Close the loop - MMSE - SR - pseudo open loop 
+#%% Close the loop - MMSE - SR - pseudo open loop
 
 total_mmse_sr, residual_mmse_sr, strehl_mmse_sr, dm_coefs_mmse_sr,\
     turbulence_phase_screens_mmse_sr,\
     residual_phase_screens_mmse_sr, wfs_frames_mmse_sr,\
     wfs_signals_mmse_sr, short_exposure_psf_mmse_sr =\
     close_the_loop_pol(tel, ngs, atm, dm, pyramid_sr, M2C,
-                       calib_sr.D, reconstructor_mmse_sr,
-                       param['loop_gain'], param['n_iter'], 
-                       delay=param['delay'],
-                       photon_noise=param['detector_photon_noise'], 
-                       read_out_noise=param['detector_read_out_noise'],
-                       seed=seed, save_telemetry=True, save_psf=True,
-                       display = False)
+                        calib_sr.D, reconstructor_mmse_sr,
+                        param['loop_gain'], param['n_iter'], 
+                        delay=param['delay'],
+                        photon_noise=param['detector_photon_noise'], 
+                        read_out_noise=param['detector_read_out_noise'],
+                        seed=seed, save_telemetry=True, save_psf=True,
+                        display = False)
 
 #%% post processing
 
