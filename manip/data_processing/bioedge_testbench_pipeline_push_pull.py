@@ -110,9 +110,6 @@ U,s,VT = np.linalg.svd(interaction_matrix_push_pull, full_matrices=False)
 
 n_mode = 0
 
-eigen_mode_push_pull_control_space = np.sum(VT[:,n_mode] * slm_phase_screens,
-                                            axis=2)
-
 eigen_modes_push_pull_control_space = np.reshape(np.reshape(slm_phase_screens,
   (slm_phase_screens.shape[0]*slm_phase_screens.shape[1], 
    slm_phase_screens.shape[2])) @ VT, slm_phase_screens.shape)
@@ -121,12 +118,12 @@ eigen_modes_push_pull_control_space = np.reshape(np.reshape(slm_phase_screens,
 
 n_mode = 0
 
-eigen_mode_push_pull_measurements_space = np.zeros(
-    valid_pixels_push_pull.shape, dtype=float)
-eigen_mode_push_pull_measurements_space.fill(np.nan)
+eigen_modes_push_pull_measurements_space = np.zeros(
+    (valid_pixels_push_pull.shape[0], valid_pixels_push_pull.shape[1],
+     slm_phase_screens.shape[2]), dtype=float)
+eigen_modes_push_pull_measurements_space.fill(np.nan)
 
-eigen_mode_push_pull_measurements_space[valid_pixels_push_pull==1] =\
-    U[:,n_mode]
+eigen_modes_push_pull_measurements_space[valid_pixels_push_pull==1] = U
 
 # slicer_x = np.r_[np.s_[0:500], np.s_[800:1200], np.s_[1500:2048]]
 # slicer_y = np.r_[np.s_[0:400], np.s_[700:1300], np.s_[1600:2048]]
@@ -134,8 +131,8 @@ eigen_mode_push_pull_measurements_space[valid_pixels_push_pull==1] =\
 slicer_x = np.r_[np.s_[0:30], np.s_[50:70], np.s_[92:120]]
 slicer_y = np.r_[np.s_[0:20], np.s_[44:74], np.s_[100:120]]
    
-eigen_mode_push_pull_measurements_space =\
-    np.delete(np.delete(eigen_mode_push_pull_measurements_space, slicer_x, 1), 
+eigen_modes_push_pull_measurements_space =\
+    np.delete(np.delete(eigen_modes_push_pull_measurements_space, slicer_x, 1), 
               slicer_y, 0)
 
 #%% Display
@@ -148,10 +145,6 @@ plt.xlabel("Eigen modes")
 plt.ylabel("Eigen Values")
 plt.legend()
 
-plt.figure()
-plt.imshow(eigen_mode_push_pull_measurements_space)
-plt.title(f"Eigen mode {n_mode}, measurements space, push_pull")
-
 support = np.zeros(reference_intensities_push_pull.shape, dtype=float)
 support.fill(np.nan)
 support[valid_pixels_push_pull==1] =\
@@ -162,5 +155,13 @@ plt.imshow(np.delete(np.delete(support, slicer_x, 1), slicer_y, 0))
 plt.title("reference intensities, push_pull")
 
 plt.figure()
-plt.imshow(eigen_mode_push_pull_control_space)
+plt.imshow(eigen_modes_push_pull_control_space[:,:,n_mode])
 plt.title(f"Eigen mode {n_mode}, control space, push_pull")
+
+plt.figure()
+plt.imshow(eigen_modes_push_pull_measurements_space[:,:,0])
+plt.title(f"Eigen mode {n_mode}, measurements space, push_pull")
+
+plt.figure()
+plt.plot(U.sum(axis=0))
+plt.title("somme des colonnes de U")
