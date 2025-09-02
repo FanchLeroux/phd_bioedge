@@ -42,7 +42,8 @@ def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
     image = np.double(cam.grab(n_frames))
     
     if roi != False:
-        image = image[:, roi[1]-roi[3]//2:roi[1]+roi[3]//2, roi[0]-roi[2]//2:roi[0]+roi[2]//2]
+        image = image[:, roi[1]-roi[3]//2:roi[1]+roi[3]//2,\
+                      roi[0]-roi[2]//2:roi[0]+roi[2]//2]
     
     if dirc != False:
         
@@ -54,13 +55,15 @@ def acquire(cam, n_frames, exp_time, roi=False, dirc = False, overwrite=False):
         tmp = cam.get_all_attribute_values()
         hdr['EXP_TIME']     = (tmp['exposure_time'],'Exposure time in s')
         hdr['FPS']          = (tmp['internal_frame_rate'],'Frame rate in Hz')
-        hdr['INTERVAL']     = (tmp['internal_frame_interval'],'Delay between two successive acquisitions in s')
+        hdr['INTERVAL']     = (tmp['internal_frame_interval'],\
+                              'Delay between two successive acquisitions in s')
         hdr['HPOS']         = (tmp['subarray_hpos'],'X-position of the ROI')
         hdr['YPOS']         = (tmp['subarray_vpos'],'Y-position of the ROI')
         hdr['TIME']         = (t,'Local Time of Acquisition')
     
         file_name = dirc / pathlib.Path(str(cam.ID)+"_exp_" + 
-                                        str(np.round(cam.get_exposure()*1000, 3)) + '_nframes_' + 
+                                        str(np.round(cam.get_exposure()*\
+                                                     1000, 3)) + '_nframes_' +\
                                         str(n_frames) + '.fits')
         
         hdu.writeto(file_name, overwrite=overwrite)
@@ -103,7 +106,9 @@ def live_view(cams, roi=None, interval=0.005):
         im = ax.imshow(frame, cmap='viridis')
         plt.colorbar(im, ax=ax)
         serial = serials[i]
-        titles.append(ax.set_title(f"Serial: {serial} - \nMax: {np.max(frame):.2f}\nMean: {np.mean(frame):.2f}"))
+        titles.append(ax.set_title(f"""Serial: {serial} - \nMax: 
+                                   {np.max(frame):.2f}\nMean: 
+                                   {np.mean(frame):.2f}"""))
         ims.append(im)
 
     # Hide unused subplots
@@ -117,11 +122,14 @@ def live_view(cams, roi=None, interval=0.005):
             ims[i].set_data(frame)
             ims[i].set_clim(vmin=np.min(frame), vmax=np.max(frame))
             serial = serials[i]  # <- Fix here
-            titles[i].set_text(f"Serial: {serial} - \nMax: {np.max(frame):.2f}\nMean: {np.mean(frame):.2f}")
+            titles[i].set_text(f"""Serial: {serial} - \nMax: 
+                               {np.max(frame):.2f}\nMean: 
+                               {np.mean(frame):.2f}""")
         plt.pause(interval)
 
 
-def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], return_command_vector=False):
+def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920],\
+                         return_command_vector=False):
     
     if slm_flat.dtype == np.dtype("bool"):
         slm_flat = np.zeros([slm_shape[0]*slm_shape[1]])
@@ -134,8 +142,11 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], retur
     phase = phase.astype(dtype=np.uint8)
 
     # display pattern on slm
-    slm_lib.Write_image(board_number, phase.ctypes.data_as(ct.POINTER(ct.c_ubyte)), slm_shape[0]*slm_shape[1], 
-                        wait_For_Trigger, OutputPulseImageFlip, OutputPulseImageRefresh,timeout_ms)
+    slm_lib.Write_image(board_number, 
+                        phase.ctypes.data_as(ct.POINTER(ct.c_ubyte)), 
+                        slm_shape[0]*slm_shape[1], 
+                        wait_For_Trigger, OutputPulseImageFlip, 
+                        OutputPulseImageRefresh,timeout_ms)
     slm_lib.ImageWriteComplete(board_number, timeout_ms)
     
     if return_command_vector:
@@ -147,7 +158,8 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152,1920], retur
 #%% parameters
 
 # directories
-dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent / "data"
+dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent\
+    / "data"
 
 # slm shape
 slm_shape = np.array([1152,1920])
@@ -181,7 +193,8 @@ threshold = 0.1
 
 # Load KL modes
 slm_phase_screens = np.load(dirc_data / "slm" / "modal_basis" / "KL_modes" / 
-                        "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy", mmap_mode='r')
+                        "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy", 
+                        mmap_mode='r')
 # chose how many modes are used to calibrate
 n_phase_screens_calib = slm_phase_screens.shape[2]
 
@@ -191,11 +204,13 @@ do_gif = False
 #%% Link slm MEADOWLARK
 
 # load slm library
-ct.cdll.LoadLibrary("C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\SDK\\Blink_C_wrapper")
+ct.cdll.LoadLibrary(
+    "C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\SDK\\Blink_C_wrapper")
 slm_lib = ct.CDLL("Blink_C_wrapper")
 
 # load image generation library
-ct.cdll.LoadLibrary("C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\SDK\\ImageGen")
+ct.cdll.LoadLibrary(
+    "C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\SDK\\ImageGen")
 image_lib = ct.CDLL("ImageGen")
 
 # Basic parameters for calling Create_SDK
@@ -211,13 +226,15 @@ board_number = ct.c_uint(1)
 wait_For_Trigger = ct.c_uint(0)
 timeout_ms = ct.c_uint(5000)
 OutputPulseImageFlip = ct.c_uint(0)
-OutputPulseImageRefresh = ct.c_uint(0) #only supported on 1920x1152, FW rev 1.8.
+OutputPulseImageRefresh = ct.c_uint(0) # only supported on 1920x1152
 
 # Call the Create_SDK constructor
 
 # Returns a handle that's passed to subsequent SDK calls
-slm_lib.Create_SDK(bit_depth, ct.byref(num_boards_found), ct.byref(constructed_okay), 
-                   is_nematic_type, RAM_write_enable, use_GPU, max_transients, 0)
+slm_lib.Create_SDK(bit_depth, ct.byref(num_boards_found), 
+                   ct.byref(constructed_okay), 
+                   is_nematic_type, RAM_write_enable, 
+                   use_GPU, max_transients, 0)
 
 if constructed_okay.value == 0:
     print ("Blink SDK did not construct successfully");
@@ -236,14 +253,15 @@ if num_boards_found.value == 1:
 
 #%% By default load a linear LUT and a black WFC
 
-slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
+slm_lib.Load_LUT_file(board_number, 
+           str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
 command = display_phase_on_slm(np.zeros(slm_shape), return_command_vector=True)
 plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Load LUT
 
-slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "slm5758_at675.lut").encode('utf-8'))
-# slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "utc_2025-06-27_11-37-41_slm0_at675.lut").encode('utf-8'))
+slm_lib.Load_LUT_file(board_number, 
+          str(dirc_data / "slm" / "LUT" / "slm5758_at675.lut").encode('utf-8'))
 
 #%% Load WFC
 
@@ -254,14 +272,15 @@ plt.figure(); plt.imshow(np.reshape(command, slm_shape)); plt.title("Command")
 
 #%% Modify WFC to simulate pupil
 
-tilt = get_tilt(slm_shape, theta=np.deg2rad(tilt_angle), amplitude = tilt_amplitude)/(2*np.pi) * 255.0
+tilt = get_tilt(slm_shape, theta=np.deg2rad(tilt_angle), 
+                amplitude = tilt_amplitude)/(2*np.pi) * 255.0
 
 # replace pupil location by zeros
 
 pupil = np.abs(get_circular_pupil(2*pupil_radius)-1)
 tilt_out_of_pupil = np.ones([1152,1920])
 tilt_out_of_pupil[pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius,
-              pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius] = pupil
+        pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius] = pupil
 tilt_out_of_pupil = tilt_out_of_pupil * tilt
 
 slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
@@ -297,13 +316,13 @@ else:
 
 # initialize settings
 orca_inline.exp_time = exposure_time
-orca_inline.n_frames = 3         # acquire cubes of n_frames images
-orca_inline.ID = 0               # ID for the data saved
+orca_inline.n_frames = 3 # acquire cubes of n_frames images
+orca_inline.ID = 0 # ID for the data saved
 
 # initialize settings
-orca_folded.exp_time = orca_inline.exp_time    # exposure time (s)
-orca_folded.n_frames = orca_inline.n_frames    # acquire cubes of n_frames images
-orca_folded.ID = 0                             # ID for the data saved
+orca_folded.exp_time = orca_inline.exp_time # exposure time (s)
+orca_folded.n_frames = orca_inline.n_frames # acquire cubes of n_frames images
+orca_folded.ID = 0 # ID for the data saved
 
 #%% live view - align Bi-O-Edge mask
 
@@ -316,14 +335,16 @@ live_view([orca_inline, orca_folded])
 
 #%% Select valid pixels
 
-pupils_raw_orca_inline = np.median(acquire(orca_inline, n_frames=10, exp_time=orca_inline.exp_time, roi=roi), axis=0)
+pupils_raw_orca_inline = np.median(acquire(orca_inline, n_frames=10, 
+                            exp_time=orca_inline.exp_time, roi=roi), axis=0)
 pupils_orca_inline = pupils_raw_orca_inline/pupils_raw_orca_inline.max()
 pupils_orca_inline[pupils_orca_inline>threshold] = 1.0
 pupils_orca_inline[pupils_orca_inline!=1.0] = 0.0
 pupils_orca_inline = pupils_orca_inline.astype(np.float32)
 
 
-pupils_raw_orca_folded = np.median(acquire(orca_folded, n_frames=10, exp_time=orca_folded.exp_time, roi=roi), axis=0)
+pupils_raw_orca_folded = np.median(acquire(orca_folded, n_frames=10, 
+                            exp_time=orca_folded.exp_time, roi=roi), axis=0)
 pupils_orca_folded = pupils_raw_orca_folded/pupils_raw_orca_folded.max()
 pupils_orca_folded[pupils_orca_folded>threshold] = 1.0
 pupils_orca_folded[pupils_orca_folded!=1.0] = 0.0
@@ -340,8 +361,10 @@ axs[1].imshow(pupils_orca_folded)
 x1, x2, x3, x4 = 450, 820, 1120, 1490
 y1, y2, y3, y4 = 400, 800, 1320, 1690
 
-pupils_orca_inline[:y1,:], pupils_orca_inline[y2:y3, :], pupils_orca_inline[y4:, :] = 0, 0, 0
-pupils_orca_inline[:, :x1], pupils_orca_inline[:, x2:x3], pupils_orca_inline[:, x4:] = 0, 0, 0
+pupils_orca_inline[:y1,:], pupils_orca_inline[y2:y3, :],\
+    pupils_orca_inline[y4:, :] = 0, 0, 0
+pupils_orca_inline[:, :x1], pupils_orca_inline[:, x2:x3],\
+    pupils_orca_inline[:, x4:] = 0, 0, 0
 
 #%%
 
@@ -352,7 +375,8 @@ plt.imshow(pupils_orca_inline)
 
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
 
-reference_intensities_orca_inline = np.mean(acquire(orca_inline, n_frames=10, exp_time=orca_inline.exp_time), axis=0)
+reference_intensities_orca_inline = np.mean(acquire(orca_inline, n_frames=10, 
+                                    exp_time=orca_inline.exp_time), axis=0)
 
 plt.figure()
 plt.imshow(reference_intensities_orca_inline)
@@ -364,13 +388,15 @@ display=True
 # get one image to infer dimensions
 img = acquire(orca_inline, 1, orca_inline.exp_time, roi=roi)
 
-interaction_matrix = np.zeros((img.shape[1], img.shape[2], n_phase_screens_calib), dtype=np.float32)
+interaction_matrix = np.zeros((img.shape[1], img.shape[2], 
+                               n_phase_screens_calib), dtype=np.float32)
 
 if display:
     
     plt.ion()  # Turn on interactive mode
     fig, ax = plt.subplots(nrows=1, ncols=2)
-    im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],slm_phase_screens.shape[1])), cmap='viridis')
+    im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],
+                                 slm_phase_screens.shape[1])), cmap='viridis')
     im2 = ax[1].imshow(interaction_matrix[:,:,0], cmap='viridis')
     ax[0].set_title("SLM Command")
     ax[1].set_title("Detector Irradiance")
@@ -383,19 +409,25 @@ for n_phase_screen in range(n_phase_screens_calib):
     KL_mode_full_slm[pupil_center[0]-slm_phase_screens.shape[0]//2:
                   pupil_center[0]+slm_phase_screens.shape[0]//2,
                   pupil_center[1]-slm_phase_screens.shape[1]//2:
-                  pupil_center[1]+slm_phase_screens.shape[1]//2] = slm_phase_screens[:,:,n_phase_screen]
+                  pupil_center[1]+slm_phase_screens.shape[1]//2] =\
+        slm_phase_screens[:,:,n_phase_screen]
     
-    command = display_phase_on_slm(amplitude_calibration_interaction_matrix*KL_mode_full_slm, 
-                                   slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+    command = display_phase_on_slm(
+        amplitude_calibration_interaction_matrix*KL_mode_full_slm, 
+        slm_flat, slm_shape=[1152,1920], return_command_vector=True)
     
-    push = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi), axis=0)
+    push = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi), 
+                   axis=0)
     
-    command = display_phase_on_slm(-amplitude_calibration_interaction_matrix*KL_mode_full_slm, 
-                                   slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+    command = display_phase_on_slm(
+        -amplitude_calibration_interaction_matrix*KL_mode_full_slm, 
+        slm_flat, slm_shape=[1152,1920], return_command_vector=True)
     
-    pull = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi), axis=0)
+    pull = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi), 
+                   axis=0)
     
-    interaction_matrix[:,:,n_phase_screen] = (push - pull) / (2*amplitude_calibration_interaction_matrix)
+    interaction_matrix[:,:,n_phase_screen] = (push - pull) /\
+        (2*amplitude_calibration_interaction_matrix)
     
     del push, pull
     
@@ -403,10 +435,11 @@ for n_phase_screen in range(n_phase_screens_calib):
     
     if display:
         im1.set_data(slm_phase_screens[:,:,n_phase_screen])
-        im1.set_clim(vmin=np.min(slm_phase_screens[:,:,n_phase_screen]), vmax=np.max(slm_phase_screens[:,:,n_phase_screen]))  # Adjust color scale
+        im1.set_clim(vmin=np.min(slm_phase_screens[:,:,n_phase_screen]), 
+                     vmax=np.max(slm_phase_screens[:,:,n_phase_screen]))
         im2.set_data(interaction_matrix[:,:,n_phase_screen])
-        im2.set_clim(vmin=np.min(interaction_matrix[:,:,n_phase_screen]), vmax=np.max(interaction_matrix[:,:,n_phase_screen]))  # Adjust color scale
-        plt.pause(0.005)
+        im2.set_clim(vmin=np.min(interaction_matrix[:,:,n_phase_screen]), 
+                     vmax=np.max(interaction_matrix[:,:,n_phase_screen]))
 
 #%% Measure test matrix - orca_inline
 
@@ -415,13 +448,15 @@ display=True
 # get one image to infer dimensions
 img = acquire(orca_inline, 1, orca_inline.exp_time, roi=roi)
 
-test_matrix = np.zeros((img.shape[1], img.shape[2], n_phase_screens_calib), dtype=np.float32)
+test_matrix = np.zeros((img.shape[1], img.shape[2], n_phase_screens_calib), 
+                       dtype=np.float32)
 
 if display:
     
     plt.ion()  # Turn on interactive mode
     fig, ax = plt.subplots(nrows=1, ncols=2)
-    im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],slm_phase_screens.shape[1])), cmap='viridis')
+    im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],
+                                 slm_phase_screens.shape[1])), cmap='viridis')
     im2 = ax[1].imshow(test_matrix[:,:,0], cmap='viridis')
     ax[0].set_title("SLM Command")
     ax[1].set_title("Detector Irradiance")
@@ -434,19 +469,25 @@ for n_phase_screen in range(n_phase_screens_calib):
     KL_mode_full_slm[pupil_center[0]-slm_phase_screens.shape[0]//2:
                   pupil_center[0]+slm_phase_screens.shape[0]//2,
                   pupil_center[1]-slm_phase_screens.shape[1]//2:
-                  pupil_center[1]+slm_phase_screens.shape[1]//2] = slm_phase_screens[:,:,n_phase_screen]
+                  pupil_center[1]+slm_phase_screens.shape[1]//2] =\
+        slm_phase_screens[:,:,n_phase_screen]
     
-    command = display_phase_on_slm(amplitude_calibration_test_matrix*KL_mode_full_slm, slm_flat, slm_shape=[1152,1920], return_command_vector=True)
+    command = display_phase_on_slm(
+        amplitude_calibration_test_matrix*KL_mode_full_slm, slm_flat, 
+        slm_shape=[1152,1920], return_command_vector=True)
     
-    test_matrix[:,:,n_phase_screen] = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi), axis=0)
+    test_matrix[:,:,n_phase_screen] = np.mean(acquire(orca_inline, 3, 
+                                orca_inline.exp_time, roi=roi), axis=0)
     
     print(str(n_phase_screen))
     
     if display:
         im1.set_data(slm_phase_screens[:,:,n_phase_screen])
-        im1.set_clim(vmin=np.min(slm_phase_screens[:,:,n_phase_screen]), vmax=np.max(slm_phase_screens[:,:,n_phase_screen]))  # Adjust color scale
+        im1.set_clim(vmin=np.min(slm_phase_screens[:,:,n_phase_screen]), 
+                     vmax=np.max(slm_phase_screens[:,:,n_phase_screen]))
         im2.set_data(test_matrix[:,:,n_phase_screen])
-        im2.set_clim(vmin=np.min(test_matrix[:,:,n_phase_screen]), vmax=np.max(test_matrix[:,:,n_phase_screen]))  # Adjust color scale
+        im2.set_clim(vmin=np.min(test_matrix[:,:,n_phase_screen]), 
+                     vmax=np.max(test_matrix[:,:,n_phase_screen]))
         plt.pause(0.005)
 
 #%% Create folder to save results
@@ -457,18 +498,22 @@ dirc_matrices = dirc_data / "matrices" / utc_now
 
 pathlib.Path(dirc_matrices).mkdir(parents=True, exist_ok=True)
 
-np.save(dirc_matrices / (utc_now + "_reference_intensities_orca_inline.npy"), reference_intensities_orca_inline)
-np.save(dirc_matrices / (utc_now + "_interaction_matrix.npy"), interaction_matrix)
+np.save(dirc_matrices / (utc_now + "_reference_intensities_orca_inline.npy"), 
+        reference_intensities_orca_inline)
+np.save(dirc_matrices / (utc_now + "_interaction_matrix.npy"), 
+        interaction_matrix)
 np.save(dirc_matrices / (utc_now + "_test_matrix.npy"), test_matrix)
 
 #%% Post-processing - interaction matrix
 
-interaction_matrix_valid_pixel_reshaped = np.reshape(interaction_matrix[pupils_orca_inline == 1.0],
-                                                             (int(pupils_orca_inline.sum()), 
-                                                              interaction_matrix.shape[-1]))
+interaction_matrix_valid_pixel_reshaped = np.reshape(
+    interaction_matrix[pupils_orca_inline == 1.0],
+    (int(pupils_orca_inline.sum()), 
+    interaction_matrix.shape[-1]))
 
 del interaction_matrix
-np.save(dirc_matrices / (utc_now + "_interaction_matrix_valid_pixel_reshaped.npy"), 
+np.save(dirc_matrices /\
+        (utc_now + "_interaction_matrix_valid_pixel_reshaped.npy"), 
         interaction_matrix_valid_pixel_reshaped)
 
 #%%
@@ -499,9 +544,10 @@ np.save(dirc_matrices / (utc_now + "_interaction_matrix_normalized.npy"),
 
 #%% Post-processing - test matrix
 
-test_matrix_valid_pixel_reshaped = np.reshape(test_matrix[pupils_orca_inline == 1.0],
-                                                             (int(pupils_orca_inline.sum()), 
-                                                              test_matrix.shape[-1]))
+test_matrix_valid_pixel_reshaped = np.reshape(\
+                        test_matrix[pupils_orca_inline == 1.0],
+                        (int(pupils_orca_inline.sum()), 
+                        test_matrix.shape[-1]))
 
 del test_matrix
 np.save(dirc_matrices / (utc_now + "_test_matrix_valid_pixel_reshaped.npy"), 
@@ -511,7 +557,7 @@ np.save(dirc_matrices / (utc_now + "_test_matrix_valid_pixel_reshaped.npy"),
 
 test_matrix_substracted = test_matrix_valid_pixel_reshaped -\
     (np.reshape(reference_intensities_orca_inline[pupils_orca_inline == 1.0],
-                                                                 (int(pupils_orca_inline.sum()))))[:,np.newaxis]
+            (int(pupils_orca_inline.sum()))))[:,np.newaxis]
 
 del test_matrix_valid_pixel_reshaped
 np.save(dirc_matrices / (utc_now + "_test_matrix_substracted.npy"), 
@@ -566,7 +612,8 @@ plt.imshow(command_matrix @ test_matrix_normalized)
 
 # Load a linear LUT and a black WFC
 
-slm_lib.Load_LUT_file(board_number, str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
+slm_lib.Load_LUT_file(board_number, 
+        str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
 display_phase_on_slm(np.zeros(slm_shape))
 
 #%% delete slm sdk
@@ -585,25 +632,30 @@ if do_gif:
 
     print("start making gif")
     
-    interaction_matrix = np.load(dirc_matrices / (utc_now + "_interaction_matrix.npy"))
-    make_gif(dirc_data / "gif" /(get_utc_now()+"_interaction_matrix_measeurements.gif"), interaction_matrix)
+    interaction_matrix = np.load(dirc_matrices /\
+                                 (utc_now + "_interaction_matrix.npy"))
+    make_gif(dirc_data / "gif" /(get_utc_now()\
+            +"_interaction_matrix_measeurements.gif"), interaction_matrix)
     del interaction_matrix
     
     test_matrix = np.load(dirc_matrices / (utc_now + "_test_matrix.npy"))
-    make_gif(dirc_data / "gif" / (get_utc_now()+"_test_matrix_measeurements.gif"), test_matrix)
+    make_gif(dirc_data / "gif" /\
+             (get_utc_now()+"_test_matrix_measeurements.gif"), test_matrix)
     del test_matrix
 
 #%% adjust slicer
 
-interaction_matrix = np.load(dirc_matrices / (utc_now + "_interaction_matrix.npy"), mmap_mode='r')
+interaction_matrix = np.load(dirc_matrices /\
+                (utc_now + "_interaction_matrix.npy"), mmap_mode='r')
 
 slicer_x = np.r_[np.s_[0:400], np.s_[900:1200], np.s_[1600:2048]]
 slicer_y = np.r_[np.s_[0:300], np.s_[800:1200], np.s_[1700:2048]]
 
 plt.figure()
-plt.imshow(np.delete(np.delete(interaction_matrix[:,:,50], slicer_x, 1), slicer_y, 0))
+plt.imshow(np.delete(np.delete(interaction_matrix[:,:,50], slicer_x, 1), 
+                     slicer_y, 0))
 
-#%%
+#%% Save interaction and test matrices as GIF
 
 if do_gif:
 
@@ -612,20 +664,25 @@ if do_gif:
     import gif 
     from tqdm import tqdm
     
-    interaction_matrix = np.load(dirc_matrices / (utc_now + "_interaction_matrix.npy"))
+    interaction_matrix = np.load(dirc_matrices /\
+                                 (utc_now + "_interaction_matrix.npy"))
     
     @gif.frame
     def plot(i):
-        plt.imshow(np.delete(np.delete(interaction_matrix[:,:,i], slicer_x, 1), slicer_y, 0))
+        plt.imshow(np.delete(np.delete(interaction_matrix[:,:,i], slicer_x, 1), 
+                             slicer_y, 0))
     
     frames = [plot(i) for i in tqdm(range(interaction_matrix.shape[-1]))]
-    gif.save(frames, str(dirc_matrices /(get_utc_now()+"_interaction_matrix_measeurements.gif")), duration=200)
+    gif.save(frames, str(dirc_matrices /(get_utc_now()+\
+             "_interaction_matrix_measeurements.gif")), duration=200)
     
     test_matrix = np.load(dirc_matrices / (utc_now + "_test_matrix.npy"))
     
     @gif.frame
     def plot(i):
-        plt.imshow(np.delete(np.delete(test_matrix[:,:,i], slicer_x, 1), slicer_y, 0))
+        plt.imshow(np.delete(np.delete(test_matrix[:,:,i], slicer_x, 1), 
+                             slicer_y, 0))
     
     frames = [plot(i) for i in tqdm(range(interaction_matrix.shape[-1]))]
-    gif.save(frames, str(dirc_matrices /(get_utc_now()+"_test_matrix_measeurements.gif")), duration=200)
+    gif.save(frames, str(dirc_matrices /\
+            (get_utc_now()+"_test_matrix_measeurements.gif")), duration=200)
