@@ -113,6 +113,10 @@ n_mode = 0
 eigen_mode_push_pull_control_space = np.sum(VT[:,n_mode] * slm_phase_screens,
                                             axis=2)
 
+eigen_modes_push_pull_control_space = np.reshape(np.reshape(slm_phase_screens,
+  (slm_phase_screens.shape[0]*slm_phase_screens.shape[1], 
+   slm_phase_screens.shape[2])) @ VT, slm_phase_screens.shape)
+
 #%% Eigen modes extraction - Measurements space - push_pull
 
 n_mode = 0
