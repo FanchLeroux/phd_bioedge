@@ -63,8 +63,12 @@ raw_measurements_push_pull = np.load(dirc_data / utc_measurement /
 
 #%% Binning push_pull
 
-raw_measurements_push_pull = set_binning(raw_measurements_push_pull, 16)
-reference_intensities_push_pull = set_binning(reference_intensities_push_pull, 16)
+binning_factor = 16
+
+raw_measurements_push_pull = set_binning(raw_measurements_push_pull, 
+                                         binning_factor)
+reference_intensities_push_pull = set_binning(reference_intensities_push_pull, 
+                                              binning_factor)
 
 #%% Select valid pixels - push_pull
 
@@ -97,14 +101,15 @@ interaction_matrix_push_pull = np.reshape(\
 interaction_matrix_push_pull = CalibrationVault(
     interaction_matrix_push_pull)
 
-#%% Eigen modes extraction - push_pull
+#%% Eigen modes extraction - Control space - push_pull
 
 n_mode = 0
 
-eigen_mode_push_pull = np.zeros(valid_pixels_push_pull.shape, dtype=float)
-eigen_mode_push_pull.fill(np.nan)
+eigen_mode_push_pull_control_space = np.zeros(
+    valid_pixels_push_pull.shape, dtype=float)
+eigen_mode_push_pull_control_space.fill(np.nan)
 
-eigen_mode_push_pull[valid_pixels_push_pull==1] = \
+eigen_mode_push_pull_control_space[valid_pixels_push_pull==1] = \
     interaction_matrix_push_pull.U[n_mode,:]
 
 # slicer_x = np.r_[np.s_[0:500], np.s_[800:1200], np.s_[1500:2048]]
@@ -113,11 +118,30 @@ eigen_mode_push_pull[valid_pixels_push_pull==1] = \
 slicer_x = np.r_[np.s_[0:30], np.s_[50:70], np.s_[92:120]]
 slicer_y = np.r_[np.s_[0:20], np.s_[44:74], np.s_[100:120]]
    
-eigen_mode_push_pull = np.delete(np.delete(eigen_mode_push_pull, slicer_x, 1), 
-                                 slicer_y, 0)
+eigen_mode_push_pull_control_space_measurements_space =\
+    np.delete(np.delete(eigen_mode_push_pull_control_space, slicer_x, 1), 
+              slicer_y, 0)
 
-plt.figure()
-plt.imshow(eigen_mode_push_pull)
+#%% Eigen modes extraction - Measurements space - push_pull
+
+n_mode = 0
+
+eigen_mode_push_pull_measurements_space = np.zeros(
+    valid_pixels_push_pull.shape, dtype=float)
+eigen_mode_push_pull_measurements_space.fill(np.nan)
+
+eigen_mode_push_pull_measurements_space[valid_pixels_push_pull==1] = \
+    interaction_matrix_push_pull.U[n_mode,:]
+
+# slicer_x = np.r_[np.s_[0:500], np.s_[800:1200], np.s_[1500:2048]]
+# slicer_y = np.r_[np.s_[0:400], np.s_[700:1300], np.s_[1600:2048]]
+
+slicer_x = np.r_[np.s_[0:30], np.s_[50:70], np.s_[92:120]]
+slicer_y = np.r_[np.s_[0:20], np.s_[44:74], np.s_[100:120]]
+   
+eigen_mode_push_pull_measurements_space_measurements_space =\
+    np.delete(np.delete(eigen_mode_push_pull_measurements_space, slicer_x, 1), 
+              slicer_y, 0)
 
 #%% Display
 
@@ -130,7 +154,7 @@ plt.ylabel("Eigen Values")
 plt.legend()
 
 plt.figure()
-plt.imshow(eigen_mode_push_pull)
+plt.imshow(eigen_mode_push_pull_measurements_space)
 plt.title(f"Eigen mode {n_mode}, push_pull")
 
 support = np.zeros(reference_intensities_push_pull.shape, dtype=float)
