@@ -163,5 +163,19 @@ plt.imshow(eigen_modes_push_pull_measurements_space[:,:,0])
 plt.title(f"Eigen mode {n_mode}, measurements space, push_pull")
 
 plt.figure()
+plt.plot(interaction_matrix_push_pull.sum(axis=0))
+plt.title("""sum of the columns of interaction matrix\n
+          (calibrations modes in measurements space)""")
+          
+plt.figure()
+plt.plot(slm_phase_screens.sum(axis=(0,1)))
+plt.title("""sum of the calibration modes\n
+          (calibrations modes in control space)""")
+
+plt.figure()
 plt.plot(U.sum(axis=0))
-plt.title("somme des colonnes de U")
+plt.title("sum of the colums of U\n(eigenmodes in measurements space)")
+
+plt.figure()
+plt.plot(eigen_modes_push_pull_control_space.sum(axis=(0,1)))
+plt.title("sum of the colums of VT\n(eigenmodes in control space)")

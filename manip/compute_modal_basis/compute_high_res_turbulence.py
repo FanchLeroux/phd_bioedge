@@ -18,12 +18,21 @@ from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
 # %%
 
 dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent /\
-    "data" / "data_banc_proto_bioedge" / "modal_basis" / "KL"
+    "data" / "data_banc_proto_bioedge" / "turbulence"
 
 # %% Parameters
 
-n_subaperture = 30
-n_pixels_in_slm_pupil = 400
+n_subaperture = 20
+n_pixels_in_slm_pupil = 1152
+
+r0 = 0.15  # Fried Parameter [m]
+L0 = 25  # Outer Scale [m]
+fractionalR0 = [0.45, 0.1, 0.1, 0.25, 0.1]  # Cn2 Profile
+windSpeed = [10, 12, 11, 15, 20]  # Wind Speed in [m]
+# Wind Direction in [degrees]
+windDirection = [0, 72, 144, 216, 288]
+# Altitude Layers in [m]
+altitude = [0, 1000, 5000, 10000, 12000]
 
 # %% Telescope
 
@@ -62,9 +71,9 @@ tel_HR = Telescope(  # resolution of the telescope in [pix]
 # %% Natural Guide Star
 
 # create the Natural Guide Star object
-ngs = Source(optBand='I',           # Optical band (see photometry.py)
-             magnitude=8,             # Source Magnitude
-             coordinates=[0, 0])         # Source coordinated [arcsec,deg]
+ngs = Source(optBand='I',  # Optical band (see photometry.py)
+             magnitude=8,  # Source Magnitude
+             coordinates=[0, 0])  # Source coordinated [arcsec,deg]
 
 # combine the NGS to the telescope using '*'
 ngs*tel
@@ -74,14 +83,14 @@ ngs*tel
 
 # create the Atmosphere object
 atm = Atmosphere(telescope=tel,  # Telescope
-                 r0=0.15,  # Fried Parameter [m]
-                 L0=25,  # Outer Scale [m]
-                 fractionalR0=[0.45, 0.1, 0.1, 0.25, 0.1],  # Cn2 Profile
-                 windSpeed=[10, 12, 11, 15, 20],  # Wind Speed in [m]
+                 r0=r0,  # Fried Parameter [m]
+                 L0=L0,  # Outer Scale [m]
+                 fractionalR0=fractionalR0,  # Cn2 Profile
+                 windSpeed=windSpeed,  # Wind Speed in [m]
                  # Wind Direction in [degrees]
-                 windDirection=[0, 72, 144, 216, 288],
+                 windDirection=windDirection,
                  # Altitude Layers in [m]
-                 altitude=[0, 1000, 5000, 10000, 12000])
+                 altitude=altitude)
 
 
 # %% Deformable Mirror
@@ -129,24 +138,26 @@ M2C_KL = compute_KL_basis(tel, atm, dm, lim=1e-5)
 
 # %% Compute high res KL modes
 
-dm_HR.coefs = M2C_KL
+# dm_HR.coefs = M2C_KL
 
-# propagate through the DM
-ngs*tel_HR*dm_HR
-KL_modes = tel_HR.OPD
+# # propagate through the DM
+# ngs*tel_HR*dm_HR
+# KL_modes = tel_HR.OPD
 
-# std normalization
-KL_modes = KL_modes / np.std(KL_modes, axis=(0, 1))
+# # std normalization
+# KL_modes = KL_modes / np.std(KL_modes, axis=(0, 1))
 
-# set the mean value around pi
-KL_modes = (KL_modes + np.pi)*tel_HR.pupil[:, :, np.newaxis]
+# # set the mean value around pi
+# KL_modes = (KL_modes + np.pi)*tel_HR.pupil[:, :, np.newaxis]
 
-# scale from 0 to 255 for a 2pi phase shift
-KL_modes = KL_modes * 255/(2*np.pi)
+# # scale from 0 to 255 for a 2pi phase shift
+# KL_modes = KL_modes * 255/(2*np.pi)
 
-# convert to 8-bit integers
-KL_modes = KL_modes.astype(np.uint8)
+# # convert to 8-bit integers
+# KL_modes = KL_modes.astype(np.uint8)
 
 # %%
 
-np.save(dirc_data / "compute_high_res_KL_output.npy", KL_modes)
+atmosphere = np.zeros(tel_HR.pupil.shape)
+
+np.save(dirc_data / "atmosphere.npy", atmosphere)
