@@ -8,12 +8,15 @@ Created on Mon May  6 14:01:52 2024
 import pathlib
 
 import numpy as np
+import matplotlib.pyplot as plt
+
+import tqdm
 
 from OOPAO.Telescope import Telescope
 from OOPAO.Source import Source
 from OOPAO.Atmosphere import Atmosphere
-from OOPAO.DeformableMirror import DeformableMirror
-from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
+
+from OOPAO.tools.interpolateGeometricalTransformation import interpolate_cube
 
 # %%
 
@@ -34,6 +37,10 @@ windDirection = [0, 72, 144, 216, 288]
 # Altitude Layers in [m]
 altitude = [0, 1000, 5000, 10000, 12000]
 
+n_phase_screens = 10
+
+seed = 0
+
 # %% Telescope
 
 # create the Telescope object
@@ -53,7 +60,7 @@ tel = Telescope(  # resolution of the telescope in [pix]
     fov=10)
 
 
-tel_HR = Telescope(  # resolution of the telescope in [pix]
+tel_hr = Telescope(  # resolution of the telescope in [pix]
     resolution=n_pixels_in_slm_pupil,
     # diameter in [m]
     diameter=8,
@@ -77,6 +84,7 @@ ngs = Source(optBand='I',  # Optical band (see photometry.py)
 
 # combine the NGS to the telescope using '*'
 ngs*tel
+ngs*tel_hr
 
 # %% Atmosphere
 
@@ -91,70 +99,45 @@ atm = Atmosphere(telescope=tel,  # Telescope
                  # Altitude Layers in [m]
                  altitude=altitude)
 
-# %% Deformable Mirror
+atm.initializeAtmosphere(tel)
+tel+atm
 
-# specifying a given number of actuators along the diameter:
-nAct = n_subaperture+1
+# %% Compute atmosphere phase screens
 
-dm = DeformableMirror(telescope=tel,  # Telescope
-                      # number of subaperture of the system considered
-                      # (by default the DM has n_subaperture + 1 actuators to
-                      # be in a Fried Geometry)
-                      nSubap=nAct-1,
-                      # Mechanical Coupling for the influence functions
-                      mechCoupling=0.35,
-                      # coordinates in [m].
-                      # Should be input as an array of size [n_actuators, 2]
-                      coordinates=None,
-                      # inter actuator distance. Only used to compute the
-                      # influence function coupling. The default is based on
-                      # the n_subaperture value.
-                      pitch=tel.D/nAct, floating_precision=32)
+atmosphere_phase_screens = np.zeros(
+    (n_phase_screens,) + atm.OPD_no_pupil.shape, dtype=float)
+atmosphere_phase_screens.fill(np.nan)
 
-dm_HR = DeformableMirror(telescope=tel_HR,  # Telescope
-                         # number of subaperture of the system considered
-                         # (by default the DM has n_subaperture + 1 actuators
-                         # to be in a Fried Geometry)
-                         nSubap=nAct-1,
-                         # Mechanical Coupling for the influence functions
-                         mechCoupling=0.35,
-                         # coordinates in [m]. Should be input as an array of
-                         # size [n_actuators, 2]
-                         coordinates=None,
-                         # inter actuator distance. Only used to compute the
-                         # influence function coupling. The default is based on
-                         # the n_subaperture value.
-                         pitch=tel.D/nAct, floating_precision=32)
+for k in tqdm.tqdm(range(n_phase_screens)):
 
-# %%  Modal Basis
-
-# use the default definition of the KL modes with forced Tip and Tilt. For more
-# complex KL modes, consider the use of the compute_KL_basis function.
-# matrix to apply modes on the DM
-M2C_KL = compute_KL_basis(tel, atm, dm, lim=1e-5)
-
-# %% Compute high res KL modes
-
-# dm_HR.coefs = M2C_KL
-
-# # propagate through the DM
-# ngs*tel_HR*dm_HR
-# KL_modes = tel_HR.OPD
-
-# # std normalization
-# KL_modes = KL_modes / np.std(KL_modes, axis=(0, 1))
-
-# # set the mean value around pi
-# KL_modes = (KL_modes + np.pi)*tel_HR.pupil[:, :, np.newaxis]
-
-# # scale from 0 to 255 for a 2pi phase shift
-# KL_modes = KL_modes * 255/(2*np.pi)
-
-# # convert to 8-bit integers
-# KL_modes = KL_modes.astype(np.uint8)
+    atmosphere_phase_screens[k, :, :] = atm.OPD_no_pupil
+    atm.update()
 
 # %%
 
-atmosphere = np.zeros(tel_HR.pupil.shape)
+atmosphere_phase_screens_hr = interpolate_cube(
+    atmosphere_phase_screens, tel.pixelSize, tel_hr.pixelSize,
+    tel_hr.resolution)
 
-np.save(dirc_data / "atmosphere.npy", atmosphere)
+# %%
+
+deltas = atmosphere_phase_screens_hr.max(
+    axis=(1, 2)) - atmosphere_phase_screens_hr.min(axis=(1, 2))
+
+wavelength = 675e-9 * np.ones(deltas.shape)
+
+plt.figure()
+plt.plot(deltas, label="deltas")
+plt.plot(wavelength, color="r", label="wavelength")
+plt.xlabel("# phase screen")
+plt.ylabel("OPD [m]")
+plt.title("to wrap or not to wrap ?")
+plt.legend()
+
+# %% Save results
+
+filename = (
+    f"{n_phase_screens}_atmosphere_phase_screens_{n_pixels_in_slm_pupil}"
+    f"_pixels_{int(r0 * 100)}_r0_seed_{seed}.npy"
+)
+np.save(dirc_data / filename, atmosphere_phase_screens_hr)
