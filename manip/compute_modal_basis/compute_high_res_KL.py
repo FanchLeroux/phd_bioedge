@@ -69,7 +69,6 @@ ngs = Source(optBand='I',           # Optical band (see photometry.py)
 # combine the NGS to the telescope using '*'
 ngs*tel
 
-
 # %% Atmosphere
 
 # create the Atmosphere object
@@ -82,7 +81,6 @@ atm = Atmosphere(telescope=tel,  # Telescope
                  windDirection=[0, 72, 144, 216, 288],
                  # Altitude Layers in [m]
                  altitude=[0, 1000, 5000, 10000, 12000])
-
 
 # %% Deformable Mirror
 
@@ -118,7 +116,6 @@ dm_HR = DeformableMirror(telescope=tel_HR,  # Telescope
                          # influence function coupling. The default is based on
                          # the n_subaperture value.
                          pitch=tel.D/nAct, floating_precision=32)
-
 
 # %%  Modal Basis
 
