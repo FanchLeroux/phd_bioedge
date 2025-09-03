@@ -5,25 +5,29 @@ Created on Mon May  6 14:01:52 2024
 @author: fleroux
 """
 
+# %% Imports
+
 import pathlib
 
 import numpy as np
 import matplotlib.pyplot as plt
-
 import tqdm
 
 from OOPAO.Telescope import Telescope
 from OOPAO.Source import Source
 from OOPAO.Atmosphere import Atmosphere
-
 from OOPAO.tools.interpolateGeometricalTransformation import interpolate_cube
 
-# %%
+# %% File path
 
-dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent /\
-    "data" / "data_banc_proto_bioedge" / "turbulence"
+dirc_data = (
+    pathlib.Path(__file__).parent.parent.parent.parent.parent
+    / "data" / "data_banc_proto_bioedge" / "turbulence"
+)
 
 # %% Parameters
+
+WAVELENGTH = 675e-9  # [m]
 
 n_subaperture = 20
 n_pixels_in_slm_pupil = 1152
@@ -31,113 +35,129 @@ n_pixels_in_slm_pupil = 1152
 r0 = 0.15  # Fried Parameter [m]
 L0 = 25  # Outer Scale [m]
 fractionalR0 = [0.45, 0.1, 0.1, 0.25, 0.1]  # Cn2 Profile
-windSpeed = [10, 12, 11, 15, 20]  # Wind Speed in [m]
-# Wind Direction in [degrees]
-windDirection = [0, 72, 144, 216, 288]
-# Altitude Layers in [m]
-altitude = [0, 1000, 5000, 10000, 12000]
+windSpeed = [10, 12, 11, 15, 20]  # Wind Speed [m/s]
+windDirection = [0, 72, 144, 216, 288]  # Wind Direction [deg]
+altitude = [0, 1000, 5000, 10000, 12000]  # Altitude Layers [m]
 
-n_phase_screens = 10
-
+n_opd_screens = 10
 seed = 0
 
 # %% Telescope
 
-# create the Telescope object
-tel = Telescope(  # resolution of the telescope in [pix]
-    resolution=8*n_subaperture,
-    # diameter in [m]
+tel = Telescope(
+    resolution=8 * n_subaperture,
     diameter=8,
-    # Sampling time in [s] of the AO loop
-    samplingTime=1/1000,
-    # Central obstruction in [%] of a diameter
-    centralObstruction=0.,
-    # Flag to display optical path
+    samplingTime=1 / 1000,
+    centralObstruction=0.0,
     display_optical_path=False,
-    # field of view in [arcsec]. If set to 0 (default) this speeds up the
-    # computation of the phase screens but is uncompatible with
-    # off-axis targets
-    fov=10)
+    fov=10
+)
 
-
-tel_hr = Telescope(  # resolution of the telescope in [pix]
+tel_hr = Telescope(
     resolution=n_pixels_in_slm_pupil,
-    # diameter in [m]
     diameter=8,
-    # Sampling time in [s] of the AO loop
-    samplingTime=1/1000,
-    # Central obstruction in [%] of a diameter
-    centralObstruction=0.,
-    # Flag to display optical path
+    samplingTime=1 / 1000,
+    centralObstruction=0.0,
     display_optical_path=False,
-    # field of view in [arcsec]. If set to 0 (default) this speeds up the
-    # computation of the phase screens but is uncompatible with
-    # off-axis targets
-    fov=10)
+    fov=10
+)
 
 # %% Natural Guide Star
 
-# create the Natural Guide Star object
-ngs = Source(optBand='I',  # Optical band (see photometry.py)
-             magnitude=8,  # Source Magnitude
-             coordinates=[0, 0])  # Source coordinated [arcsec,deg]
+ngs = Source(
+    optBand='I',
+    magnitude=8,
+    coordinates=[0, 0]
+)
 
-# combine the NGS to the telescope using '*'
-ngs*tel
-ngs*tel_hr
+ngs * tel
+ngs * tel_hr
 
 # %% Atmosphere
 
-# create the Atmosphere object
-atm = Atmosphere(telescope=tel,  # Telescope
-                 r0=r0,  # Fried Parameter [m]
-                 L0=L0,  # Outer Scale [m]
-                 fractionalR0=fractionalR0,  # Cn2 Profile
-                 windSpeed=windSpeed,  # Wind Speed in [m]
-                 # Wind Direction in [degrees]
-                 windDirection=windDirection,
-                 # Altitude Layers in [m]
-                 altitude=altitude)
+atm = Atmosphere(
+    telescope=tel,
+    r0=r0,
+    L0=L0,
+    fractionalR0=fractionalR0,
+    windSpeed=windSpeed,
+    windDirection=windDirection,
+    altitude=altitude
+)
 
 atm.initializeAtmosphere(tel)
-tel+atm
+tel + atm
 
-# %% Compute atmosphere phase screens
+# %% Compute atmosphere opd screens
 
-atmosphere_phase_screens = np.zeros(
-    (n_phase_screens,) + atm.OPD_no_pupil.shape, dtype=float)
-atmosphere_phase_screens.fill(np.nan)
+atmosphere_opd_screens = np.full(
+    (n_opd_screens,) + atm.OPD_no_pupil.shape,
+    np.nan,
+    dtype=float
+)
 
-for k in tqdm.tqdm(range(n_phase_screens)):
-
-    atmosphere_phase_screens[k, :, :] = atm.OPD_no_pupil
+for k in tqdm.tqdm(range(n_opd_screens)):
+    atmosphere_opd_screens[k, :, :] = atm.OPD_no_pupil
     atm.update()
 
-# %%
+# %% Interpolation to high resolution
 
-atmosphere_phase_screens_hr = interpolate_cube(
-    atmosphere_phase_screens, tel.pixelSize, tel_hr.pixelSize,
-    tel_hr.resolution)
+atmosphere_opd_screens_hr = interpolate_cube(
+    atmosphere_opd_screens,
+    tel.pixelSize,
+    tel_hr.pixelSize,
+    tel_hr.resolution
+)
 
-# %%
+# %% Plot OPD deltas vs wavelength
 
-deltas = atmosphere_phase_screens_hr.max(
-    axis=(1, 2)) - atmosphere_phase_screens_hr.min(axis=(1, 2))
-
-wavelength = 675e-9 * np.ones(deltas.shape)
+deltas = (
+    atmosphere_opd_screens_hr.max(axis=(1, 2))
+    - atmosphere_opd_screens_hr.min(axis=(1, 2))
+)
 
 plt.figure()
 plt.plot(deltas, label="deltas")
-plt.plot(wavelength, color="r", label="wavelength")
-plt.xlabel("# phase screen")
+plt.plot(WAVELENGTH * np.ones(deltas.shape), color="r", label="wavelength")
+plt.xlabel("# opd screen")
 plt.ylabel("OPD [m]")
-plt.title("to wrap or not to wrap ?")
+plt.title("To wrap or not to wrap?")
 plt.legend()
 
 # %% Save results
 
 filename = (
-    f"{n_phase_screens}_atmosphere_phase_screens_{n_pixels_in_slm_pupil}"
+    f"{n_opd_screens}_atmosphere_opd_screens_{n_pixels_in_slm_pupil}"
     f"_pixels_{int(r0 * 100)}_r0_seed_{seed}.npy"
 )
-np.save(dirc_data / filename, atmosphere_phase_screens_hr)
+
+np.save(dirc_data / filename, atmosphere_opd_screens_hr)
+
+# %% Convert to SLM phase map
+
+# set piston at half the wavelength (slm dynamic range in meter)
+
+atmosphere_opd_screens_hr_piston_corrected = atmosphere_opd_screens_hr - \
+    atmosphere_opd_screens_hr.mean(axis=(1, 2), keepdims=True) + WAVELENGTH/2.
+
+plt.figure()
+plt.plot(atmosphere_opd_screens_hr_piston_corrected.mean(axis=(1, 2)))
+plt.title("Mean of OPD\nturbulent phase screens without piston")
+plt.xlabel("# OPD phase screen")
+plt.ylabel("mean [m]")
+plt.ylim(atmosphere_opd_screens_hr_piston_corrected.mean(axis=(1, 2)).min(
+), atmosphere_opd_screens_hr_piston_corrected.mean(axis=(1, 2)).max())
+
+# scale between 0 and 255
+
+atmosphere_slm_screens_hr_wrapped =\
+    atmosphere_opd_screens_hr_piston_corrected *\
+    255./WAVELENGTH
+
+atmosphere_slm_screens_hr_wrapped = np.mod(
+    atmosphere_slm_screens_hr_wrapped, 256.)
+
+# encode on 8-bit
+
+atmosphere_slm_screens_hr_8bit = atmosphere_slm_screens_hr_wrapped.astype(
+    np.uint8)
