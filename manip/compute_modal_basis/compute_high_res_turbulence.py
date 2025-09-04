@@ -109,12 +109,47 @@ atmosphere_opd_screens_hr = interpolate_cube(
     tel_hr.resolution
 )
 
-# %% Plot OPD deltas vs wavelength
+# %% Convert to SLM phase map
+
+# set piston at half the wavelength (slm dynamic range in meter)
+
+atmosphere_opd_screens_hr_piston_corrected = atmosphere_opd_screens_hr - \
+    atmosphere_opd_screens_hr.mean(axis=(1, 2), keepdims=True) + WAVELENGTH/2.
+
+# scale between 0 and 255
+
+atmosphere_slm_screens_hr_wrapped =\
+    np.mod(atmosphere_opd_screens_hr_piston_corrected *
+           255./WAVELENGTH, 256.)
+
+# encode on 8-bit
+
+atmosphere_slm_screens_hr_8bit = atmosphere_slm_screens_hr_wrapped.astype(
+    np.uint8)
+
+# %% Save results
+
+filename = (
+    f"{n_opd_screens}_atmosphere_slm_screens_8bit_{n_pixels_in_slm_pupil}"
+    f"_pixels_{int(r0 * 100)}_r0_seed_{seed}.npy"
+)
+
+np.save(dirc_data / filename, atmosphere_slm_screens_hr_8bit)
+
+# %% Plots
 
 deltas = (
     atmosphere_opd_screens_hr.max(axis=(1, 2))
     - atmosphere_opd_screens_hr.min(axis=(1, 2))
 )
+
+plt.figure()
+plt.plot(atmosphere_opd_screens_hr_piston_corrected.mean(axis=(1, 2))*1e9)
+plt.title("Mean of OPD\nturbulent phase screens without piston")
+plt.xlabel("# OPD phase screen")
+plt.ylabel("mean [m]")
+# plt.ylim(atmosphere_opd_screens_hr_piston_corrected.mean(axis=(1, 2)).min(
+# ), atmosphere_opd_screens_hr_piston_corrected.mean(axis=(1, 2)).max()*1e9)
 
 plt.figure()
 plt.plot(deltas, label="deltas")
@@ -124,40 +159,51 @@ plt.ylabel("OPD [m]")
 plt.title("To wrap or not to wrap?")
 plt.legend()
 
-# %% Save results
-
-filename = (
-    f"{n_opd_screens}_atmosphere_opd_screens_{n_pixels_in_slm_pupil}"
-    f"_pixels_{int(r0 * 100)}_r0_seed_{seed}.npy"
-)
-
-np.save(dirc_data / filename, atmosphere_opd_screens_hr)
-
-# %% Convert to SLM phase map
-
-# set piston at half the wavelength (slm dynamic range in meter)
-
-atmosphere_opd_screens_hr_piston_corrected = atmosphere_opd_screens_hr - \
-    atmosphere_opd_screens_hr.mean(axis=(1, 2), keepdims=True) + WAVELENGTH/2.
+plt.figure()
+plt.imshow(atmosphere_opd_screens_hr_piston_corrected[0, :, :])
+plt.title("raw")
 
 plt.figure()
-plt.plot(atmosphere_opd_screens_hr_piston_corrected.mean(axis=(1, 2)))
-plt.title("Mean of OPD\nturbulent phase screens without piston")
-plt.xlabel("# OPD phase screen")
-plt.ylabel("mean [m]")
-plt.ylim(atmosphere_opd_screens_hr_piston_corrected.mean(axis=(1, 2)).min(
-), atmosphere_opd_screens_hr_piston_corrected.mean(axis=(1, 2)).max())
+plt.imshow(atmosphere_slm_screens_hr_8bit[0, :, :])
+plt.title("slm shaped")
 
-# scale between 0 and 255
+# %% Debug phase encoding
 
-atmosphere_slm_screens_hr_wrapped =\
-    atmosphere_opd_screens_hr_piston_corrected *\
-    255./WAVELENGTH
+test_phase_2pi = np.arange(256, dtype=float) * 2*np.pi/255.
+test_phase_4pi = np.arange(256, dtype=float) * 4*np.pi/255.
 
-atmosphere_slm_screens_hr_wrapped = np.mod(
-    atmosphere_slm_screens_hr_wrapped, 256.)
+plt.figure()
+plt.plot(test_phase_2pi, label="test_phase_2pi")
+plt.plot(test_phase_4pi, label="test_phase_4pi")
+plt.xlabel("spatial coordinate")
+plt.ylabel("phase")
+plt.title("test phases")
+plt.legend()
 
-# encode on 8-bit
+test_phase_2pi_mod_255 = np.mod(test_phase_2pi*255./(2*np.pi), 255)
+test_phase_2pi_mod_256 = np.mod(test_phase_2pi*255./(2*np.pi), 256)
 
-atmosphere_slm_screens_hr_8bit = atmosphere_slm_screens_hr_wrapped.astype(
-    np.uint8)
+test_phase_4pi_mod_255 = np.mod(test_phase_4pi*255./(2*np.pi), 255)
+test_phase_4pi_mod_256 = np.mod(test_phase_4pi*255./(2*np.pi), 256)
+
+plt.figure()
+plt.plot(test_phase_2pi_mod_255, "+", label="test_phase_2pi_mod_255")
+plt.plot(test_phase_2pi_mod_256, label="test_phase_2pi_mod_256")
+plt.plot(test_phase_4pi_mod_255, "+", label="test_phase_4pi_mod_255")
+plt.plot(test_phase_4pi_mod_256, label="test_phase_4pi_mod_256")
+plt.title("test phases modulo ?")
+plt.legend()
+
+test_phase_2pi_mod_255_8bit = test_phase_2pi_mod_255.astype(np.uint8)
+test_phase_2pi_mod_256_8bit = test_phase_2pi_mod_256.astype(np.uint8)
+
+test_phase_4pi_mod_255_8bit = test_phase_4pi_mod_255.astype(np.uint8)
+test_phase_4pi_mod_256_8bit = test_phase_4pi_mod_256.astype(np.uint8)
+
+plt.figure()
+plt.plot(test_phase_2pi_mod_255_8bit, "+", label="test_phase_2pi_mod_255_8bit")
+plt.plot(test_phase_2pi_mod_256_8bit, "*", label="test_phase_2pi_mod_256_8bit")
+plt.plot(test_phase_4pi_mod_255_8bit, "+", label="test_phase_4pi_mod_255_8bit")
+plt.plot(test_phase_4pi_mod_256_8bit, "*", label="test_phase_4pi_mod_256_8bit")
+plt.title("test phases 8 bit")
+plt.legend()
