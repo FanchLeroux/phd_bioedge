@@ -118,9 +118,11 @@ atmosphere_opd_screens_hr_piston_corrected = atmosphere_opd_screens_hr - \
 
 # scale between 0 and 255
 
-atmosphere_slm_screens_hr_wrapped =\
-    np.mod(atmosphere_opd_screens_hr_piston_corrected *
-           255./WAVELENGTH, 256.)
+atmosphere_slm_screens_hr_slm_units =\
+    atmosphere_opd_screens_hr_piston_corrected * 255./WAVELENGTH
+
+atmosphere_slm_screens_hr_wrapped = np.mod(
+    atmosphere_slm_screens_hr_slm_units, 256)
 
 # encode on 8-bit
 
@@ -130,13 +132,18 @@ atmosphere_slm_screens_hr_8bit = atmosphere_slm_screens_hr_wrapped.astype(
 # %% Save results
 
 filename = (
-    f"{n_opd_screens}_atmosphere_slm_screens_8bit_{n_pixels_in_slm_pupil}"
-    f"_pixels_{int(r0 * 100)}_r0_seed_{seed}.npy"
+    f"{n_opd_screens}_atmosphere_screens_piston_1275e-1_slm_units"
+    f"_unwrapped_float64_{n_pixels_in_slm_pupil}"
+    f"_pixels_{int(r0 * 100)}cm_r0_seed_{seed}.npy"
 )
 
-np.save(dirc_data / filename, atmosphere_slm_screens_hr_8bit)
+np.save(dirc_data / filename, atmosphere_slm_screens_hr_slm_units)
 
 # %% Plots
+
+"""
+plt.figure()
+plt.plot(atmosphere_slm_screens_hr_slm_units.mean(axis=(1, 2)))
 
 deltas = (
     atmosphere_opd_screens_hr.max(axis=(1, 2))
@@ -166,9 +173,11 @@ plt.title("raw")
 plt.figure()
 plt.imshow(atmosphere_slm_screens_hr_8bit[0, :, :])
 plt.title("slm shaped")
+"""
 
 # %% Debug phase encoding
 
+"""
 test_phase_2pi = np.arange(256, dtype=float) * 2*np.pi/255.
 test_phase_4pi = np.arange(256, dtype=float) * 4*np.pi/255.
 
@@ -207,3 +216,4 @@ plt.plot(test_phase_4pi_mod_255_8bit, "+", label="test_phase_4pi_mod_255_8bit")
 plt.plot(test_phase_4pi_mod_256_8bit, "*", label="test_phase_4pi_mod_256_8bit")
 plt.title("test phases 8 bit")
 plt.legend()
+"""
