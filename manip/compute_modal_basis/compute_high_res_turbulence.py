@@ -134,8 +134,11 @@ atmosphere_slm_units_screens_wrapped = np.mod(
     atmosphere_slm_units_screens_piston_corrected, 256)
 
 # encode on 8-bit
+
+atmosphere_slm_units_screens_8bit = np.round(
+    atmosphere_slm_units_screens_wrapped)
 atmosphere_slm_units_screens_8bit =\
-    atmosphere_slm_units_screens_wrapped.astype(np.uint8)
+    atmosphere_slm_units_screens_8bit.astype(np.uint8)
 
 # %% Save results
 

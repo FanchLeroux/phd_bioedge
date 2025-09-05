@@ -279,30 +279,6 @@ plt.figure()
 plt.imshow(np.reshape(command, slm_shape))
 plt.title("Command")
 
-# %% Modify WFC to simulate pupil
-
-# tilt = get_tilt(slm_shape, theta=np.deg2rad(tilt_angle),
-#                 amplitude=tilt_amplitude)/(2*np.pi) * 255.0
-
-# # replace pupil location by zeros
-
-# pupil = np.abs(get_circular_pupil(2*pupil_radius)-1)
-# tilt_out_of_pupil = np.ones([1152, 1920])
-# tilt_out_of_pupil[
-#     pupil_center[0]-pupil_radius:pupil_center[0]+pupil_radius,
-#     pupil_center[1]-pupil_radius:pupil_center[1]+pupil_radius] = pupil
-# tilt_out_of_pupil = tilt_out_of_pupil * tilt
-
-# slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
-# slm_flat = slm_flat + tilt_out_of_pupil
-
-# # Load new WFC
-
-# command = display_phase_on_slm(slm_flat, return_command_vector=True)
-# plt.figure()
-# plt.imshow(np.reshape(command, slm_shape))
-# plt.title("Command")
-
 # %% Link WFS cameras (ORCA)
 
 DCAM.get_cameras_number()
@@ -341,50 +317,6 @@ orca_folded.ID = 0  # ID for the data saved
 roi = False
 live_view([orca_inline, orca_folded])
 
-# %% Link focal plane camera (Thorlabs)
-
-# to be done
-
-# %% Select valid pixels
-
-# pupils_raw_orca_inline = np.median(
-#     acquire(orca_inline, n_frames=10,
-#             exp_time=orca_inline.exp_time, roi=roi), axis=0)
-# pupils_orca_inline = pupils_raw_orca_inline/pupils_raw_orca_inline.max()
-# pupils_orca_inline[pupils_orca_inline > threshold] = 1.0
-# pupils_orca_inline[pupils_orca_inline != 1.0] = 0.0
-# pupils_orca_inline = pupils_orca_inline.astype(np.float32)
-
-
-# pupils_raw_orca_folded = np.median(
-#     acquire(orca_folded, n_frames=10,
-#             exp_time=orca_folded.exp_time, roi=roi), axis=0)
-# pupils_orca_folded = pupils_raw_orca_folded/pupils_raw_orca_folded.max()
-# pupils_orca_folded[pupils_orca_folded > threshold] = 1.0
-# pupils_orca_folded[pupils_orca_folded != 1.0] = 0.0
-# pupils_orca_folded = pupils_orca_folded.astype(np.float32)
-
-# # %%
-
-# fig, axs = plt.subplots(nrows=1, ncols=2)
-# axs[0].imshow(pupils_orca_inline)
-# axs[1].imshow(pupils_orca_folded)
-
-# %% Get rid of slm edges - orca_inline
-
-# x1, x2, x3, x4 = 450, 820, 1120, 1490
-# y1, y2, y3, y4 = 400, 800, 1320, 1690
-
-# pupils_orca_inline[:y1, :], pupils_orca_inline[y2:y3, :], \
-#     pupils_orca_inline[y4:, :] = 0, 0, 0
-# pupils_orca_inline[:, :x1], pupils_orca_inline[:, x2:x3], \
-#     pupils_orca_inline[:, x4:] = 0, 0, 0
-
-# %%
-
-# plt.figure()
-# plt.imshow(pupils_orca_inline)
-
 # %% Measure reference intensities
 
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
@@ -395,6 +327,19 @@ reference_intensities_orca_inline = np.mean(
 
 plt.figure()
 plt.imshow(reference_intensities_orca_inline)
+
+# %% Create folder to save results
+
+utc_now = get_utc_now()
+
+dirc_matrices = dirc_data / "matrices" / utc_now
+
+pathlib.Path(dirc_matrices).mkdir(parents=True, exist_ok=True)
+
+# %% Save reference intensities
+
+np.save(dirc_matrices / (utc_now + "_reference_intensities_orca_inline.npy"),
+        reference_intensities_orca_inline)
 
 # %% Measure interaction matrix - orca_inline
 
@@ -456,6 +401,11 @@ for n_phase_screen in range(n_phase_screens_calib):
         im2.set_clim(vmin=np.min(interaction_matrix[:, :, n_phase_screen]),
                      vmax=np.max(interaction_matrix[:, :, n_phase_screen]))
 
+# %% Save interaction matrix
+
+np.save(dirc_matrices / (utc_now + "_interaction_matrix.npy"),
+        interaction_matrix)
+
 # %% Measure test matrix - orca_inline
 
 display = True
@@ -506,208 +456,6 @@ for n_phase_screen in range(n_phase_screens_calib):
                      vmax=np.max(test_matrix[:, :, n_phase_screen]))
         plt.pause(0.005)
 
-# %% Create folder to save results
+# %% Save test matrix
 
-utc_now = get_utc_now()
-
-dirc_matrices = dirc_data / "matrices" / utc_now
-
-pathlib.Path(dirc_matrices).mkdir(parents=True, exist_ok=True)
-
-np.save(dirc_matrices / (utc_now + "_reference_intensities_orca_inline.npy"),
-        reference_intensities_orca_inline)
-np.save(dirc_matrices / (utc_now + "_interaction_matrix.npy"),
-        interaction_matrix)
 np.save(dirc_matrices / (utc_now + "_test_matrix.npy"), test_matrix)
-
-# # %% Post-processing - interaction matrix
-
-# interaction_matrix_valid_pixel_reshaped = np.reshape(
-#     interaction_matrix[pupils_orca_inline == 1.0],
-#     (int(pupils_orca_inline.sum()),
-#      interaction_matrix.shape[-1]))
-
-# del interaction_matrix
-# np.save(dirc_matrices /
-#         (utc_now + "_interaction_matrix_valid_pixel_reshaped.npy"),
-#         interaction_matrix_valid_pixel_reshaped)
-
-# # %%
-
-# # interaction_matrix_substracted = interaction_matrix_valid_pixel_reshaped -\
-# #     (np.reshape(reference_intensities_orca_inline[pupils_orca_inline == 1.0],
-# #                                                                  (int(pupils_orca_inline.sum()))))[:,np.newaxis]
-
-# # del interaction_matrix_valid_pixel_reshaped
-# # np.save(dirc_matrices / (utc_now + "_interaction_matrix_substracted.npy"),
-# #         interaction_matrix_substracted)
-
-# # %%
-
-# # interaction_matrix_normalized = interaction_matrix_substracted /\
-# #     interaction_matrix_substracted.sum(axis=0, keepdims=True)
-
-# # del interaction_matrix_substracted
-# # np.save(dirc_matrices / (utc_now + "_interaction_matrix_normalized.npy"),
-# #         interaction_matrix_normalized)
-
-# interaction_matrix_normalized = interaction_matrix_valid_pixel_reshaped /\
-#     interaction_matrix_valid_pixel_reshaped.sum(axis=0, keepdims=True)
-
-# del interaction_matrix_valid_pixel_reshaped
-# np.save(dirc_matrices / (utc_now + "_interaction_matrix_normalized.npy"),
-#         interaction_matrix_normalized)
-
-# # %% Post-processing - test matrix
-
-# test_matrix_valid_pixel_reshaped = np.reshape(
-#     test_matrix[pupils_orca_inline == 1.0],
-#     (int(pupils_orca_inline.sum()),
-#      test_matrix.shape[-1]))
-
-# del test_matrix
-# np.save(dirc_matrices / (utc_now + "_test_matrix_valid_pixel_reshaped.npy"),
-#         test_matrix_valid_pixel_reshaped)
-
-# # %%
-
-# test_matrix_substracted = test_matrix_valid_pixel_reshaped -\
-#     (np.reshape(reference_intensities_orca_inline[pupils_orca_inline == 1.0],
-#                 (int(pupils_orca_inline.sum()))))[:, np.newaxis]
-
-# del test_matrix_valid_pixel_reshaped
-# np.save(dirc_matrices / (utc_now + "_test_matrix_substracted.npy"),
-#         test_matrix_substracted)
-
-# # %%
-
-# test_matrix_normalized = test_matrix_substracted /\
-#     test_matrix_substracted.sum(axis=0, keepdims=True)
-
-# del test_matrix_substracted
-# np.save(dirc_matrices / (utc_now + "_test_matrix_normalized.npy"),
-#         test_matrix_normalized)
-
-# # %% see post-processed interaction matrix as camera frame
-
-# support = np.zeros((2048, 2048))
-
-# support[np.where(pupils_orca_inline == 1)
-#         ] = interaction_matrix_normalized[:, 8]
-# plt.figure()
-# plt.imshow(support)
-
-# # %% SVD
-
-# U, S, Vt = np.linalg.svd(interaction_matrix_normalized, full_matrices=False)
-
-# plt.figure()
-# plt.plot(S/S.max())
-# plt.yscale('log')
-
-# # %% see eigen modes
-
-# support = np.zeros((2048, 2048))
-
-# support[np.where(pupils_orca_inline == 1)] = U[:, 0]
-# plt.figure()
-# plt.imshow(support)
-
-# # %% Inversion
-
-# command_matrix = np.linalg.pinv(interaction_matrix_normalized)
-
-# plt.figure()
-# plt.imshow(command_matrix @ interaction_matrix_normalized)
-
-# # %%
-
-# plt.figure()
-# plt.imshow(command_matrix @ test_matrix_normalized)
-
-# # %% End connection with SLM
-
-# # Load a linear LUT and a black WFC
-
-# slm_lib.Load_LUT_file(
-#     board_number,
-#     str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
-# display_phase_on_slm(np.zeros(slm_shape))
-
-# # %% delete slm sdk
-
-# # Always call Delete_SDK before exiting
-# slm_lib.Delete_SDK()
-
-# # %% End conection with cameras
-
-# orca_inline.close()
-# orca_folded.close()
-
-# # %% Bonus - Make gif
-
-# if do_gif:
-
-#     print("start making gif")
-
-#     interaction_matrix = np.load(
-#         dirc_matrices /
-#         (utc_now + "_interaction_matrix.npy"))
-#     make_gif(
-#         dirc_data / "gif" /
-#         (get_utc_now()
-#          + "_interaction_matrix_measeurements.gif"), interaction_matrix)
-#     del interaction_matrix
-
-#     test_matrix = np.load(dirc_matrices / (utc_now + "_test_matrix.npy"))
-#     make_gif(dirc_data / "gif" /
-#              (get_utc_now()+"_test_matrix_measeurements.gif"), test_matrix)
-#     del test_matrix
-
-# # %% adjust slicer
-
-# interaction_matrix = np.load(
-#     dirc_matrices /
-#     (utc_now + "_interaction_matrix.npy"), mmap_mode='r')
-
-# slicer_x = np.r_[np.s_[0:400], np.s_[900:1200], np.s_[1600:2048]]
-# slicer_y = np.r_[np.s_[0:300], np.s_[800:1200], np.s_[1700:2048]]
-
-# plt.figure()
-# plt.imshow(np.delete(np.delete(interaction_matrix[:, :, 50], slicer_x, 1),
-#                      slicer_y, 0))
-
-# # %% Save interaction and test matrices as GIF
-
-# if do_gif:
-
-#     plt.close('all')
-
-#     import gif
-#     from tqdm import tqdm
-
-#     interaction_matrix = np.load(dirc_matrices /
-#                                  (utc_now + "_interaction_matrix.npy"))
-
-#     @gif.frame
-#     def plot(i):
-#         plt.imshow(
-#             np.delete(np.delete(interaction_matrix[:, :, i], slicer_x, 1),
-#                       slicer_y, 0))
-
-#     frames = [plot(i) for i in tqdm(range(interaction_matrix.shape[-1]))]
-#     gif.save(frames, str(dirc_matrices / (get_utc_now() +
-#              "_interaction_matrix_measeurements.gif")), duration=200)
-
-#     test_matrix = np.load(dirc_matrices / (utc_now + "_test_matrix.npy"))
-
-#     @gif.frame
-#     def plot(i):
-#         plt.imshow(np.delete(np.delete(test_matrix[:, :, i], slicer_x, 1),
-#                              slicer_y, 0))
-
-#     frames = [plot(i) for i in tqdm(range(interaction_matrix.shape[-1]))]
-#     gif.save(
-#         frames,
-#         str(dirc_matrices /
-#             (get_utc_now()+"_test_matrix_measeurements.gif")), duration=200)
