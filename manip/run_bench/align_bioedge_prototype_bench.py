@@ -167,6 +167,7 @@ slm_shape = np.array([1152, 1920])
 
 # pupil radius in SLM pixels
 pupil_radius = 1152  # [pixel]
+
 # pupil center on slm
 pupil_center = (slm_shape/2).astype(int)  # [pixel]
 

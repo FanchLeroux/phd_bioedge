@@ -174,9 +174,8 @@ np.save(dirc_data / "phd_bioedge" / "manip" / "slm_screens" / "modal_basis" /
         KL_modes_slm_units_no_wraping_required)
 
 # save KL modes
-filename = "KL_modes_slm_units_unitary_variance.npy"
 np.save(dirc_data / "phd_bioedge" / "manip" / "slm_screens" / "modal_basis" /
         "KL_modes" /
         f"KL_modes_slm_units_{n_pixels_in_slm_pupil}_pixels_in_slm_pupil_"
-        f"{n_subapertures}_subapertures.npy",
+        f"{n_subapertures}_subapertures_unitary_variance.npy",
         KL_modes_slm_units_unitary_variance)

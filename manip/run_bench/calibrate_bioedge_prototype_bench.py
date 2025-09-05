@@ -174,15 +174,16 @@ slm_shape = np.array([1152, 1920])
 
 # pupil radius in SLM pixels
 pupil_radius = 300  # [pixel]
+
 # pupil center on slm
-pupil_center = [565, 1010]  # [pixel]
+pupil_center = (slm_shape/2).astype(int)  # [pixel]
 
 # get large tilt on slm shaped support
 tilt_amplitude = 1000.0*np.pi  # [rad]
 tilt_angle = -135.0  # [deg]
 
-stroke = 0.1  # (std) [rad]
-amplitude_calibration_test_matrix = 0.3  # (std) [rad]
+stroke = 1.  # (std) [SLM units if std normalized modes are used]
+stroke_test_matrix = 10.  # (std) [rad]
 
 # orcas exposure time
 exposure_time = 200e-3    # exposure time (s)
@@ -194,12 +195,13 @@ threshold = 0.1
 # calibration
 
 # Load KL modes
+filename = "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy"
 KL_modes = np.load(
     dirc_data / "phd_bioedge" / "manip" / "slm_screens" / "modal_basis" /
-    "KL_modes" / "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy",
+    "KL_modes" / filename,
     mmap_mode='r')
 # chose how many modes are used to calibrate
-n_calibration_modes = KL_modes.shape[2]
+n_calibration_modes = KL_modes.shape[0]
 
 # do gif
 do_gif = False
@@ -321,12 +323,21 @@ live_view([orca_inline, orca_folded])
 
 utc_now = get_utc_now()
 
-dirc_matrices = dirc_data / "matrices" / utc_now
+dirc_interaction_matrix = dirc_data / "phd_bioedge" / \
+    "manip" / "interaction_matrix" / utc_now
 
-pathlib.Path(dirc_matrices).mkdir(parents=True, exist_ok=True)
+pathlib.Path(dirc_interaction_matrix).mkdir(parents=True, exist_ok=True)
 
-# %% Save calibration modal basis
+# %% Compute calibration modes
 
+calibration_modes = np.mod(stroke * KL_modes + slm_flat, 256).astype(np.uint8)
+
+
+# %% Save calibration modes
+
+filename = (utc_now + "_calibration_modes_slm_units.npy")
+np.save(dirc_interaction_matrix / filename,
+        calibration_modes)
 
 # %% Measure reference intensities
 
@@ -341,7 +352,8 @@ plt.imshow(reference_intensities_orca_inline)
 
 # %% Save reference intensities
 
-np.save(dirc_matrices / (utc_now + "_reference_intensities_orca_inline.npy"),
+filename = (utc_now + "_reference_intensities_orca_inline.npy")
+np.save(dirc_interaction_matrix / filename,
         reference_intensities_orca_inline)
 
 # %% Measure interaction matrix - orca_inline
@@ -358,8 +370,8 @@ if display:
 
     plt.ion()  # Turn on interactive mode
     fig, ax = plt.subplots(nrows=1, ncols=2)
-    im1 = ax[0].imshow(np.zeros((KL_modes.shape[0],
-                                 KL_modes.shape[1])), cmap='viridis')
+    im1 = ax[0].imshow(np.zeros((calibration_modes.shape[0],
+                                 calibration_modes.shape[1])), cmap='viridis')
     im2 = ax[1].imshow(interaction_matrix[:, :, 0], cmap='viridis')
     ax[0].set_title("SLM Command")
     ax[1].set_title("Detector Irradiance")
@@ -368,23 +380,24 @@ if display:
 
 for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
 
-    KL_mode_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
-    KL_mode_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
-                     pupil_center[0]+KL_modes.shape[0]//2,
-                     pupil_center[1]-KL_modes.shape[1]//2:
-                     pupil_center[1]+KL_modes.shape[1]//2] =\
-        KL_modes[:, :, n_phase_screen]
+    calibration_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
+    calibration_modes_full_slm[pupil_center[0]-calibration_modes.shape[0]//2:
+                               pupil_center[0]+calibration_modes.shape[0]//2,
+                               pupil_center[1]-calibration_modes.shape[1]//2:
+                               pupil_center[1] +
+                                   calibration_modes.shape[1]//2] =\
+        calibration_modes[n_phase_screen, :, :]
 
     command = display_phase_on_slm(
-        stroke*KL_mode_full_slm,
+        stroke*calibration_modes_full_slm,
         slm_flat, slm_shape=[1152, 1920], return_command_vector=True)
 
     push = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi),
                    axis=0)
 
     command = display_phase_on_slm(
-        -stroke*KL_mode_full_slm,
-        slm_flat, slm_shape=[1152, 1920], return_command_vector=True)
+        -stroke*calibration_modes_full_slm, slm_shape=[1152, 1920],
+        return_command_vector=True)
 
     pull = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi),
                    axis=0)
@@ -397,16 +410,16 @@ for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
     print(str(n_phase_screen))
 
     if display:
-        im1.set_data(KL_modes[:, :, n_phase_screen])
-        im1.set_clim(vmin=np.min(KL_modes[:, :, n_phase_screen]),
-                     vmax=np.max(KL_modes[:, :, n_phase_screen]))
+        im1.set_data(calibration_modes[:, :, n_phase_screen])
+        im1.set_clim(vmin=np.min(calibration_modes[:, :, n_phase_screen]),
+                     vmax=np.max(calibration_modes[:, :, n_phase_screen]))
         im2.set_data(interaction_matrix[:, :, n_phase_screen])
         im2.set_clim(vmin=np.min(interaction_matrix[:, :, n_phase_screen]),
                      vmax=np.max(interaction_matrix[:, :, n_phase_screen]))
 
 # %% Save interaction matrix
 
-np.save(dirc_matrices / (utc_now + "_interaction_matrix.npy"),
+np.save(dirc_interaction_matrix / (utc_now + "_interaction_matrix.npy"),
         interaction_matrix)
 
 # %% Measure test matrix - orca_inline
@@ -423,8 +436,8 @@ if display:
 
     plt.ion()  # Turn on interactive mode
     fig, ax = plt.subplots(nrows=1, ncols=2)
-    im1 = ax[0].imshow(np.zeros((KL_modes.shape[0],
-                                 KL_modes.shape[1])), cmap='viridis')
+    im1 = ax[0].imshow(np.zeros((calibration_modes.shape[0],
+                                 calibration_modes.shape[1])), cmap='viridis')
     im2 = ax[1].imshow(test_matrix[:, :, 0], cmap='viridis')
     ax[0].set_title("SLM Command")
     ax[1].set_title("Detector Irradiance")
@@ -433,15 +446,15 @@ if display:
 
 for n_phase_screen in range(n_calibration_modes):
 
-    KL_mode_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
-    KL_mode_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
-                     pupil_center[0]+KL_modes.shape[0]//2,
-                     pupil_center[1]-KL_modes.shape[1]//2:
-                     pupil_center[1]+KL_modes.shape[1]//2] =\
-        KL_modes[:, :, n_phase_screen]
+    calibration_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
+    calibration_modes_full_slm[pupil_center[0]-calibration_modes.shape[0]//2:
+                               pupil_center[0]+calibration_modes.shape[0]//2,
+                               pupil_center[1]-calibration_modes.shape[1]//2:
+                               pupil_center[1]+calibration_modes.shape[1]//2] =\
+        calibration_modes[:, :, n_phase_screen]
 
     command = display_phase_on_slm(
-        amplitude_calibration_test_matrix*KL_mode_full_slm, slm_flat,
+        stroke_test_matrix*calibration_modes_full_slm, slm_flat,
         slm_shape=[1152, 1920], return_command_vector=True)
 
     test_matrix[:, :, n_phase_screen] = np.mean(
@@ -451,9 +464,9 @@ for n_phase_screen in range(n_calibration_modes):
     print(str(n_phase_screen))
 
     if display:
-        im1.set_data(KL_modes[:, :, n_phase_screen])
-        im1.set_clim(vmin=np.min(KL_modes[:, :, n_phase_screen]),
-                     vmax=np.max(KL_modes[:, :, n_phase_screen]))
+        im1.set_data(calibration_modes[:, :, n_phase_screen])
+        im1.set_clim(vmin=np.min(calibration_modes[:, :, n_phase_screen]),
+                     vmax=np.max(calibration_modes[:, :, n_phase_screen]))
         im2.set_data(test_matrix[:, :, n_phase_screen])
         im2.set_clim(vmin=np.min(test_matrix[:, :, n_phase_screen]),
                      vmax=np.max(test_matrix[:, :, n_phase_screen]))
@@ -461,7 +474,7 @@ for n_phase_screen in range(n_calibration_modes):
 
 # %% Save test matrix
 
-np.save(dirc_matrices / (utc_now + "_test_matrix.npy"), test_matrix)
+np.save(dirc_interaction_matrix / (utc_now + "_test_matrix.npy"), test_matrix)
 
 # %% End connection with SLM
 
