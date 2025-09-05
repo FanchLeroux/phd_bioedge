@@ -334,7 +334,7 @@ pathlib.Path(dirc_interaction_matrix).mkdir(parents=True, exist_ok=True)
 
 # %% Compute calibration modes
 
-calibration_modes = np.mod(stroke * KL_modes + slm_flat, 256).astype(np.uint8)
+calibration_modes = np.mod(stroke * KL_modes, 256).astype(np.uint8)
 
 
 # %% Save calibration modes
@@ -385,11 +385,11 @@ if display:
 for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
 
     calibration_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
-    calibration_modes_full_slm[pupil_center[0]-calibration_modes.shape[0]//2:
-                               pupil_center[0]+calibration_modes.shape[0]//2,
-                               pupil_center[1]-calibration_modes.shape[1]//2:
+    calibration_modes_full_slm[pupil_center[0]-calibration_modes.shape[1]//2:
+                               pupil_center[0]+calibration_modes.shape[1]//2,
+                               pupil_center[1]-calibration_modes.shape[2]//2:
                                pupil_center[1] +
-                                   calibration_modes.shape[1]//2] =\
+                                   calibration_modes.shape[2]//2] =\
         calibration_modes[n_phase_screen, :, :]
 
     command = display_phase_on_slm(
@@ -414,9 +414,9 @@ for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
     print(str(n_phase_screen))
 
     if display:
-        im1.set_data(calibration_modes[:, :, n_phase_screen])
-        im1.set_clim(vmin=np.min(calibration_modes[:, :, n_phase_screen]),
-                     vmax=np.max(calibration_modes[:, :, n_phase_screen]))
+        im1.set_data(calibration_modes[n_phase_screen, :, :])
+        im1.set_clim(vmin=np.min(calibration_modes[n_phase_screen, :, :]),
+                     vmax=np.max(calibration_modes[n_phase_screen, :, :]))
         im2.set_data(interaction_matrix[:, :, n_phase_screen])
         im2.set_clim(vmin=np.min(interaction_matrix[:, :, n_phase_screen]),
                      vmax=np.max(interaction_matrix[:, :, n_phase_screen]))
@@ -456,7 +456,7 @@ for n_phase_screen in range(n_calibration_modes):
                                pupil_center[1]-calibration_modes.shape[1]//2:
                                pupil_center[1]
                                    + calibration_modes.shape[1]//2] =\
-        calibration_modes[:, :, n_phase_screen]
+        calibration_modes[n_phase_screen, :, :]
 
     command = display_phase_on_slm(
         stroke_test_matrix*calibration_modes_full_slm, slm_flat,
@@ -469,9 +469,9 @@ for n_phase_screen in range(n_calibration_modes):
     print(str(n_phase_screen))
 
     if display:
-        im1.set_data(calibration_modes[:, :, n_phase_screen])
-        im1.set_clim(vmin=np.min(calibration_modes[:, :, n_phase_screen]),
-                     vmax=np.max(calibration_modes[:, :, n_phase_screen]))
+        im1.set_data(calibration_modes[n_phase_screen, :, :])
+        im1.set_clim(vmin=np.min(calibration_modes[n_phase_screen, :, :]),
+                     vmax=np.max(calibration_modes[n_phase_screen, :, :]))
         im2.set_data(test_matrix[:, :, n_phase_screen])
         im2.set_clim(vmin=np.min(test_matrix[:, :, n_phase_screen]),
                      vmax=np.max(test_matrix[:, :, n_phase_screen]))
