@@ -39,7 +39,7 @@ windSpeed = [10, 12, 11, 15, 20]  # Wind Speed [m/s]
 windDirection = [0, 72, 144, 216, 288]  # Wind Direction [deg]
 altitude = [0, 1000, 5000, 10000, 12000]  # Altitude Layers [m]
 
-n_opd_screens = 10
+n_screens = 10
 seed = 0
 
 # %% Telescope
@@ -91,12 +91,12 @@ tel + atm
 # %% Compute atmosphere opd screens
 
 atmosphere_opd_screens = np.full(
-    (n_opd_screens,) + atm.OPD_no_pupil.shape,
+    (n_screens,) + atm.OPD_no_pupil.shape,
     np.nan,
     dtype=float
 )
 
-for k in tqdm.tqdm(range(n_opd_screens)):
+for k in tqdm.tqdm(range(n_screens)):
     atmosphere_opd_screens[k, :, :] = atm.OPD_no_pupil
     atm.update()
 
@@ -111,48 +111,48 @@ atmosphere_opd_screens_hr = interpolate_cube(
 
 # %% Convert to SLM phase map
 
+# scale to slm units
+atmosphere_slm_units_screens = atmosphere_opd_screens_hr * 255./WAVELENGTH
+
 # get a version with no wraping required
-atmosphere_opd_screens_hr_no_wraping_required =\
-    atmosphere_opd_screens_hr - \
-    atmosphere_opd_screens_hr.mean(axis=(1, 2), keepdims=True)  # set zero mean
-atmosphere_opd_screens_hr_no_wraping_required = 127.5 *\
-    atmosphere_opd_screens_hr_no_wraping_required /\
-    np.array([atmosphere_opd_screens_hr_no_wraping_required.max(),
-              -atmosphere_opd_screens_hr_no_wraping_required.min()]).max() +\
-    127.5
+atmosphere_slm_units_screens_no_wraping_required =\
+    atmosphere_slm_units_screens - \
+    atmosphere_slm_units_screens.mean(
+        axis=(1, 2), keepdims=True)  # set zero mean
+atmosphere_slm_units_screens_no_wraping_required = 127.5 *\
+    atmosphere_slm_units_screens_no_wraping_required /\
+    np.array([atmosphere_slm_units_screens_no_wraping_required.max(),
+              -atmosphere_slm_units_screens_no_wraping_required.min()]).max()\
+    + 127.5
 
 # set piston at half the wavelength (slm dynamic range in meter)
-atmosphere_opd_screens_hr_piston_corrected = atmosphere_opd_screens_hr - \
-    atmosphere_opd_screens_hr.mean(axis=(1, 2), keepdims=True) + WAVELENGTH/2.
-
-# scale between 0 and 255
-atmosphere_slm_screens_hr_slm_units =\
-    atmosphere_opd_screens_hr_piston_corrected * 255./WAVELENGTH
+atmosphere_slm_units_screens_piston_corrected = atmosphere_slm_units_screens\
+    - atmosphere_slm_units_screens.mean(axis=(1, 2), keepdims=True) + 127.5
 
 # wraping
-atmosphere_slm_screens_hr_wrapped = np.mod(
-    atmosphere_slm_screens_hr_slm_units, 256)
+atmosphere_slm_units_screens_wrapped = np.mod(
+    atmosphere_slm_units_screens_piston_corrected, 256)
 
 # encode on 8-bit
-atmosphere_slm_screens_hr_8bit = atmosphere_slm_screens_hr_wrapped.astype(
-    np.uint8)
+atmosphere_slm_units_screens_8bit =\
+    atmosphere_slm_units_screens_wrapped.astype(np.uint8)
 
 # %% Save results
 
 #
 filename = (
-    f"{n_opd_screens}_atmosphere_screens_piston_1275e-1_slm_units"
+    f"{n_screens}_atmosphere_screens_piston_1275e-1_slm_units"
     f"_unwrapped_float64_{n_pixels_in_slm_pupil}"
     f"_pixels_{int(r0 * 100)}cm_r0_seed_{seed}.npy"
 )
-np.save(dirc_data / filename, atmosphere_slm_screens_hr_slm_units)
+np.save(dirc_data / filename, atmosphere_slm_units_screens_piston_corrected)
 
 filename = (
-    f"{n_opd_screens}_atmosphere_screens_piston_1275e-1_slm_units"
+    f"{n_screens}_atmosphere_screens_piston_1275e-1_slm_units"
     f"_no_wraping_required_float64_{n_pixels_in_slm_pupil}"
     f"_pixels_{int(r0 * 100)}cm_r0_seed_{seed}.npy"
 )
-np.save(dirc_data / filename, atmosphere_opd_screens_hr_no_wraping_required)
+np.save(dirc_data / filename, atmosphere_slm_units_screens_no_wraping_required)
 
 # %% Plots
 

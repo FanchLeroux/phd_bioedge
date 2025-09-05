@@ -33,7 +33,7 @@ windSpeed = [10, 12, 11, 15, 20]  # Wind Speed [m/s]
 windDirection = [0, 72, 144, 216, 288]  # Wind Direction [deg]
 altitude = [0, 1000, 5000, 10000, 12000]  # Altitude Layers [m]
 
-n_opd_screens = 10
+n_opd = 10
 seed = 0
 
 # %% Telescope
@@ -118,6 +118,9 @@ dm.coefs = M2C_KL
 ngs*tel*dm
 KL_modes = tel.OPD
 
+# reshape data cube as [n_images, n_pixels, n_pixels]
+KL_modes = np.transpose(KL_modes, (2, 0, 1))
+
 # %% Interpolation to high resolution
 
 KL_modes_hr = interpolate_cube(
@@ -127,9 +130,48 @@ KL_modes_hr = interpolate_cube(
     tel_hr.resolution
 )
 
-# %%
+# %% Convert to SLM phase map
 
+# scale to slm units
+KL_modes_slm_units = KL_modes_hr * 255./WAVELENGTH
 
-# %%
+# set 0 mean
+KL_modes_slm_units = KL_modes_slm_units - \
+    KL_modes_slm_units.mean(axis=(1, 2), keepdims=True)
 
-np.save(dirc_data / "compute_high_res_KL_output.npy", KL_modes)
+# set unitary variance
+KL_modes_slm_units = KL_modes_slm_units / \
+    KL_modes_slm_units.std(axis=(1, 2), keepdims=True)
+
+# get a version with no wraping required
+KL_modes_slm_units_no_wraping_required = 127.5 *\
+    KL_modes_slm_units /\
+    np.array([KL_modes_slm_units.max(),
+              -KL_modes_slm_units.min()]).max()\
+    + 127.5
+
+# encode on 8-bit
+KL_modes_slm_units_no_wraping_required_8bit = np.round(
+    KL_modes_slm_units_no_wraping_required)
+KL_modes_slm_units_no_wraping_required_8bit =\
+    KL_modes_slm_units_no_wraping_required_8bit.astype(np.uint8)
+
+# set piston at half the wavelength (slm dynamic range in meter)
+KL_modes_slm_units_piston_corrected = KL_modes_slm_units + 127.5
+
+# wraping
+KL_modes_slm_units_wrapped = np.mod(
+    KL_modes_slm_units_piston_corrected, 256)
+
+# encode on 8-bit
+KL_modes_slm_units_8bit = np.round(KL_modes_slm_units_wrapped)
+KL_modes_slm_units_8bit =\
+    KL_modes_slm_units_wrapped.astype(np.uint8)
+
+# %% Save results
+
+filename = "KL_modes_slm_units_no_wraping_required.npy"
+np.save(dirc_data / filename, KL_modes_slm_units_no_wraping_required)
+
+filename = "KL_modes_slm_units_piston_corrected.npy"
+np.save(dirc_data / filename, KL_modes_slm_units_piston_corrected)
