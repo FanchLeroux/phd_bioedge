@@ -154,11 +154,11 @@ KL_modes_slm_units_no_wraping_required_8bit =\
         np.uint8)
 
 # set piston at half the wavelength (slm dynamic range in meter)
-KL_modes_slm_units_piston_corrected = KL_modes_slm_units + 127.5
+KL_modes_slm_units_unitary_variance = KL_modes_slm_units + 127.5
 
 # wraping
 KL_modes_slm_units_wrapped = np.mod(
-    KL_modes_slm_units_piston_corrected, 256)
+    KL_modes_slm_units_unitary_variance, 256)
 
 # encode on 8-bit
 KL_modes_slm_units_8bit = np.round(KL_modes_slm_units_wrapped)
@@ -168,13 +168,15 @@ KL_modes_slm_units_8bit = KL_modes_slm_units_wrapped.astype(np.uint8)
 
 # save KL modes no wrapping required
 np.save(dirc_data / "phd_bioedge" / "manip" / "slm_screens" / "modal_basis" /
-        "KL_modes" / f"KL_modes_{n_pixels_in_slm_pupil}_pixels_in_slm_pupil_"
+        "KL_modes" /
+        f"KL_modes_slm_units_{n_pixels_in_slm_pupil}_pixels_in_slm_pupil_"
         f"{n_subapertures}_subapertures_no_wrapping_required.npy",
         KL_modes_slm_units_no_wraping_required)
 
 # save KL modes
-filename = "KL_modes_slm_units_piston_corrected.npy"
+filename = "KL_modes_slm_units_unitary_variance.npy"
 np.save(dirc_data / "phd_bioedge" / "manip" / "slm_screens" / "modal_basis" /
-        "KL_modes" / f"KL_modes_{n_pixels_in_slm_pupil}_pixels_in_slm_pupil_"
+        "KL_modes" /
+        f"KL_modes_slm_units_{n_pixels_in_slm_pupil}_pixels_in_slm_pupil_"
         f"{n_subapertures}_subapertures.npy",
-        KL_modes_slm_units_piston_corrected)
+        KL_modes_slm_units_unitary_variance)
