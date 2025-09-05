@@ -195,7 +195,8 @@ threshold = 0.1
 # calibration
 
 # Load KL modes
-filename = "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy"
+filename = ("KL_modes_slm_units_600_pixels_in_slm_pupil_20_subapertures_"
+            "no_wrapping_required.npy")
 KL_modes = np.load(
     dirc_data / "phd_bioedge" / "manip" / "slm_screens" / "modal_basis" /
     "KL_modes" / filename,
@@ -260,7 +261,8 @@ if num_boards_found.value == 1:
 
 slm_lib.Load_LUT_file(
     board_number,
-    str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
+    str(dirc_data / "phd_bioedge" / "manip" / "slm_lut" /
+        "12bit_linear.lut").encode('utf-8'))
 command = display_phase_on_slm(np.zeros(slm_shape), return_command_vector=True)
 plt.figure()
 plt.imshow(np.reshape(command, slm_shape))
@@ -270,12 +272,14 @@ plt.title("Command")
 
 slm_lib.Load_LUT_file(
     board_number,
-    str(dirc_data / "slm" / "LUT" / "slm5758_at675.lut").encode('utf-8'))
+    str(dirc_data / "phd_bioedge" / "manip" / "slm_lut" /
+        "slm5758_at675.lut").encode('utf-8'))
 
 # %% Load WFC
 
 slm_flat = np.zeros(slm_shape)
-# slm_flat = np.load(dirc_data / "slm" / "WFC" / "slm5758_at675.npy")
+# slm_flat = np.load(dirc_data / "phd_bioedge" / "manip" / "slm_wfc" /
+#                    "slm5758_at675.npy")
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
 plt.figure()
 plt.imshow(np.reshape(command, slm_shape))
@@ -402,8 +406,8 @@ for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
     pull = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi),
                    axis=0)
 
-    interaction_matrix[:, :, n_phase_screen] = (push - pull) /\
-        (2*stroke)
+    interaction_matrix[:, :, n_phase_screen] = push/push.sum()\
+        - pull/pull.sum()
 
     del push, pull
 
@@ -450,7 +454,8 @@ for n_phase_screen in range(n_calibration_modes):
     calibration_modes_full_slm[pupil_center[0]-calibration_modes.shape[0]//2:
                                pupil_center[0]+calibration_modes.shape[0]//2,
                                pupil_center[1]-calibration_modes.shape[1]//2:
-                               pupil_center[1]+calibration_modes.shape[1]//2] =\
+                               pupil_center[1]
+                                   + calibration_modes.shape[1]//2] =\
         calibration_modes[:, :, n_phase_screen]
 
     command = display_phase_on_slm(
