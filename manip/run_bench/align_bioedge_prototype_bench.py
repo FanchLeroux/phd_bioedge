@@ -325,6 +325,15 @@ roi = [995, 860, 200, 200]  # roi[0] is x coordinate, i.e column number
 live_view(acquire, orca_inline, roi)
 
 
+# %% End connection with SLM
+
+# Load a linear LUT and a black WFC
+
+slm_lib.Load_LUT_file(
+    board_number,
+    str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
+display_phase_on_slm(np.zeros(slm_shape))
+
 # %% delete slm sdk
 
 # Always call Delete_SDK before exiting

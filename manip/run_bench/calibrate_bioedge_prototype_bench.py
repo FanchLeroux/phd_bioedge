@@ -7,6 +7,8 @@ Created on Wed Apr 16 17:02:10 2025
 
 import datetime
 import pathlib
+import math
+import tqdm
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,8 +21,6 @@ from astropy.io import fits
 
 from fanch.tools.miscellaneous import get_tilt, get_circular_pupil
 from fanch.plots import make_gif
-
-import math
 
 # %% Function declaration
 
@@ -160,9 +160,9 @@ def display_phase_on_slm(phase, slm_flat=np.False_, slm_shape=[1152, 1920],
 # %% parameters
 
 
-# directories
-dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent.parent\
-    / "data"
+# directory
+dirc_data = pathlib.Path(
+    __file__).parent.parent.parent.parent.parent / "data"
 
 # slm shape
 slm_shape = np.array([1152, 1920])
@@ -181,7 +181,7 @@ pupil_center = [565, 1010]  # [pixel]
 tilt_amplitude = 1000.0*np.pi  # [rad]
 tilt_angle = -135.0  # [deg]
 
-amplitude_calibration_interaction_matrix = 0.1  # (std) [rad]
+stroke = 0.1  # (std) [rad]
 amplitude_calibration_test_matrix = 0.3  # (std) [rad]
 
 # orcas exposure time
@@ -194,12 +194,12 @@ threshold = 0.1
 # calibration
 
 # Load KL modes
-slm_phase_screens = np.load(
-    dirc_data / "slm" / "modal_basis" / "KL_modes" /
-    "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy",
+KL_modes = np.load(
+    dirc_data / "phd_bioedge" / "manip" / "slm_screens" / "modal_basis" /
+    "KL_modes" / "KL_modes_600_pixels_in_slm_pupil_20_subapertures.npy",
     mmap_mode='r')
 # chose how many modes are used to calibrate
-n_phase_screens_calib = slm_phase_screens.shape[2]
+n_calibration_modes = KL_modes.shape[2]
 
 # do gif
 do_gif = False
@@ -317,6 +317,17 @@ orca_folded.ID = 0  # ID for the data saved
 roi = False
 live_view([orca_inline, orca_folded])
 
+# %% Create folder to save results
+
+utc_now = get_utc_now()
+
+dirc_matrices = dirc_data / "matrices" / utc_now
+
+pathlib.Path(dirc_matrices).mkdir(parents=True, exist_ok=True)
+
+# %% Save calibration modal basis
+
+
 # %% Measure reference intensities
 
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
@@ -327,14 +338,6 @@ reference_intensities_orca_inline = np.mean(
 
 plt.figure()
 plt.imshow(reference_intensities_orca_inline)
-
-# %% Create folder to save results
-
-utc_now = get_utc_now()
-
-dirc_matrices = dirc_data / "matrices" / utc_now
-
-pathlib.Path(dirc_matrices).mkdir(parents=True, exist_ok=True)
 
 # %% Save reference intensities
 
@@ -349,54 +352,54 @@ display = True
 img = acquire(orca_inline, 1, orca_inline.exp_time, roi=roi)
 
 interaction_matrix = np.zeros((img.shape[1], img.shape[2],
-                               n_phase_screens_calib), dtype=np.float32)
+                               n_calibration_modes), dtype=np.float32)
 
 if display:
 
     plt.ion()  # Turn on interactive mode
     fig, ax = plt.subplots(nrows=1, ncols=2)
-    im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],
-                                 slm_phase_screens.shape[1])), cmap='viridis')
+    im1 = ax[0].imshow(np.zeros((KL_modes.shape[0],
+                                 KL_modes.shape[1])), cmap='viridis')
     im2 = ax[1].imshow(interaction_matrix[:, :, 0], cmap='viridis')
     ax[0].set_title("SLM Command")
     ax[1].set_title("Detector Irradiance")
     plt.tight_layout()
     plt.show()
 
-for n_phase_screen in range(n_phase_screens_calib):
+for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
 
     KL_mode_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
-    KL_mode_full_slm[pupil_center[0]-slm_phase_screens.shape[0]//2:
-                     pupil_center[0]+slm_phase_screens.shape[0]//2,
-                     pupil_center[1]-slm_phase_screens.shape[1]//2:
-                     pupil_center[1]+slm_phase_screens.shape[1]//2] =\
-        slm_phase_screens[:, :, n_phase_screen]
+    KL_mode_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
+                     pupil_center[0]+KL_modes.shape[0]//2,
+                     pupil_center[1]-KL_modes.shape[1]//2:
+                     pupil_center[1]+KL_modes.shape[1]//2] =\
+        KL_modes[:, :, n_phase_screen]
 
     command = display_phase_on_slm(
-        amplitude_calibration_interaction_matrix*KL_mode_full_slm,
+        stroke*KL_mode_full_slm,
         slm_flat, slm_shape=[1152, 1920], return_command_vector=True)
 
     push = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi),
                    axis=0)
 
     command = display_phase_on_slm(
-        -amplitude_calibration_interaction_matrix*KL_mode_full_slm,
+        -stroke*KL_mode_full_slm,
         slm_flat, slm_shape=[1152, 1920], return_command_vector=True)
 
     pull = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi),
                    axis=0)
 
     interaction_matrix[:, :, n_phase_screen] = (push - pull) /\
-        (2*amplitude_calibration_interaction_matrix)
+        (2*stroke)
 
     del push, pull
 
     print(str(n_phase_screen))
 
     if display:
-        im1.set_data(slm_phase_screens[:, :, n_phase_screen])
-        im1.set_clim(vmin=np.min(slm_phase_screens[:, :, n_phase_screen]),
-                     vmax=np.max(slm_phase_screens[:, :, n_phase_screen]))
+        im1.set_data(KL_modes[:, :, n_phase_screen])
+        im1.set_clim(vmin=np.min(KL_modes[:, :, n_phase_screen]),
+                     vmax=np.max(KL_modes[:, :, n_phase_screen]))
         im2.set_data(interaction_matrix[:, :, n_phase_screen])
         im2.set_clim(vmin=np.min(interaction_matrix[:, :, n_phase_screen]),
                      vmax=np.max(interaction_matrix[:, :, n_phase_screen]))
@@ -413,29 +416,29 @@ display = True
 # get one image to infer dimensions
 img = acquire(orca_inline, 1, orca_inline.exp_time, roi=roi)
 
-test_matrix = np.zeros((img.shape[1], img.shape[2], n_phase_screens_calib),
+test_matrix = np.zeros((img.shape[1], img.shape[2], n_calibration_modes),
                        dtype=np.float32)
 
 if display:
 
     plt.ion()  # Turn on interactive mode
     fig, ax = plt.subplots(nrows=1, ncols=2)
-    im1 = ax[0].imshow(np.zeros((slm_phase_screens.shape[0],
-                                 slm_phase_screens.shape[1])), cmap='viridis')
+    im1 = ax[0].imshow(np.zeros((KL_modes.shape[0],
+                                 KL_modes.shape[1])), cmap='viridis')
     im2 = ax[1].imshow(test_matrix[:, :, 0], cmap='viridis')
     ax[0].set_title("SLM Command")
     ax[1].set_title("Detector Irradiance")
     plt.tight_layout()
     plt.show()
 
-for n_phase_screen in range(n_phase_screens_calib):
+for n_phase_screen in range(n_calibration_modes):
 
     KL_mode_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
-    KL_mode_full_slm[pupil_center[0]-slm_phase_screens.shape[0]//2:
-                     pupil_center[0]+slm_phase_screens.shape[0]//2,
-                     pupil_center[1]-slm_phase_screens.shape[1]//2:
-                     pupil_center[1]+slm_phase_screens.shape[1]//2] =\
-        slm_phase_screens[:, :, n_phase_screen]
+    KL_mode_full_slm[pupil_center[0]-KL_modes.shape[0]//2:
+                     pupil_center[0]+KL_modes.shape[0]//2,
+                     pupil_center[1]-KL_modes.shape[1]//2:
+                     pupil_center[1]+KL_modes.shape[1]//2] =\
+        KL_modes[:, :, n_phase_screen]
 
     command = display_phase_on_slm(
         amplitude_calibration_test_matrix*KL_mode_full_slm, slm_flat,
@@ -448,9 +451,9 @@ for n_phase_screen in range(n_phase_screens_calib):
     print(str(n_phase_screen))
 
     if display:
-        im1.set_data(slm_phase_screens[:, :, n_phase_screen])
-        im1.set_clim(vmin=np.min(slm_phase_screens[:, :, n_phase_screen]),
-                     vmax=np.max(slm_phase_screens[:, :, n_phase_screen]))
+        im1.set_data(KL_modes[:, :, n_phase_screen])
+        im1.set_clim(vmin=np.min(KL_modes[:, :, n_phase_screen]),
+                     vmax=np.max(KL_modes[:, :, n_phase_screen]))
         im2.set_data(test_matrix[:, :, n_phase_screen])
         im2.set_clim(vmin=np.min(test_matrix[:, :, n_phase_screen]),
                      vmax=np.max(test_matrix[:, :, n_phase_screen]))
@@ -468,8 +471,6 @@ slm_lib.Load_LUT_file(
     board_number,
     str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
 display_phase_on_slm(np.zeros(slm_shape))
-
-# %% delete slm sdk
 
 # Always call Delete_SDK before exiting
 slm_lib.Delete_SDK()

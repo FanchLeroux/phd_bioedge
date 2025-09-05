@@ -14,17 +14,14 @@ from OOPAO.tools.interpolateGeometricalTransformation import interpolate_cube
 
 # %% File path
 
-dirc_data = (
-    pathlib.Path(__file__).parent.parent.parent.parent.parent
-    / "data" / "data_banc_proto_bioedge" / "turbulence"
-)
+dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent / "data"
 
 # %% Parameters
 
 WAVELENGTH = 675e-9  # [m]
 
-n_subaperture = 20
-n_pixels_in_slm_pupil = 1152
+n_subapertures = 20
+n_pixels_in_slm_pupil = 600
 
 r0 = 0.15  # Fried Parameter [m]
 L0 = 25  # Outer Scale [m]
@@ -39,7 +36,7 @@ seed = 0
 # %% Telescope
 
 tel = Telescope(
-    resolution=8 * n_subaperture,
+    resolution=8 * n_subapertures,
     diameter=8,
     samplingTime=1 / 1000,
     centralObstruction=0.0,
@@ -84,11 +81,11 @@ tel+atm
 # %% Deformable Mirror
 
 # specifying a given number of actuators along the diameter:
-nAct = n_subaperture+1
+nAct = n_subapertures+1
 
 dm = DeformableMirror(telescope=tel,  # Telescope
                       # number of subaperture of the system considered
-                      # (by default the DM has n_subaperture + 1 actuators to
+                      # (by default the DM has n_subapertures + 1 actuators to
                       # be in a Fried Geometry)
                       nSubap=nAct-1,
                       # Mechanical Coupling for the influence functions
@@ -98,7 +95,7 @@ dm = DeformableMirror(telescope=tel,  # Telescope
                       coordinates=None,
                       # inter actuator distance. Only used to compute the
                       # influence function coupling. The default is based on
-                      # the n_subaperture value.
+                      # the n_subapertures value.
                       pitch=tel.D/nAct, floating_precision=32)
 
 # %%  Modal Basis
@@ -136,25 +133,25 @@ KL_modes_hr = interpolate_cube(
 KL_modes_slm_units = KL_modes_hr * 255./WAVELENGTH
 
 # set 0 mean
-KL_modes_slm_units = KL_modes_slm_units - \
+KL_modes_slm_units = KL_modes_slm_units -\
     KL_modes_slm_units.mean(axis=(1, 2), keepdims=True)
 
 # set unitary variance
-KL_modes_slm_units = KL_modes_slm_units / \
+KL_modes_slm_units = KL_modes_slm_units /\
     KL_modes_slm_units.std(axis=(1, 2), keepdims=True)
 
 # get a version with no wraping required
 KL_modes_slm_units_no_wraping_required = 127.5 *\
     KL_modes_slm_units /\
     np.array([KL_modes_slm_units.max(),
-              -KL_modes_slm_units.min()]).max()\
-    + 127.5
+              -KL_modes_slm_units.min()]).max() + 127.5
 
 # encode on 8-bit
 KL_modes_slm_units_no_wraping_required_8bit = np.round(
     KL_modes_slm_units_no_wraping_required)
 KL_modes_slm_units_no_wraping_required_8bit =\
-    KL_modes_slm_units_no_wraping_required_8bit.astype(np.uint8)
+    KL_modes_slm_units_no_wraping_required_8bit.astype(
+        np.uint8)
 
 # set piston at half the wavelength (slm dynamic range in meter)
 KL_modes_slm_units_piston_corrected = KL_modes_slm_units + 127.5
@@ -165,13 +162,19 @@ KL_modes_slm_units_wrapped = np.mod(
 
 # encode on 8-bit
 KL_modes_slm_units_8bit = np.round(KL_modes_slm_units_wrapped)
-KL_modes_slm_units_8bit =\
-    KL_modes_slm_units_wrapped.astype(np.uint8)
+KL_modes_slm_units_8bit = KL_modes_slm_units_wrapped.astype(np.uint8)
 
 # %% Save results
 
-filename = "KL_modes_slm_units_no_wraping_required.npy"
-np.save(dirc_data / filename, KL_modes_slm_units_no_wraping_required)
+# save KL modes no wrapping required
+np.save(dirc_data / "phd_bioedge" / "manip" / "slm_screens" / "modal_basis" /
+        "KL_modes" / f"KL_modes_{n_pixels_in_slm_pupil}_pixels_in_slm_pupil_"
+        f"{n_subapertures}_subapertures_no_wrapping_required.npy",
+        KL_modes_slm_units_no_wraping_required)
 
+# save KL modes
 filename = "KL_modes_slm_units_piston_corrected.npy"
-np.save(dirc_data / filename, KL_modes_slm_units_piston_corrected)
+np.save(dirc_data / "phd_bioedge" / "manip" / "slm_screens" / "modal_basis" /
+        "KL_modes" / f"KL_modes_{n_pixels_in_slm_pupil}_pixels_in_slm_pupil_"
+        f"{n_subapertures}_subapertures.npy",
+        KL_modes_slm_units_piston_corrected)
