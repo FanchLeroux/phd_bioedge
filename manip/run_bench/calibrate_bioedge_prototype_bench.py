@@ -459,3 +459,22 @@ for n_phase_screen in range(n_phase_screens_calib):
 # %% Save test matrix
 
 np.save(dirc_matrices / (utc_now + "_test_matrix.npy"), test_matrix)
+
+# %% End connection with SLM
+
+# Load a linear LUT and a black WFC
+
+slm_lib.Load_LUT_file(
+    board_number,
+    str(dirc_data / "slm" / "LUT" / "12bit_linear.lut").encode('utf-8'))
+display_phase_on_slm(np.zeros(slm_shape))
+
+# %% delete slm sdk
+
+# Always call Delete_SDK before exiting
+slm_lib.Delete_SDK()
+
+# %% End conection with cameras
+
+orca_inline.close()
+orca_folded.close()
