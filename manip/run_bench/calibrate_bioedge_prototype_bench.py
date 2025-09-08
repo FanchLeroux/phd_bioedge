@@ -373,15 +373,13 @@ if display:
 
     plt.ion()  # Turn on interactive mode
     fig, ax = plt.subplots(nrows=1, ncols=2)
-    im1 = ax[0].imshow(np.zeros((calibration_modes.shape[0],
-                                 calibration_modes.shape[1])), cmap='viridis')
+    im1 = ax[0].imshow(np.zeros((calibration_modes.shape[1],
+                                 calibration_modes.shape[2])), cmap='viridis')
     im2 = ax[1].imshow(interaction_matrix[:, :, 0], cmap='viridis')
     ax[0].set_title("SLM Command")
     ax[1].set_title("Detector Irradiance")
     plt.tight_layout()
     plt.show()
-
-# %%
 
 for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
 
