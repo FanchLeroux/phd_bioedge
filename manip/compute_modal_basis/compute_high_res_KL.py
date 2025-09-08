@@ -18,11 +18,9 @@ from OOPAO.DeformableMirror import DeformableMirror
 from OOPAO.calibration.compute_KL_modal_basis import compute_KL_basis
 from OOPAO.tools.interpolateGeometricalTransformation import interpolate_cube
 
-# %% File path
+# %% Parameters
 
 dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent / "data"
-
-# %% Parameters
 
 WAVELENGTH = 675e-9  # [m]
 

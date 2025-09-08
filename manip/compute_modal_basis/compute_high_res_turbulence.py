@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon May  6 14:01:52 2024
+Created on Wed Apr 16 17:02:10 2025
 
 @author: fleroux
 """
@@ -8,29 +8,24 @@ Created on Mon May  6 14:01:52 2024
 # %% Imports
 
 import pathlib
+import tqdm
 
 import numpy as np
-import matplotlib.pyplot as plt
-import tqdm
 
 from OOPAO.Telescope import Telescope
 from OOPAO.Source import Source
 from OOPAO.Atmosphere import Atmosphere
 from OOPAO.tools.interpolateGeometricalTransformation import interpolate_cube
 
-# %% File path
-
-dirc_data = (
-    pathlib.Path(__file__).parent.parent.parent.parent.parent
-    / "data" / "data_banc_proto_bioedge" / "turbulence"
-)
-
 # %% Parameters
+
+dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent / "data"
 
 WAVELENGTH = 675e-9  # [m]
 
-n_subaperture = 20
-n_pixels_in_slm_pupil = 1152
+n_subapertures = 30
+n_pixels_in_slm_pupil = 600
+n_screens = 300
 
 r0 = 0.15  # Fried Parameter [m]
 L0 = 25  # Outer Scale [m]
@@ -39,13 +34,13 @@ windSpeed = [10, 12, 11, 15, 20]  # Wind Speed [m/s]
 windDirection = [0, 72, 144, 216, 288]  # Wind Direction [deg]
 altitude = [0, 1000, 5000, 10000, 12000]  # Altitude Layers [m]
 
-n_screens = 10
+n_opd = 10
 seed = 0
 
 # %% Telescope
 
 tel = Telescope(
-    resolution=8 * n_subaperture,
+    resolution=8 * n_subapertures,
     diameter=8,
     samplingTime=1 / 1000,
     centralObstruction=0.0,
@@ -84,9 +79,8 @@ atm = Atmosphere(
     windDirection=windDirection,
     altitude=altitude
 )
-
 atm.initializeAtmosphere(tel)
-tel + atm
+tel+atm
 
 # %% Compute atmosphere opd screens
 
@@ -148,14 +142,17 @@ filename = (
     f"_unwrapped_float64_{n_pixels_in_slm_pupil}"
     f"_pixels_{int(r0 * 100)}cm_r0_seed_{seed}.npy"
 )
-np.save(dirc_data / filename, atmosphere_slm_units_screens_piston_corrected)
+np.save(dirc_data / "phd_bioedge" / "manip" / "slm_screens" /
+        "atmosphere" / filename, atmosphere_slm_units_screens_piston_corrected)
 
 filename = (
     f"{n_screens}_atmosphere_screens_piston_1275e-1_slm_units"
     f"_no_wraping_required_float64_{n_pixels_in_slm_pupil}"
     f"_pixels_{int(r0 * 100)}cm_r0_seed_{seed}.npy"
 )
-np.save(dirc_data / filename, atmosphere_slm_units_screens_no_wraping_required)
+np.save(dirc_data / "phd_bioedge" / "manip" / "slm_screens" /
+        "atmosphere" / filename,
+        atmosphere_slm_units_screens_no_wraping_required)
 
 # %% Plots
 
