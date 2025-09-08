@@ -359,6 +359,18 @@ filename = (utc_now + "_reference_intensities_orca_inline.npy")
 np.save(dirc_interaction_matrix / filename,
         reference_intensities_orca_inline)
 
+# %% Measure Dark - Turn Off Ligth Source
+
+filename = (utc_now + "_dark_orca_inline.npy")
+
+darks = acquire(orca_inline, 11, orca_inline.exp_time, roi=roi)
+
+np.save(dirc_interaction_matrix / filename, darks)
+
+# %% Darks Post Processing
+
+mean_dark = darks.mean(axis=0)
+
 # %% Measure interaction matrix - orca_inline
 
 display = True
@@ -395,16 +407,21 @@ for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
         stroke*calibration_modes_full_slm,
         slm_flat, slm_shape=[1152, 1920], return_command_vector=True)
 
-    push = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi),
+    # substract mean dark to each image and then take the mean
+    push = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi)
+                   - mean_dark,
                    axis=0)
 
     command = display_phase_on_slm(
         -stroke*calibration_modes_full_slm, slm_shape=[1152, 1920],
         return_command_vector=True)
 
-    pull = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi),
+    # substract mean dark to each image and then take the mean
+    pull = np.mean(acquire(orca_inline, 3, orca_inline.exp_time, roi=roi)
+                   - mean_dark,
                    axis=0)
 
+    # normalize push and pull flux separately
     interaction_matrix[:, :, n_phase_screen] = push/push.sum()\
         - pull/pull.sum()
 
@@ -422,63 +439,10 @@ for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
 # %% Save interaction matrix
 
 np.save(dirc_interaction_matrix /
-        (utc_now + "_interaction_matrix_push_pull_orca_inline.npy"),
+        (utc_now +
+         f"_push_pull_measurements_orca_inline"
+         f"_{calibration_modes.shape[0]}_modes.npy"),
         interaction_matrix)
-
-# %% Measure test matrix - orca_inline
-
-display = True
-
-# get one image to infer dimensions
-img = acquire(orca_inline, 1, orca_inline.exp_time, roi=roi)
-
-test_matrix = np.zeros((img.shape[1], img.shape[2], n_calibration_modes),
-                       dtype=np.float32)
-
-if display:
-
-    plt.ion()  # Turn on interactive mode
-    fig, ax = plt.subplots(nrows=1, ncols=2)
-    im1 = ax[0].imshow(np.zeros((calibration_modes.shape[0],
-                                 calibration_modes.shape[1])), cmap='viridis')
-    im2 = ax[1].imshow(test_matrix[:, :, 0], cmap='viridis')
-    ax[0].set_title("SLM Command")
-    ax[1].set_title("Detector Irradiance")
-    plt.tight_layout()
-    plt.show()
-
-for n_phase_screen in range(n_calibration_modes):
-
-    calibration_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
-    calibration_modes_full_slm[pupil_center[0]-calibration_modes.shape[0]//2:
-                               pupil_center[0]+calibration_modes.shape[0]//2,
-                               pupil_center[1]-calibration_modes.shape[1]//2:
-                               pupil_center[1]
-                                   + calibration_modes.shape[1]//2] =\
-        calibration_modes[n_phase_screen, :, :]
-
-    command = display_phase_on_slm(
-        stroke_test_matrix*calibration_modes_full_slm, slm_flat,
-        slm_shape=[1152, 1920], return_command_vector=True)
-
-    test_matrix[:, :, n_phase_screen] = np.mean(
-        acquire(orca_inline, 3,
-                orca_inline.exp_time, roi=roi), axis=0)
-
-    print(str(n_phase_screen))
-
-    if display:
-        im1.set_data(calibration_modes[n_phase_screen, :, :])
-        im1.set_clim(vmin=np.min(calibration_modes[n_phase_screen, :, :]),
-                     vmax=np.max(calibration_modes[n_phase_screen, :, :]))
-        im2.set_data(test_matrix[:, :, n_phase_screen])
-        im2.set_clim(vmin=np.min(test_matrix[:, :, n_phase_screen]),
-                     vmax=np.max(test_matrix[:, :, n_phase_screen]))
-        plt.pause(0.005)
-
-# %% Save test matrix
-
-np.save(dirc_interaction_matrix / (utc_now + "_test_matrix.npy"), test_matrix)
 
 # %% End connection with SLM
 
