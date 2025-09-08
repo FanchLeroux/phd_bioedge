@@ -142,6 +142,16 @@ eigen_modes_push_pull_control_space =\
                    (slm_phase_screens.shape[1]*slm_phase_screens.shape[2],
                     slm_phase_screens.shape[0])) @ VT, slm_phase_screens.shape)
 
+eigen_modes_push_pull_control_space =\
+    np.reshape(
+        slm_phase_screens.reshape(slm_phase_screens.shape[0], -1).T @ VT,
+        slm_phase_screens.shape, order='A')
+
+# %%
+
+eigen_modes_push_pull_control_space = np.tensordot(
+    VT, slm_phase_screens, axes=(1, 0))
+
 # %% Eigen modes extraction - Measurements space - push_pull
 
 eigen_modes_push_pull_measurements_space = np.zeros(
