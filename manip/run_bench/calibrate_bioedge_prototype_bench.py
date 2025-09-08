@@ -336,7 +336,6 @@ pathlib.Path(dirc_interaction_matrix).mkdir(parents=True, exist_ok=True)
 
 calibration_modes = np.mod(stroke * KL_modes, 256).astype(np.uint8)
 
-
 # %% Save calibration modes
 
 filename = (utc_now + "_calibration_modes_slm_units.npy")
@@ -382,6 +381,8 @@ if display:
     plt.tight_layout()
     plt.show()
 
+# %%
+
 for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
 
     calibration_modes_full_slm = np.zeros((slm_shape[0], slm_shape[1]))
@@ -411,8 +412,6 @@ for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
 
     del push, pull
 
-    print(str(n_phase_screen))
-
     if display:
         im1.set_data(calibration_modes[n_phase_screen, :, :])
         im1.set_clim(vmin=np.min(calibration_modes[n_phase_screen, :, :]),
@@ -420,10 +419,12 @@ for n_phase_screen in tqdm.tqdm(range(n_calibration_modes)):
         im2.set_data(interaction_matrix[:, :, n_phase_screen])
         im2.set_clim(vmin=np.min(interaction_matrix[:, :, n_phase_screen]),
                      vmax=np.max(interaction_matrix[:, :, n_phase_screen]))
+        plt.pause(0.01)
 
 # %% Save interaction matrix
 
-np.save(dirc_interaction_matrix / (utc_now + "_interaction_matrix.npy"),
+np.save(dirc_interaction_matrix /
+        (utc_now + "_interaction_matrix_push_pull_orca_inline.npy"),
         interaction_matrix)
 
 # %% Measure test matrix - orca_inline
