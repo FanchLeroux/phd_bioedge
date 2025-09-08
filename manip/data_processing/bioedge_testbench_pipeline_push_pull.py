@@ -10,7 +10,7 @@ import pathlib
 import numpy as np
 import matplotlib.pyplot as plt
 
-# %%
+# %% Functions declaration
 
 
 def set_binning(array, binning_factor: int, mode='sum'):
@@ -49,7 +49,7 @@ def set_binning(array, binning_factor: int, mode='sum'):
 dirc_data = pathlib.Path(
     __file__).parent.parent.parent.parent.parent / "data"
 
-utc_measurement = "utc_2025-09-08_07-24-41"
+utc_measurement = "utc_2025-09-08_14-22-08"
 
 dirc_interaction_matrix = dirc_data / "phd_bioedge" / \
     "manip" / "interaction_matrix" / utc_measurement
@@ -61,12 +61,12 @@ filename_reference_intensities_orca_inline = utc_measurement\
     + "_reference_intensities_orca_inline.npy"
 
 filename_interaction_matrix_push_pull_orca_inline = utc_measurement\
-    + "_interaction_matrix_push_pull_orca_inline.npy"
+    + "_push_pull_measurements_orca_inline_743_modes.npy"
 
 filename_darks_orca_inline = utc_measurement\
     + "_dark_orca_inline.npy"
 
-binning_factor = 16
+binning_factor = 8
 threshold_push_pull = 0.2
 n_mode = 0
 do_gif = True
@@ -86,7 +86,8 @@ reference_intensities_orca_inline =\
 
 # %% Load Darks
 
-darks = np.load(dirc_interaction_matrix / filename_darks_orca_inline)
+darks = np.load(dirc_interaction_matrix / filename_darks_orca_inline,
+                mmap_mode='r')
 
 # %% Load Push-Pull Measurements
 
@@ -239,6 +240,7 @@ if do_gif:
     import gif
     from tqdm import tqdm
 
+    # measurements_push_pull_orca_inline_sliced
     @gif.frame
     def plot(i):
         plt.imshow(
@@ -255,5 +257,24 @@ if do_gif:
         str(dirc_interaction_matrix /
             (utc_measurement +
              f"_interaction_matrix_measeurements_"
+             f"binning_{binning_factor}x{binning_factor}.gif")),
+        duration=200)
+
+    # eigen_modes_push_pull_measurements_space_sliced
+    @gif.frame
+    def plot(i):
+        plt.imshow(
+            np.delete(
+                np.delete(
+                    eigen_modes_push_pull_measurements_space[:, :, i],
+                    slicer_x, 1),
+                slicer_y, 0))
+    frames = [plot(i) for i in tqdm(
+        range(eigen_modes_push_pull_measurements_space_sliced.shape[-1]))]
+    gif.save(
+        frames,
+        str(dirc_interaction_matrix /
+            (utc_measurement +
+             f"_eigen_modes_measurements_space_"
              f"binning_{binning_factor}x{binning_factor}.gif")),
         duration=200)
