@@ -1,9 +1,15 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 16 17:02:10 2025
+
+@author: fleroux
+"""
+
 # %% Imports
 
 import pathlib
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from OOPAO.Telescope import Telescope
 from OOPAO.Source import Source
@@ -20,7 +26,7 @@ dirc_data = pathlib.Path(__file__).parent.parent.parent.parent.parent / "data"
 
 WAVELENGTH = 675e-9  # [m]
 
-n_subapertures = 20
+n_subapertures = 30
 n_pixels_in_slm_pupil = 600
 
 r0 = 0.15  # Fried Parameter [m]

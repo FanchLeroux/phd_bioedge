@@ -195,7 +195,7 @@ threshold = 0.1
 # calibration
 
 # Load KL modes
-filename = ("KL_modes_slm_units_600_pixels_in_slm_pupil_20_subapertures_"
+filename = ("KL_modes_slm_units_600_pixels_in_slm_pupil_30_subapertures_"
             "no_wrapping_required.npy")
 KL_modes = np.load(
     dirc_data / "phd_bioedge" / "manip" / "slm_screens" / "modal_basis" /
@@ -347,7 +347,7 @@ np.save(dirc_interaction_matrix / filename,
 command = display_phase_on_slm(slm_flat, return_command_vector=True)
 
 reference_intensities_orca_inline = np.mean(
-    acquire(orca_inline, n_frames=10,
+    acquire(orca_inline, n_frames=11,
             exp_time=orca_inline.exp_time), axis=0)
 
 plt.figure()
@@ -375,10 +375,7 @@ mean_dark = darks.mean(axis=0)
 
 display = True
 
-# get one image to infer dimensions
-img = acquire(orca_inline, 1, orca_inline.exp_time, roi=roi)
-
-interaction_matrix = np.zeros((img.shape[1], img.shape[2],
+interaction_matrix = np.zeros((mean_dark.shape[0], mean_dark.shape[1],
                                n_calibration_modes), dtype=np.float32)
 
 if display:
